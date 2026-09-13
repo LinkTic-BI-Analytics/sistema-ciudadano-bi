@@ -66,8 +66,35 @@ no se construyó nada o no se anotó lo que se decidió.
 | Q17 | `[A2]` **¿Qué nivel de compromiso declara cada proceso?** La investigación §11.2 exige nombrar con precisión uno de tres: *consulta* —la autoridad recibe y considera—, *deliberación con compromiso de respuesta* —se obliga a explicar su posición— o *decisión presupuestal autorizada*. Y advierte: **«sin usar vinculante como promesa genérica»** | La ficha pública de cada convocatoria, y lo que el sistema puede prometer. También `I5`, que ya bloquea la tercera | Es un campo obligatorio del proceso, con los tres valores y sin cuarto. **Antes de publicar la primera convocatoria** |
 | Q18 | `[A1]` **La visibilidad territorial puede no ser aislamiento, sino jerarquía.** Esto cambia la `Q9`: §2.3 dice que *«la Nación también puede conocer patrones locales sin asumir su ejecución directa»*. Si el CTP de un municipio ve lo suyo y la Nación ve todo, **no son compartimentos estancos: es alcance jerárquico por territorio** | La forma de las políticas de acceso a nivel de fila. Aislamiento y jerarquía se implementan distinto y no se convierten uno en otro después | Preguntarlo junto con la `Q9`, porque son la misma decisión vista desde dos lados. **Antes de la primera tabla** |
 | Q19 | `[C2]` **La consulta previa es una ruta jurídica aparte y este sistema no la sustituye.** La Sentencia SU-123 de 2018 la hace proceder ante afectación directa a un pueblo étnico, y la investigación advierte que **un formulario general, un panel ciudadano o una votación no la sustituyen** | Qué pasa cuando un aporte viene de un pueblo étnico con afectación directa. Hoy el sistema no tiene por dónde reconocerlo ni a dónde derivarlo | Necesita criterio jurídico, no de producto. **Antes del primer piloto en territorio con comunidades étnicas** |
+| Q20 | `[C4]` **¿Cuánto silencio institucional marca un aporte como vencido?** Es la pregunta 3 de las nueve que `cierre_brechas_conocimiento_proyecto5.md` dejó abiertas el 12 de septiembre. Hoy no hay ningún plazo escrito, y el sistema tampoco puede cerrar por silencio | Las alertas de gestión de M04 | Mientras tanto se puede mostrar «sin respuesta registrada» y la antigüedad, **sin llamarlo vencido**. Lo define la entidad responsable de la respuesta |
+| Q21 | `[A2]` **¿Quién tiene autoridad para rechazar una propuesta o declararla fuera de competencia?** Pregunta 6 de esas nueve | El flujo de gestión completo de M04 | Permisos configurables, motivos, revisión e historial **sin asignar autoridad real por software**. Lo define la entidad promotora según su mandato |
+| Q22 | `[E2]` **¿Cómo se tratan la suplantación y la automatización abusiva?** Pregunta 7 de esas nueve, y choca de frente con `I1` y con `N17`: un centro comunitario comparte dispositivo y cincuenta aportes desde un punto de ayuda no son bots | La moderación de M02 y M07 | Señales, revisión humana y reclamación. **Nunca equiparar IP compartida o crítica con fraude, ni prometer que el fraude es imposible.** Lo definen el responsable del proceso, seguridad y el responsable de datos |
 
 ---
+
+## Conciliación con las nueve preguntas del 12 de septiembre
+
+`fuentes-2026-09-11/cierre_brechas_conocimiento_proyecto5.md` ya había dejado **nueve preguntas
+abiertas agrupadas por quién debe responderlas**. Esto es qué pasó con cada una.
+
+| Su pregunta | Estado hoy |
+|---|---|
+| Retiro, eliminación y derivados (3) | **Parcial.** El mecanismo se decidió —borrado lógico, V11— y la política de datos sigue abierta: `Q7`, `Q8`, `Q12`. *Su propio documento dice que las tres son una sola conversación* |
+| Cambio de vocero colectivo | **Cerrada.** V15: la vocería es un rol, no una propiedad |
+| Tiempo para vencimientos | Abierta · `Q20` |
+| Unicidad de voto en equipo compartido | **Aplazada a propósito.** `I5` mantiene la votación apagada, y su documento ya decía que *«esta pregunta no debería bloquear la captura y el BI iniciales»* |
+| Atención de emergencia reportada | **Cerrada.** V13, con protocolo. Queda el directorio territorial: `Q13` |
+| Autoridad para rechazar o declarar falta de competencia | Abierta · `Q21` |
+| Suplantación y automatización abusiva | Abierta · `Q22` |
+
+**Dos de las nueve se cerraron hoy.** Y aparecieron once que no estaban en esa lista, casi todas
+por una de dos razones: son **consecuencia de una decisión que se acaba de tomar** —`Q4`, `Q5`,
+`Q10`, `Q11`, `Q12`, `Q15`, `Q16`, `Q17`, `Q18`— o **aparecieron construyendo**, que es para lo
+que existe este archivo.
+
+La más grave de las once no estaba en ninguna lista de nadie: **`Q9`/`Q18`, la unidad de
+pertenencia.** Nadie la había preguntado porque no se ve escribiendo documentos; se ve cuando
+hay que crear la primera tabla.
 
 ## 3 · Datos que faltan
 
