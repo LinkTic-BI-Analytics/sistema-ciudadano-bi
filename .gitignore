@@ -1,0 +1,28 @@
+.DS_Store
+.env
+.env.local
+.env*.local
+node_modules/
+.next/
+*.log
+
+# El entorno y el binario que prepara scripts/leer-insumos.sh
+.venv-insumos/
+scripts/lib/.bin/
+
+# Las notas crudas de la entrevista llevan nombres y detalles de personas reales.
+# Si tu repositorio es público, descomenta la línea siguiente.
+# negocio/notas-de-descubrimiento.md
+
+# Los documentos del cliente. Si el repositorio va a ser compartido, descomenta:
+negocio/insumos/*
+!negocio/insumos/README.md
+
+# Derivados de la construccion. Salen de los archivos; no se versionan.
+construccion/.estado.json
+negocio/.grafo.json
+.superpowers/
+
+# Supabase local
+producto/supabase/.branches/
+producto/supabase/.temp/

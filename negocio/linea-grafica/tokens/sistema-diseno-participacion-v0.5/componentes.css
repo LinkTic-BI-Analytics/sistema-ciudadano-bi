@@ -1,0 +1,79 @@
+/* Participación 0.4 — importar tras participacion.css y shadcn-theme.css.
+   Clases de referencia, sin framework. Controles nativos y variables comunes. */
+.pc-ui {
+  --pc-ink: var(--pc-semantic-color-text-default);
+  --pc-muted: var(--pc-semantic-color-text-secondary);
+  --pc-paper: var(--pc-semantic-color-surface-base);
+  --pc-soft: var(--pc-semantic-color-surface-canvas);
+  --pc-line: var(--pc-semantic-color-border-subtle);
+  --pc-blue: var(--pc-semantic-color-action-primary-default);
+  --pc-link: var(--pc-semantic-color-action-tertiary-foreground);
+  --pc-error: var(--pc-semantic-color-feedback-error-foreground);
+  --pc-radius: var(--pc-component-field-radius);
+  color:var(--pc-ink); background:var(--pc-paper); color-scheme:light;
+  font:400 1rem/1.5 var(--pc-semantic-fontFamily-body);
+  overflow-wrap:anywhere; width:100%;
+}
+.pc-ui * {box-sizing:border-box;}
+.pc-ui [hidden] {display:none !important;}
+.pc-ui h1,.pc-ui h2,.pc-ui h3 {font-family:var(--pc-semantic-fontFamily-heading);line-height:1.25;font-weight:600;margin:0 0 1rem;color:var(--pc-ink);}
+.pc-ui h1 {font-size:var(--pc-primitive-fontSize-h2);letter-spacing:var(--pc-primitive-letterSpacing-heading);}
+.pc-ui h2 {font-size:1.5rem;}
+.pc-ui h3 {font-size:1.125rem;}
+.pc-ui p {margin:0 0 1rem;}
+.pc-ui button,.pc-ui input,.pc-ui textarea,.pc-ui select {font:inherit;}
+.pc-ui button {cursor:pointer;}
+.pc-ui :is(button,a,input,textarea,select,summary):focus-visible {
+  outline:var(--pc-semantic-focus-width) solid var(--pc-semantic-color-focus-ring);
+  outline-offset:var(--pc-semantic-focus-offset);box-shadow:0 0 0 3px var(--pc-semantic-color-focus-gap);
+}
+.pc-ui .pc-action {
+  display:inline-flex;gap:.5rem;align-items:center;justify-content:center;max-width:100%;
+  min-height:var(--pc-component-button-height);padding:.625rem var(--pc-component-button-paddingInline);
+  border:1px solid transparent;border-radius:var(--pc-component-button-radius);font-weight:var(--pc-component-button-weight);
+  background:var(--pc-component-button-primary-background);color:var(--pc-component-button-primary-foreground);
+  text-align:center;white-space:normal;line-height:1.5;
+}
+.pc-ui .pc-action:hover {background:var(--pc-component-button-primary-hover);}
+.pc-ui .pc-action:active {background:var(--pc-component-button-primary-pressed);}
+.pc-ui .pc-action[data-variant=secondary] {background:var(--pc-component-button-secondary-background);color:var(--pc-component-button-secondary-foreground);border-color:var(--pc-component-button-secondary-border);font-weight:500;}
+.pc-ui .pc-action[data-variant=secondary]:hover {background:var(--pc-component-button-secondary-hover);}
+.pc-ui .pc-action[data-variant=secondary]:active {background:var(--pc-component-button-secondary-pressed);}
+.pc-ui .pc-text-action {border:0;background:transparent;color:var(--pc-link);text-decoration:underline;text-underline-offset:3px;min-height:var(--pc-semantic-control-helperHeight);padding:.5rem .25rem;font-weight:400;display:inline-flex;align-items:center;gap:.5rem;max-width:100%;line-height:1.5;}
+.pc-ui .pc-text-action:hover {color:var(--pc-semantic-color-action-tertiary-hover);text-decoration-thickness:2px;}
+.pc-ui .pc-action:disabled,.pc-ui .pc-action[aria-disabled=true] {background:var(--pc-component-button-disabled-background);color:var(--pc-component-button-disabled-foreground);border-color:var(--pc-component-button-disabled-border);cursor:default;opacity:var(--pc-semantic-opacity-disabled);}
+.pc-ui .pc-label {display:block;font-weight:600;margin:0 0 .5rem;}
+.pc-ui .pc-input {display:block;width:100%;min-height:var(--pc-component-field-height);padding:.75rem;border:1px solid var(--pc-component-field-border);border-radius:var(--pc-radius);color:var(--pc-component-field-foreground);background:var(--pc-component-field-background);font-size:1rem;line-height:1.5;}
+.pc-ui textarea.pc-input {min-height:var(--pc-component-field-textareaMinHeight);resize:vertical;}
+.pc-ui .pc-input[aria-invalid=true] {border:2px solid var(--pc-component-field-error);}
+.pc-ui .pc-help,.pc-ui .pc-meta {font-size:.875rem;color:var(--pc-muted);line-height:1.5;}
+.pc-ui .pc-help {margin:.5rem 0 0;}
+.pc-ui .pc-field {margin:1.5rem 0;}
+.pc-ui .pc-error {color:var(--pc-error);font-size:1rem;margin:.5rem 0;}
+.pc-ui .pc-error-summary {border-left:3px solid var(--pc-error);padding:.25rem 0 .25rem 1rem;margin:0 0 1.5rem;}
+.pc-ui .pc-error-summary p {margin:0;}
+.pc-ui .pc-error-summary a {color:var(--pc-error);display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;}
+.pc-ui .pc-voice {background:var(--pc-component-voice-surface);color:var(--pc-component-voice-text);padding:var(--pc-component-voice-padding);border-radius:var(--pc-component-voice-radius);margin-top:1rem;}
+.pc-ui .pc-voice-status {display:flex;align-items:center;gap:.625rem;margin-bottom:.75rem;font-weight:600;}
+.pc-ui .pc-record-dot {width:.625rem;height:.625rem;border-radius:50%;background:var(--pc-component-voice-recording);flex-shrink:0;}
+.pc-ui .pc-actions {display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem;}
+.pc-ui .pc-summary-item {margin:1.5rem 0 0;}
+.pc-ui .pc-summary-head {display:flex;justify-content:space-between;align-items:baseline;gap:1rem;}
+.pc-ui .pc-summary-head h2 {font-size:1rem;}
+.pc-ui .pc-summary-text {white-space:pre-wrap;}
+.pc-ui .pc-note {font-size:.875rem;color:var(--pc-muted);margin:1rem 0;}
+.pc-ui .pc-status {display:inline-flex;align-items:center;gap:.5rem;color:var(--pc-component-status-reviewing-foreground);background:var(--pc-component-status-reviewing-background);border-radius:4px;padding:.25rem .5rem;font-size:.875rem;}
+.pc-ui .pc-rule {height:1px;border:0;background:var(--pc-line);margin:1.5rem 0;}
+.pc-ui details {margin:1rem 0;}
+.pc-ui summary {color:var(--pc-link);text-decoration:underline;cursor:pointer;min-height:44px;padding:.5rem 0;}
+.pc-ui .pc-sr {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;}
+@media(max-width:40rem) {.pc-ui h1 {font-size:1.75rem}.pc-ui .pc-actions {gap:.5rem}.pc-ui .pc-actions>.pc-action {width:100%}}
+@media(prefers-reduced-motion:reduce) {.pc-ui * {scroll-behavior:auto;transition:none;animation:none}}
+@media(forced-colors:active) {
+ .pc-ui .pc-action,.pc-ui .pc-input {border-color:ButtonText;}
+ .pc-ui .pc-action {background:ButtonFace;color:ButtonText;}
+ .pc-ui .pc-action[data-variant=primary] {border-width:2px;font-weight:700;}
+ .pc-ui .pc-action:disabled {color:GrayText;border-color:GrayText;}
+ .pc-ui :is(button,a,input,textarea,summary):focus-visible {outline-color:Highlight;box-shadow:none;}
+ .pc-ui .pc-record-dot {background:CanvasText;}
+}

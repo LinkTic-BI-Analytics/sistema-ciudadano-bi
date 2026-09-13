@@ -1,0 +1,66 @@
+/* La línea gráfica de este negocio.
+ *
+ * Se deriva de `negocio/linea-grafica/`, que es donde va lo que llegue del
+ * cliente: un sistema de diseño, una guía de marca, o las referencias que
+ * alguien vaya pasando.
+ *
+ * CADA TOKEN DICE DE DÓNDE SALIÓ, y hay tres orígenes que no pesan igual:
+ *
+ *   sin marca        del sistema o la guía del cliente. Es la marca, no se discute
+ *   DE REFERENCIA    de algo que alguien pasó. Sirve para construir, NO está decidido
+ *   PROVISIONAL      de nada. Lo pusimos para que no se vea roto
+ *
+ * Sin esa distinción el archivo miente: dentro de un mes nadie se acuerda de
+ * cuál color lo dijo el cliente y cuál salió de una captura. Es la misma
+ * regla que prohíbe inventar un número — un valor plausible es indistinguible
+ * de uno real y nadie lo va a cuestionar después.
+ *
+ * Al arrancar un negocio nuevo todo está PROVISIONAL. Cada valor que se
+ * decida o que salga de una referencia cambia de marca, y en
+ * `negocio/linea-grafica/README.md` se dice de dónde salió.
+ *
+ * El color de marca provisional es gris a propósito: un naranja o un azul
+ * plausible se leen como una decisión que alguien tomó. Un gris se ve como lo
+ * que es — que todavía no hay marca.
+ *
+ * Lo consume el PRODUCTO. Las vistas del harness —/modulos y /telemetria—
+ * traen sus propios tokens y no leen estos: son internas y se ven igual en
+ * todos los proyectos.
+ */
+:root {
+  /* Color ------------------------------------------------------------- */
+  --pr-marca:      #3d4650;   /* PROVISIONAL · gris de pizarra, escogido POR NO SER una marca */
+  --pr-marca-suave:#eef0f2;   /* PROVISIONAL */
+  --pr-papel:      #ffffff;   /* PROVISIONAL */
+  --pr-superficie: #f7f7f8;   /* PROVISIONAL */
+  --pr-tinta:      #14171a;   /* PROVISIONAL */
+  --pr-tinta-2:    #5b6572;   /* PROVISIONAL */
+  --pr-linea:      #e0e3e8;   /* PROVISIONAL */
+  --pr-bien:       #0d7a5c;   /* PROVISIONAL */
+  --pr-mal:        #b02f2a;   /* PROVISIONAL */
+
+  /* Tipografía -------------------------------------------------------- */
+  /* PROVISIONAL: pila del sistema. No se carga ninguna tipografía de marca
+     porque no llegó ninguna, y cargar una escogida por nosotros haría que la
+     gente comente la tipografía. */
+  --pr-titulos: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;  /* PROVISIONAL */
+  --pr-texto:   ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;  /* PROVISIONAL */
+  --pr-cifras:  ui-monospace, SFMono-Regular, Menlo, monospace;                           /* PROVISIONAL */
+
+  /* Forma ------------------------------------------------------------- */
+  --pr-esquina:  6px;         /* PROVISIONAL */
+  --pr-borde:    1px;         /* PROVISIONAL */
+  --pr-sombra:   0 1px 2px rgb(0 0 0 / .06), 0 4px 12px rgb(0 0 0 / .04);  /* PROVISIONAL */
+
+  /* Ritmo. Una sola escala, para que el espaciado no se decida cada vez.
+     La escala de un sistema de diseño suele ser suya —de 4, de 8, con o sin
+     medios pasos—, así que esta también va marcada: que sea estructural no la
+     vuelve decidida. Y va marcada renglón por renglón y no en este comentario,
+     para que la comprobación se pueda hacer a máquina y no a ojo. */
+  --pr-1: .25rem;             /* PROVISIONAL */
+  --pr-2: .5rem;              /* PROVISIONAL */
+  --pr-3: .75rem;             /* PROVISIONAL */
+  --pr-4: 1rem;               /* PROVISIONAL */
+  --pr-6: 1.5rem;             /* PROVISIONAL */
+  --pr-8: 2rem;               /* PROVISIONAL */
+}
