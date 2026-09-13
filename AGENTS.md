@@ -105,22 +105,146 @@ Lo corre `/donde-voy`, que llama al escribano. Cuando llegue el stack, esto pasa
 
 ---
 
-## Lo que llega con el stack
+## La capa de construcción
 
-Estas secciones están reservadas y vacías a propósito. La siguiente pasada las rellena; no
-anexa un contrato aparte.
+Las secciones que siguen gobiernan **el código del producto formal**, no el MVP. La frontera
+entre las dos capas es el módulo entregable, y quién manda cuando chocan está en el
+[ADR 0011](decisiones/0011-el-harness-y-superpowers.md).
+
+**Una advertencia que no se puede saltar.** El [ADR 0006](decisiones/0006-stack-fijo.md) fija
+el stack **del MVP**, y él mismo dice que *«el stack del MVP no compromete nada de lo que
+venga después»*. Además, `negocio/especificacion-v0-2026-09-13/vacios.md` tiene abierto
+**«motor de base de datos e infraestructura cloud: sin especificar»**. Para un servicio del
+Estado colombiano eso arrastra preguntas de residencia de datos que nadie ha respondido.
+
+Por eso estas cinco secciones están escritas **contra Postgres y un framework con servidor**,
+no contra un proveedor. Las reglas se cumplen igual con Supabase gestionado que con Postgres
+propio. **El proveedor es una `Q` abierta y se decide con el negocio, no de paso.**
 
 ### §8 · Dónde vive la lógica
-*(pendiente)*
+
+Cuatro niveles, en este orden. **Nunca la misma regla en dos niveles** — el día que una
+cambie, la otra se queda, y nadie va a saber cuál se estaba aplicando.
+
+| # | Nivel | Cuándo es el nivel correcto |
+|---|---|---|
+| 1 | Acceso a nivel de fila (RLS) | La regla dice **quién puede ver o tocar qué fila**. Aislamiento, ámbito por territorio, superficie pública contra interna |
+| 2 | Función en Postgres | La regla es una **cuenta o una restricción sobre datos**, y tiene que valer aunque el llamado venga por otra puerta |
+| 3 | Acción de servidor | La regla **orquesta**: valida una forma, llama a 2, compone una respuesta |
+| 4 | Función de borde | Solo lo que **no puede vivir en el ciclo de una petición**: trabajos programados, webhooks, cosas largas |
+
+**Cómo se escoge, sin discutirlo cada vez.** La pregunta es *«¿qué pasa si alguien llama
+esto por otra puerta?»*. Si la respuesta es «se rompe», el nivel está muy arriba y baja.
+
+**Las invariantes bajan hasta donde se vuelven imposibles, no hasta donde se validan.**
+Esto es lo que separa una invariante de una cualidad: una cualidad se puede cumplir mejor o
+peor; una invariante se cumple o se rompe. Una invariante implementada solo en el nivel 3 es
+una invariante que un `curl` rompe.
+
+| Invariante de esta especificación | Dónde tiene que hacerse imposible |
+|---|---|
+| `I1` · un reintento técnico no duplica un aporte | Nivel 2: **restricción única sobre la clave de envío**. No un `if` en el servidor, y explícitamente **no** por similitud ni por IP — la propia `I1` lo prohíbe |
+| `I2` · no inferir datos que faltan | Nivel 2: la ubicación tiene tres estados y el esquema no admite un cuarto implícito. Un `NULL` que se lee como «desconocido» ya es una inferencia |
+| `I4` · agrupar es reversible | Nivel 2: el vínculo aporte→necesidad es una fila con autor, fecha y motivo. **Fusionar registros destruye la reversibilidad**: nunca se fusiona |
+| `I6` · no divulgar identidad ni ubicación sensible | Nivel 1, y **también por URL directa**. Ocultar un botón no es un permiso; `backoffice-especificacion.md` ya lo dice con esas palabras |
+
+**Lo que JavaScript no hace.** Formatea; no calcula. Las cuentas de `R1` y `R2` —no sumar
+subtotales solapados, y los aportes sin ubicación que entran al total pero no al denominador
+municipal— viven en el nivel 2 y se prueban ahí. Si el mapa, la lista y la exportación
+hacen cada uno su propia cuenta, `I6` se rompe sola.
 
 ### §9 · Base de datos
-*(pendiente)*
+
+**El esquema declarativo es la fuente de verdad.** Nunca se toca por un panel de
+administración: un cambio que no está en un archivo es un cambio que el siguiente entorno no
+tiene. `scripts/esquema.sh` genera la migración concatenando `supabase/schemas/*.sql`.
+
+**Antes de escribir la primera migración hay que cerrar `[B2]`.** La pregunta es si un aporte
+retirado por seguridad **se borra o se apaga**, y `vacios.md` la marca como *«la que bloquea
+todo lo demás»* con razón: decide si el modelo es append-only con lápidas o admite borrado
+físico, y eso **toca las diez tablas**. Escribir migraciones antes de esa respuesta es
+garantizar reescribirlas.
+
+Lo que sí está decidido y no se discute por tabla:
+
+- **El dinero es `numeric`.** Las cuentas se hacen en Postgres.
+- **La auditoría es append-only** y no se reescribe cuando se revoca un permiso. Una
+  auditoría que se puede editar no es una auditoría.
+- **Los catálogos son versionados**, y entre versiones hay **correspondencia explícita**. El
+  catálogo geográfico cambia; un corte exportado en marzo tiene que seguir siendo
+  reproducible en octubre.
+- **La identidad y el contacto viven separados del dato analítico.** No es una vista: es una
+  partición. Es lo que hace cumplible que Comunicaciones no pueda descargar contactos.
+- **Seis entidades que la tentación junta y no se juntan:** aporte ≠ persona ≠ asistencia ≠
+  apoyo ≠ necesidad ≠ decisión. Y en gestión, **recepción, respuesta, solución, financiación
+  y ejecución son cinco eventos distintos**, nunca un campo `estado`.
+- **Un aporte multiterritorial no se duplica por territorio.** `R1`: una necesidad en N
+  municipios sigue siendo una necesidad.
+
+Antes de crear una tabla se lee la skill `supabase-postgres-best-practices`.
 
 ### §10 · Interfaz
-*(pendiente)*
+
+Las reglas de pantalla están en [`harness/interfaz.md`](harness/interfaz.md), cada una con el
+hallazgo que la produjo. **Se leen antes de tocar una pantalla**, no después.
+
+Lo que este negocio agrega:
+
+- **La línea gráfica es del producto, nunca del harness** (`interfaz.md` I5). Las vistas
+  `/modulos`, `/telemetria` y `/construccion` traen sus propios tokens y no leen los del
+  producto: son internas y se ven igual en todos los proyectos.
+- **Los tokens salen de `negocio/linea-grafica/tokens/`** y se generan, no se escriben. El
+  sistema v0.5 trae 319 tokens en formato DTCG y un generador que valida ciclos de alias.
+  **Editar el CSS generado a mano lo desincroniza del JSON**, y el JSON es la fuente.
+- **El contraste es una compuerta, no una recomendación.** El generador comprueba 41 pares
+  con umbral 4.5:1 para texto y 3:1 para bordes y foco, y **falla si alguno baja**. Entra a
+  `scripts/validar.sh`. La Resolución 1519 de 2020 de MinTIC obliga WCAG 2.1 AA a los
+  sujetos obligados; el sistema de diseño apunta a 2.2 AA.
+- **El estado nunca se comunica solo por color**, y una confirmación no es un aviso que se
+  va solo.
+- **Ocultar un botón no sustituye un permiso de servidor.** Un permiso que solo existe en la
+  pantalla no existe.
+- **Dos dimensiones de estado no se colapsan en una.** La demo del sistema de diseño usa
+  `captureOpen` como simplificación y avisa que no debe sustituir a las cuatro reales:
+  estado del encuentro, de la inscripción, de la ventana de aportes y de la publicación.
 
 ### §11 · Entornos y credenciales
-*(pendiente)*
+
+- **Las llaves son `publishable` y `secret`**, no las viejas `anon` y `service_role`. La
+  `secret` no aparece nunca en código que llegue al navegador.
+- **El identificador del proyecto local lleva el nombre del negocio**, no `mvp`. Los
+  contenedores se llaman `supabase_db_<id>`, y en una máquina con más de un proyecto un
+  identificador genérico choca por prefijo: `docker exec` empieza a hablarle al contenedor
+  equivocado, y el error no habla de eso.
+- **El bloque de puertos también se escoge.** El `543xx` que trae `supabase init` lo usa el
+  primer proyecto que se haya levantado en esa máquina. `lsof -nP -iTCP:<puerto> -sTCP:LISTEN`
+  dice cuál está libre, y el que se escoja queda anotado.
+- **`negocio/insumos/` no sale de la máquina.** El [ADR 0008](decisiones/0008-la-lectura-corre-local.md)
+  lo sostiene, y `negocio/autorizacion-de-salida.md` es la compuerta cuando haga falta: no es
+  un aviso, es un `return False`.
+- **Ningún dato real de ciudadanía en entornos que no sean producción.** Un relato con el
+  nombre de un municipio pequeño reidentifica a quien lo contó, y eso es exactamente lo que
+  `C2` existe para impedir.
 
 ### §12 · Definición de terminado — el código
-*(pendiente)*
+
+`AGENTS.md` §7 define cuándo un **documento** está terminado. Esto es lo mismo para código, y
+**ninguna casilla se marca con una afirmación**: cada una se marca con algo que se corrió.
+
+- [ ] Existe una prueba que **se vio fallar** por la ausencia del comportamiento, con el
+      mensaje exacto registrado. *Un chequeo que no se ha visto fallar no es un chequeo.*
+- [ ] La prueba pasa ahora, y el resultado está en el registro.
+- [ ] Los códigos `RF` `C` `P` `R` `I` del contrato están cubiertos, y **no se agregó alcance**.
+- [ ] Cada invariante que toca está implementada en el nivel de §8 que la hace imposible, no
+      en uno que solo la valida.
+- [ ] Los casos de verificación salen de la §9 de la especificación, **con el resultado
+      calculado a mano** — nunca con lo que devolvió la implementación.
+- [ ] No se modificó ninguna superficie ajena a la declarada en el contrato.
+- [ ] Pasó revisión de cumplimiento **y** revisión técnica, en ese orden. El constructor no
+      aprueba su propio trabajo.
+- [ ] `scripts/validar.sh` devuelve 0.
+- [ ] La hoja de ruta y el registro de progreso quedaron actualizados con la evidencia.
+
+**Y una que no es una casilla:** si al construir apareció una decisión que la especificación
+no responde, va a `negocio/vacios.md` como `Q` con qué bloquea y cuándo se vuelve urgente.
+Eso es la mitad del valor del método (§6), y se pierde entero si se decide callado.

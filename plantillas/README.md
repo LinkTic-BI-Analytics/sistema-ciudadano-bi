@@ -35,3 +35,17 @@ Para encontrarlas: `grep -rn "^> ➤" negocio/`
 | [persona.md](persona.md) | Una persona validadora | `/validar` |
 | [modulo.md](modulo.md) | **El entregable para el equipo de desarrollo** | `/entregar` |
 | [adr.md](adr.md) | Una decisión con su porqué | a mano |
+
+## Las de la construcción formal
+
+Estas cuatro son de la **Capa B**: entran cuando un módulo ya pasó la prueba del sobre
+cerrado y empieza a construirse el producto formal. Las gobierna
+[`metodo/construccion-solida-y-paralela.md`](../metodo/construccion-solida-y-paralela.md) y
+el [ADR 0011](../decisiones/0011-el-harness-y-superpowers.md).
+
+| Plantilla | Para qué | La usa |
+|---|---|---|
+| [hoja-de-ruta.md](hoja-de-ruta.md) | **El tablero canónico de la construcción**: estado, dependencia, propietario y evidencia | `/hoja-de-ruta` |
+| [plan-de-construccion.md](plan-de-construccion.md) | Lo que este método le agrega a `superpowers:writing-plans` | `/planear-construccion` |
+| [tarea.md](tarea.md) | **El contrato que recibe un agente constructor.** Se lee sin conocer el resto del proyecto | `/despachar` |
+| [registro-de-progreso.md](registro-de-progreso.md) | Los hechos de ejecución, para recuperar dónde iba todo tras una pausa | `/integrar` |
