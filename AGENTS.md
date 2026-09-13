@@ -243,6 +243,39 @@ trazables: no asigna recursos, no compromete una intervención y no declara resu
   contacto, cinco sin aceptación para avisar al suplente. Son **actuaciones del equipo de la
   plataforma**, no tiempos de llegada de organismos de emergencia, y no se presentan como tal.
 
+**Quién puede corregir qué: tres registros y tres autoridades.** Decidido el 2026-09-13
+(`negocio/vacios.md` V14 y V15). No hay una última palabra; hay tres, y la que aplica depende
+de qué se está corrigiendo.
+
+- **Tres registros que no se colapsan**, y el tercero es el que se olvida: `aporte individual`
+  —lo que una persona expresa, aunque lo haya dicho dentro de una mesa—, `relatoría del
+  encuentro` —lo discutido, con acuerdos, desacuerdos y pendientes— y `aporte colectivo` —una
+  formulación que un grupo validó **expresamente** como propia—. **No toda relatoría es un
+  aporte colectivo**, y tratarla como tal atribuye a un grupo algo que nunca validó. Es `I3`
+  otra vez, con un séptimo elemento.
+- **Una relatoría tiene partes direccionables.** Una objeción se vincula «al pasaje concreto»,
+  así que no es un bloque de texto. Cuál es la unidad de pasaje sigue abierto (`Q16`).
+- **`cuestionado` es un estado real y se propaga.** Mientras una objeción se revisa, ese pasaje
+  **no se usa como consenso confirmado para agrupar, priorizar ni preparar respuestas**. Toca
+  tres módulos aguas abajo, no solo el de eventos.
+- **Una corrección es una versión nueva, y hay dos clases.** «Esto fue mal interpretado» y
+  «ahora quiero cambiar mi posición» son las dos válidas y **tienen efectos distintos sobre el
+  registro histórico**. Cuáles, exactamente, sigue abierto (`Q15`).
+- **El silencio no cuenta como aceptación.** Si no hay validación suficiente, el contenido se
+  queda como relatoría o propuesta pendiente. Cuando solo una parte del grupo respalda una
+  formulación, **se atribuye a esa parte, no a toda la mesa**. Y quién puede validar y con qué
+  mecanismo **se define antes de cada encuentro**, no después.
+- **El responsable de revisión no es el facilitador.** Tiene la última palabra sobre cómo se
+  clasifica el conflicto —error de registro, nueva posición o desacuerdo— pero **no puede
+  declarar que alguien respalda algo que no validó**. Un desacuerdo se conserva con sus
+  atribuciones; no se fabrica una versión única.
+- **La vocería es un rol, no una propiedad.** El expediente conserva su identidad porque
+  corresponde a una necesidad situada. Cambiar de vocero exige designación verificable del
+  grupo; se registra quién asume, desde cuándo y con qué alcance, y **no hace falta la
+  autorización del anterior**. Con la vocería en disputa la revisión sigue, pero **no se
+  atribuye representación ni se entrega información reservada** a quien tenga la autorización
+  pendiente — y eso necesita el mecanismo de identidad, que es la `P4`, todavía sin responder.
+
 **Y falta la unidad de pertenencia, que es la que de verdad bloquea** (`Q9`). `metodo/frentes.md`
 lo dice sin rodeos: es lo único que no se puede agregar después, porque no es una restricción
 sobre una tabla sino **una columna en todas** y una condición en cada consulta que alguien

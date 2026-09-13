@@ -1,6 +1,6 @@
 # Preguntas — las seis decisiones que bloquean la construcción
 
-**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** **4 de 6 respondidas** (P1, P2, P3, P5). Faltan P4 y P6
+**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** **5 de 6 respondidas.** Falta solo la `P4`, la de identidad
 
 ## Para quien responde
 
@@ -315,7 +315,7 @@ Emergencias, el NUSE, nacional, gratuita y 24/7. Y trae un matiz que respalda la
 
 ---
 
-### P6 · Si la persona corrige la síntesis y el facilitador cree que eso cambia lo que se habló en la mesa, ¿quién tiene la última palabra?
+### P6 · Si la persona corrige la síntesis y el facilitador cree que eso cambia lo que se habló en la mesa, ¿quién tiene la última palabra? — **RESPONDIDA**
 
 **Por qué la preguntamos.** El producto promete dos cosas que se pueden contradecir: que la
 persona puede corregir lo que entendimos de lo suyo, y que las relatorías de un encuentro
@@ -332,9 +332,68 @@ expediente, y a quién le llegan las respuestas?
 autoría, y es un caso que va a pasar en el primer encuentro presencial. Si no está decidido,
 lo va a decidir quien esté en la pantalla ese día — y cada quien lo va a decidir distinto.
 
-**Respuesta:**
+**Respuesta:** — Miguel Gómez, 2026-09-13. Protocolo completo en el hilo de esta pregunta.
 
+> **No hay una última palabra: hay tres**, y la que aplica depende de qué se está corrigiendo.
+> La persona valida el sentido de **su** aporte; el grupo valida lo que se presenta como
+> **acuerdo colectivo**; y el equipo de revisión resuelve **cómo registrar una discrepancia sin
+> borrar ninguna de esas voces**. El facilitador no puede sustituir ninguna de las tres.
 >
+> **Tres registros distintos:** *aporte individual* (lo que una persona expresa, aunque lo haya
+> dicho dentro de una mesa), *relatoría del encuentro* (lo discutido, con acuerdos, desacuerdos
+> y pendientes) y *aporte colectivo* (una formulación que un grupo validó **expresamente** como
+> propia). **No toda relatoría constituye un aporte colectivo.**
+>
+> **Si la corrección afecta lo que la persona quiso decir:** ella tiene la última palabra sobre
+> la síntesis atribuida a ella. El facilitador puede pedir aclaración, no imponer una
+> interpretación. La corrección es una versión nueva, y se distingue *«esto fue mal
+> interpretado»* de *«ahora quiero ampliar o cambiar mi posición»* — ambas válidas, con efectos
+> distintos sobre el registro histórico.
+>
+> **Si afecta un supuesto acuerdo del grupo:** ni la persona, ni el vocero, ni el facilitador lo
+> modifican unilateralmente. La corrección se registra como objeción vinculada **al pasaje
+> concreto**, y mientras se revisa ese pasaje aparece **cuestionado** y no se usa como consenso
+> confirmado para agrupar, priorizar o preparar respuestas. Lo resuelve un responsable de
+> revisión **distinto del facilitador**, que puede concluir *error de registro* (se corrige
+> conservando trazabilidad), *nueva posición* (se añade con su fecha, sin reescribir lo
+> ocurrido) o *desacuerdo* (se conservan las posiciones y sus atribuciones; **no se fabrica una
+> versión única**). Tiene la última palabra sobre la clasificación, pero **no puede declarar que
+> alguien respalda algo que no validó**.
+>
+> *Ejemplo: si alguien aclara «yo pedí mejorar la presión, no construir una planta», se corrige
+> su aporte. Si otras personas sí propusieron la planta, esa propuesta se mantiene atribuida a
+> quienes la respaldaron.*
+>
+> **Cómo se valida un aporte colectivo:** antes de cada encuentro se define quiénes pueden
+> validarlo y con qué mecanismo. **El silencio no cuenta como aceptación.** Sin validación
+> suficiente el contenido queda como relatoría o propuesta pendiente, y cuando solo una parte
+> del grupo respalda una formulación **se atribuye a esa parte, no a toda la mesa**.
+>
+> **Si cambia el vocero:** el expediente conserva su identidad, porque corresponde a una
+> necesidad situada. **La vocería es un rol de representación y contacto; no otorga propiedad
+> sobre el expediente** ni autoridad para cambiar los aportes de otras personas. El cambio exige
+> designación verificable del grupo; se registra quién asume, desde cuándo y con qué alcance, y
+> **la autorización del vocero anterior no es un requisito**. Con la vocería en disputa la
+> revisión continúa, pero no se atribuye representación ni se entrega información reservada a
+> quien tenga la autorización pendiente.
+
+Las consecuencias de modelado están en `AGENTS.md` §9, y en `vacios.md` V14 y V15.
+
+**Esta respuesta estrechó la `Q9`.** Si el expediente corresponde a una necesidad situada y no
+a quien la reportó, **la persona queda descartada como unidad de pertenencia**. Quedan
+«convocatoria × territorio» y «entidad operadora» como candidatas.
+
+**Lo que abrió:**
+
+- **`Q15` · las dos clases de corrección tienen «efectos diferentes sobre el registro
+  histórico», pero no está dicho cuáles.** Si lo mal interpretado nunca fue lo que la persona
+  quiso decir, ¿la versión anterior sigue contando en un corte ya exportado? Es la `Q8` por
+  otra puerta.
+- **`Q16` · ¿qué es un «pasaje» de una relatoría?** Que una objeción se vincule «al pasaje
+  concreto» significa que la relatoría tiene partes direccionables. Falta cuál es la unidad: un
+  párrafo, una intervención, un acuerdo numerado.
+- **Y una dependencia con la `P4`:** «no se entrega información reservada a quien tenga la
+  autorización pendiente» necesita el mecanismo de identidad, que es justo la que falta.
 
 ---
 
@@ -391,7 +450,7 @@ una es un pliego que va a llegar después:
 | Respondido | — |
 | Qué destrabó | — |
 | Qué abrió que no estaba | — |
-| Respondido | P1, P2, P3 y P5, el 2026-09-13. La P1 y la P3 a medias: cada una cerró el mecanismo y abrió su semántica. La P2 y la P5 completas, y las dos trajeron protocolo, no solo definición |
+| Respondido | P1, P2, P3, P5 y P6, el 2026-09-13. La P1 y la P3 a medias: cada una cerró el mecanismo y abrió su semántica. La P2 y la P5 completas, y las dos trajeron protocolo, no solo definición |
 | Qué destrabó | Catálogo, modo de borrado, la forma del expediente y la ruta de alerta ya están en `AGENTS.md`. El módulo de revisión tiene sus cinco reglas y su prueba de decisión |
-| Qué abrió que no estaba | Once preguntas nuevas, `Q4` a `Q14`. La más grave sigue siendo `Q9`. Y una corrección: `AGENTS.md` §8 decía «nunca se fusiona», que era más estricto que la `I4` de la especificación |
-| Contexto mínimo para retomar | Quedan **P4** (identidad) y **P6** (quién decide entre ciudadano y facilitador). **Y apareció una que no estaba y bloquea más que todas: `Q9`, cuál es la unidad de pertenencia** — la columna que va en todas las tablas y que `metodo/frentes.md` señala como lo único que no se puede agregar después. La primera tabla espera esa, no las dos ya respondidas. |
+| Qué abrió que no estaba | Trece preguntas nuevas, `Q4` a `Q16`. La más grave sigue siendo `Q9`, aunque la `P6` la estrechó descartando a la persona como unidad. Y una corrección: `AGENTS.md` §8 decía «nunca se fusiona», que era más estricto que la `I4` de la especificación |
+| Contexto mínimo para retomar | Queda **solo la `P4`**, la de identidad — y la `P6` la volvió más urgente: sin mecanismo de identidad no se puede cumplir «no se entrega información reservada a quien tenga la autorización pendiente». **Y apareció una que no estaba y bloquea más que todas: `Q9`, cuál es la unidad de pertenencia** — la columna que va en todas las tablas y que `metodo/frentes.md` señala como lo único que no se puede agregar después. La primera tabla espera esa, no las dos ya respondidas. |
