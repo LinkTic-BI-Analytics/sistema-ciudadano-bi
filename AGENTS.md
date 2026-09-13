@@ -269,6 +269,11 @@ de qué se está corrigiendo.
   clasifica el conflicto —error de registro, nueva posición o desacuerdo— pero **no puede
   declarar que alguien respalda algo que no validó**. Un desacuerdo se conserva con sus
   atribuciones; no se fabrica una versión única.
+- **El aporte colectivo es del colectivo.** Decidido el 2026-09-13 (V19). No del vocero, que
+  solo lo representa, y no de quien lo reportó primero. **Pero «colectivo» no existe todavía
+  como entidad** en ningún documento (`Q23`), y un expediente que mezcla un aporte colectivo
+  con aportes individuales no puede ser del colectivo sin darle derechos sobre lo de los demás
+  (`Q24`). Hasta que eso se cierre: el aporte tiene dueño, el expediente no.
 - **La vocería es un rol, no una propiedad.** El expediente conserva su identidad porque
   corresponde a una necesidad situada. Cambiar de vocero exige designación verificable del
   grupo; se registra quién asume, desde cuándo y con qué alcance, y **no hace falta la
