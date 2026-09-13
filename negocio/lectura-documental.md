@@ -8,6 +8,10 @@ Hay un cuerpo documental grande y coherente sobre un servicio para que cualquier
 Colombia cuente qué necesita mejorar en su comunidad, y para que los equipos públicos
 conviertan esos relatos en necesidades territoriales trazables.
 
+**El objetivo quedó decidido el 2026-09-13, después de esta lectura: ser una línea de
+alimentación al Sistema Nacional de Planeación.** Eso reordenó el mapa de módulos y resolvió
+una contradicción que este archivo había dejado abierta. Ver §9, pregunta 1.
+
 **Lo primero que hay que saber es que todo el paquete PROPONE. Ninguno describe un sistema
 que opere.** No hay reglamento de algo en marcha, ni manual de un sistema en producción, ni
 registro de cómo funciona hoy una herramienta. Todo lo que dice es una intención, incluido lo
@@ -206,7 +210,7 @@ secciones llenas»*.
 
 | Una dice | La otra dice | Dónde |
 |---|---|---|
-| El BI institucional es **parte del núcleo inicial**: *«no se pospone como un adorno posterior a la captura»* | El grafo de dependencias pone el BI en la ola 3, después de captura y revisión | `especificacion_datos_y_bi_v1.md` §2 contra `entregable/mapa-de-modulos.md` |
+| ~~El BI es parte del núcleo inicial~~ **RESUELTA: ganó el paquete.** El BI entra al núcleo mínimo. Con la línea de alimentación decidida, el corte trazable **es** el entregable | — | `vacios.md` V17 |
 | *«La primera entrega conecta convocatoria, captura, confirmación, revisión y respuesta»* | El núcleo mínimo que propusimos aplaza convocatoria a un registro sembrado | núcleo v2 contra `mapa-de-modulos.md` |
 | Los encuentros virtuales **entran** en la primera entrega (actualización del 13 de septiembre) | La misma especificación excluye *«deliberación avanzada»* | núcleo v2, encabezado contra alcance |
 | *«Un mes no es un plazo nacional confirmado»* | Varios documentos hablan de «piloto» sin decir de qué tamaño | núcleo v2 |
@@ -238,11 +242,21 @@ Lo que sigue **no aparece en ninguno de los 24**. Se buscó, no se dedujo.
 
 Las cuatro primeras son las que más cambian lo que se construye.
 
-1. **¿Esto se conecta con el Sistema Nacional de Planeación —el CNP y los Consejos
-   Territoriales— o queda al lado?** Ya existe un mecanismo legal de participación en el plan,
-   con la Ley 152 de 1994. Si lo que se construye alimenta a los CTP, ellos son un actor del
-   sistema y hoy no están en la lista de once roles. Si queda al lado, hay que poder explicar
-   a la ciudadanía en qué se diferencia de lo que ya podía hacer.
+1. ~~**¿Esto se conecta con el Sistema Nacional de Planeación o queda al lado?**~~ —
+   **RESPONDIDA el 2026-09-13 por Miguel Gómez: somos una línea de alimentación al Sistema
+   Nacional de Planeación. Ese es el valor.**
+
+   Y estaba escrito en estos mismos documentos sin nombrarse así: es la **«ruta de política
+   nacional»** de la investigación §11.1, operando como **registro permanente con cortes
+   anunciados** (§1.2). Queda en `vacios.md` V16, y reordenó `entregable/mapa-de-modulos.md`.
+
+   **Lo que destrabó:** la contradicción del BI (§7 de este archivo). El paquete tenía razón
+   y mi grafo estaba mal — si el entregable al Sistema Nacional es un corte con evidencia, el
+   BI **es** el producto. Entra al núcleo mínimo.
+
+   **Lo que abrió:** el nivel de compromiso que declara cada proceso (`Q17`), si la visibilidad
+   territorial es aislamiento o jerarquía (`Q18`, que reencuadra la `Q9`), y qué pasa con la
+   consulta previa de pueblos étnicos, que este sistema no sustituye (`Q19`).
 
 2. **¿Un proceso participativo puede ver los datos de otro?** Es la `Q9` dicha en las palabras
    del negocio. Los documentos ponen el «proceso» como contenedor y dejan que un expediente

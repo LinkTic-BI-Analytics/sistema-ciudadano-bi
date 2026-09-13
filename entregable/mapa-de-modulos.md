@@ -5,6 +5,45 @@ la vez**. Lo pide `metodo/construccion-solida-y-paralela.md` §4.
 
 **Actualizado:** 2026-09-13 · derivado de `negocio/especificacion-v0-2026-09-13/`
 
+## El objetivo, decidido el 2026-09-13
+
+**Este sistema es una línea de alimentación al Sistema Nacional de Planeación.** Ese es el
+valor, y ordena todo lo que sigue.
+
+La investigación ya lo tenía escrito sin nombrarlo así. Es la **«ruta de política nacional»**
+de su §11.1 — *traducir patrones de necesidades, brechas estructurales y obstáculos
+regulatorios en opciones de política, metas, programas o cambios normativos*, y hacerlo
+**«sin exigir éxito previo en un ranking municipal»**, conservando el vínculo de cada opción
+con los contextos que la originaron.
+
+Y el modo de operar sale de su §1.2: **registro permanente con cortes anunciados** para cada
+ciclo de formulación, presupuesto y evaluación. No es una convocatoria que abre y cierra.
+
+### El calendario no es nuestro, es de la Ley 152 de 1994
+
+| Momento | Fecha límite |
+|---|---|
+| El proyecto de plan llega al Consejo Nacional de Planeación | 15 de noviembre |
+| El CNP emite concepto y recomendaciones | antes del 10 de enero |
+| El Gobierno lo presenta al Congreso | antes del 7 de febrero |
+| En territorio: el proyecto llega al CTP | dentro de los 2 primeros meses desde la posesión |
+| El CTP conceptúa | 1 mes |
+
+De ahí sale la frase que más manda sobre el producto: **«el calendario obliga a anticipar la
+escucha»**. Una convocatoria que recibe miles de aportes cuando el texto está prácticamente
+cerrado no alcanza a convertirlos en nada.
+
+### Y el límite que hay que decir en voz alta
+
+**El concepto de un consejo de planeación no aprueba gasto ni obliga a incorporar cada
+recomendación.** Escuchar un concepto es distinto de adoptarlo. Por eso el producto tiene que
+declarar **qué puede decidir la ciudadanía y qué es una recomendación que la autoridad
+examinará** — y con cuál de los tres niveles de compromiso se está comprometiendo: consulta,
+deliberación con compromiso de respuesta, o decisión presupuestal autorizada. *Nunca
+«vinculante» como promesa genérica* (`Q17`).
+
+---
+
 > ## Lo primero, porque cambia cómo se lee todo lo demás
 >
 > **Los diez módulos declaran `Depende de: —`.** Ninguna dependencia está escrita en la
@@ -86,8 +125,21 @@ paralelo la acorta.
 | **0 · cimientos** | **M10** + el modelo de datos común + el motor de conteo `R1`/`R2` + el catálogo geográfico versionado + el contrato del comprobante. **Secuencial: nadie más empieza antes** | — |
 | **1 · entrada** | **M01** · **M06** sin campañas · **M09** | ola 0 |
 | **2 · transformación** | **M02** · **M05** | M01, M06 |
-| **3 · explotación** | **M03** · **M04** · **M07** | M02 |
+| **3 · el entregable** | **M03** — es lo que recibe el Sistema Nacional. Con **M04** y **M07** en paralelo | M02 |
 | **4 · cierre** | **M08** · las campañas de M06 (`CAM-01/02` y los QR) | M03 |
+
+> **Corrección del 2026-09-13.** Este grafo ponía el BI como «explotación», después de todo lo
+> demás. **Estaba mal, y el paquete lo decía:** *«el BI institucional es parte del núcleo
+> inicial: no se pospone como un adorno posterior a la captura»*
+> (`especificacion_datos_y_bi_v1.md` §2).
+>
+> Con la línea de alimentación decidida, la razón se ve: **el corte trazable y reproducible ES
+> el entregable al Sistema Nacional.** Un sistema que captura y responde pero no produce un
+> corte que un consejo de planeación pueda recibir y verificar no es una línea de alimentación
+> — es un buzón.
+>
+> La ola no se mueve de número, porque M03 sí necesita que M01 y M02 existan para tener qué
+> mostrar. Lo que cambia es **que M03 entra al núcleo mínimo**, abajo.
 
 **Lo que de verdad se puede paralelizar.** M09 es casi independiente: puede arrancar el
 primer día, en su propio worktree. M07 en P0 es pequeño y solo necesita el expediente. M05 y
@@ -109,15 +161,23 @@ aplazando una mitad. Los cuatro, con su corte:
 
 El conjunto más pequeño que produce algo de principio a fin:
 
-> **M10 mínimo → M01 → M02 mínimo → M04 mínimo**
+> **M10 mínimo → M01 → M02 mínimo → M03 mínimo → M04 mínimo**
 
-**El recorrido que produce.** Una persona entra por una convocatoria sembrada → cuenta su
-problema con la ubicación imprecisa → recibe un comprobante con código → alguien aclara la
-ubicación y crea el expediente → un responsable registra una respuesta → la persona consulta
-su código **sin dar correo** y ve qué pasó con lo que contó.
+**Son dos recorridos y el núcleo tiene que cerrar los dos**, porque el sistema le debe algo a
+dos partes distintas.
 
-Eso es el sistema entero en pequeño: **capturar → volverlo expediente → responder → que la
-persona se entere.** Es también la promesa que orienta el diseño, escrita en `negocio/vision.md`.
+**A la persona:** entra por una convocatoria sembrada → cuenta su problema con la ubicación
+imprecisa → recibe un comprobante con código → alguien aclara la ubicación y crea el expediente
+→ un responsable registra una respuesta → consulta su código **sin dar correo** y ve qué pasó.
+Es la promesa de `negocio/vision.md`.
+
+**Al Sistema Nacional de Planeación:** esos mismos expedientes producen **un corte con fecha,
+filtros, catálogo y diccionario, que otro analista puede reproducir** — y que un consejo de
+planeación puede recibir como evidencia de un concepto. Es `TRA-01`: *«otro analista reproduce
+el total a partir del mismo corte y regla»*.
+
+Sin el primero no hay confianza. **Sin el segundo no hay valor**, que es lo que el objetivo
+acaba de decidir.
 
 | Módulo | Lo imprescindible | Lo que se aplaza |
 |---|---|---|
@@ -145,6 +205,23 @@ Ninguno es técnico. Los seis son decisiones que alguien tiene que tomar.
 | 4 | **Definición de «Expediente»** | El glosario lo declara **sin definir**, y «necesidad situada» —la unidad de decisión del sistema— queda abierta porque depende de él |
 | 5 | **Taxonomías y máquinas de estado** | La sección está vacía. Hay al menos **siete máquinas de estado implícitas** sin escribir: ubicación, clasificación, confirmación, revisión, remisión, campaña y encuentro |
 | 6 | **`[C2]` ruta de emergencia** | Una necesidad urgente que cae en la cola normal es un riesgo humano, no técnico. Necesita decisión antes del primer piloto real |
+
+## Dos actores que no estaban en la lista
+
+La lista de once roles no incluye a quien recibe lo que producimos.
+
+| Quién | Qué recibe | Qué NO es |
+|---|---|---|
+| **Consejo Nacional de Planeación (CNP)** | Cortes con evidencia para sustentar su concepto sobre el proyecto de plan | No es un usuario que administra nada. Recibe un entregable con fecha |
+| **Consejos Territoriales de Planeación (CTP)** | Lo mismo, acotado a su territorio | Tampoco administra. Y su alcance abre la `Q18` |
+
+**No se agregan a la especificación desde aquí.** Eso lo hace `T020` con `/especificar`, y hay
+que decidir antes si son usuarios del sistema o destinatarios de una exportación — que son dos
+diseños muy distintos.
+
+Y hay una ruta que este sistema **no sustituye** y tiene que saber reconocer: la **consulta
+previa** de pueblos étnicos (Sentencia SU-123 de 2018). Un formulario general, un panel
+ciudadano o una votación no la reemplazan (`Q19`).
 
 ## Estado de entrega
 
