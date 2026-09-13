@@ -133,6 +133,13 @@ else
   saltó "las vistas del harness todavía no están en el producto"
 fi
 
+# CHEQUEO: el catálogo territorial cuadra consigo mismo
+# Se ve fallar: cámbiale el cod_departamento a una fila de municipios.csv
+python3 scripts/lib/divipola_integro.py >/tmp/dv.$$ 2>&1 \
+  && ok "$(head -1 /tmp/dv.$$)" \
+  || { mal "el catálogo territorial no cuadra"; sed 's/^/          /' /tmp/dv.$$; }
+rm -f /tmp/dv.$$
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then
