@@ -145,7 +145,7 @@ una invariante que un `curl` rompe.
 |---|---|
 | `I1` · un reintento técnico no duplica un aporte | Nivel 2: **restricción única sobre la clave de envío**. No un `if` en el servidor, y explícitamente **no** por similitud ni por IP — la propia `I1` lo prohíbe |
 | `I2` · no inferir datos que faltan | Nivel 2: la ubicación tiene tres estados y el esquema no admite un cuarto implícito. Un `NULL` que se lee como «desconocido» ya es una inferencia |
-| `I4` · agrupar es reversible | Nivel 2: el vínculo aporte→necesidad es una fila con autor, fecha y motivo. **Fusionar registros destruye la reversibilidad**: nunca se fusiona |
+| `I4` · agrupar es reversible | Nivel 2: el vínculo aporte→expediente es una fila con autor, fecha y motivo. Lo que `I4` prohíbe es **fusionar automáticamente por palabras compartidas**, no fusionar: un expediente sí se puede fusionar o dividir cuando una revisión humana lo establece. Lo que nunca se hace es fusionar **destruyendo filas** — la fusión es un expediente nuevo, lápidas en los anteriores y los vínculos conservados |
 | `I6` · no divulgar identidad ni ubicación sensible | Nivel 1, y **también por URL directa**. Ocultar un botón no es un permiso; `backoffice-especificacion.md` ya lo dice con esas palabras |
 
 **Lo que JavaScript no hace.** Formatea; no calcula. Las cuentas de `R1` y `R2` —no sumar
@@ -192,6 +192,57 @@ Dos cosas que hay que saber antes de modelar una ubicación:
   distintas según la versión con que se escribió. Guardar la versión junto al dato es lo que
   hace que `R2` se pueda cumplir — *un corte exportado no se reescribe*.
 
+**El expediente es la unidad de decisión, y tiene forma.** Decidido el 2026-09-13
+(`negocio/vacios.md` V12; la definición completa está en la respuesta a la `P2` del pliego).
+Tres niveles que no se colapsan: **aporte** → **expediente** → **agrupación temática o
+territorial**. Lo que eso obliga en el esquema:
+
+- **Un aporte puede alimentar varios expedientes.** Quien menciona contaminación del agua y
+  falta de transporte escolar produce dos necesidades desde un mismo relato. La relación es
+  **muchos a muchos**, con autor, fecha y motivo en el vínculo. No es una columna
+  `expediente_id` en la tabla de aportes.
+- **Un expediente puede abarcar varios territorios, y conserva el seguimiento de cada uno.**
+  Un expediente intermunicipal no es un expediente con un territorio «promedio»: es uno con
+  varios, cada uno con su propio estado de atención. También muchos a muchos.
+- **La separación es el estado por defecto.** Dos aportes son dos expedientes salvo que una
+  revisión establezca que describen la misma afectación. Compartir tema, municipio, entidad o
+  palabras parecidas **no basta**.
+- **Fusionar y dividir no destruyen filas.** Compone con el borrado lógico: la fusión escribe
+  un expediente nuevo, marca los anteriores y conserva los vínculos y la historia.
+- **Un expediente puede nacer de un solo aporte**, y no hace falta conocer la causa técnica
+  para abrirlo. Una afectación con causa por determinar es un expediente válido.
+- **Para el BI se cuentan aportes y expedientes por separado.** Cien aportes en un expediente
+  siguen siendo **una** necesidad registrada, y ese volumen no demuestra mayor gravedad ni
+  equivale a cien personas afectadas. Es `R1` con su unidad por fin definida.
+
+**La prueba para decidir si son uno o dos**, y es la que va a los casos de verificación:
+
+> ¿Podríamos dar por atendida una de estas situaciones mientras la otra sigue pendiente?
+> Si la respuesta es sí, tienen que poder gestionarse por separado.
+
+**Y abrir un expediente no aprueba nada.** Significa iniciar una revisión y un seguimiento
+trazables: no asigna recursos, no compromete una intervención y no declara resuelto nada.
+
+**La alerta urgente es una entidad propia, no un estado del aporte.** Decidido el 2026-09-13
+(`negocio/vacios.md` V13). Lo que obliga:
+
+- **Se abre desde un aporte, sin esperar a que exista un expediente.** Es un cuarto nivel al
+  lado de los tres de arriba, no un campo de ninguno de ellos. Un formulario a medio llenar
+  ya puede tener alerta.
+- **Tres cosas distintas que la tentación junta en una:** `orientación mostrada`,
+  `contacto intentado`, `recepción confirmada`. Cada una con responsable, canal, fecha y la
+  constancia que haya. **Mostrar un teléfono no es haber contactado, y contactar no es que
+  alguien haya recibido.** Y una transferencia confirmada tampoco significa emergencia
+  resuelta.
+- **Cada intento fallido se registra**, y la transferencia sigue pendiente hasta que se
+  confirme.
+- **Un reintento técnico no abre dos alertas.** Es `I1` otra vez: la misma clave de envío.
+- **Volver al flujo ordinario deja justificación**, y el relato original y la necesidad se
+  conservan.
+- **Este es el único plazo del sistema.** Cinco minutos para acusar recibo, diez para iniciar
+  contacto, cinco sin aceptación para avisar al suplente. Son **actuaciones del equipo de la
+  plataforma**, no tiempos de llegada de organismos de emergencia, y no se presentan como tal.
+
 **Y falta la unidad de pertenencia, que es la que de verdad bloquea** (`Q9`). `metodo/frentes.md`
 lo dice sin rodeos: es lo único que no se puede agregar después, porque no es una restricción
 sobre una tabla sino **una columna en todas** y una condición en cada consulta que alguien
@@ -236,6 +287,14 @@ Lo que este negocio agrega:
   va solo.
 - **Ocultar un botón no sustituye un permiso de servidor.** Un permiso que solo existe en la
   pantalla no existe.
+- **La orientación de emergencia se muestra sin exigir terminar el formulario**, y el texto
+  es el acordado: *«Si hay personas en peligro, llama ahora al 123. No esperes una respuesta
+  de esta plataforma. Este formulario registra información y no activa por sí mismo un
+  servicio de emergencia.»* El 123 es la Línea Única de Atención de Emergencias, nacional y
+  gratuita — pero **quién contesta varía por municipio**, y por eso el directorio territorial
+  es condición para abrir el piloto (`Q13`).
+- **«Llamar al 123» es la acción principal** en ese momento, y lo escrito se conserva. La
+  pantalla **nunca** pide acercarse al peligro, tomar fotografías ni conseguir pruebas.
 - **Dos dimensiones de estado no se colapsan en una.** La demo del sistema de diseño usa
   `captureOpen` como simplificación y avisa que no debe sustituir a las cuatro reales:
   estado del encuentro, de la inscripción, de la ventana de aportes y de la publicación.

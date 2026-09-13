@@ -1,6 +1,6 @@
 # Preguntas — las seis decisiones que bloquean la construcción
 
-**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** **2 de 6 respondidas** (P1 y P3)
+**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** **4 de 6 respondidas** (P1, P2, P3, P5). Faltan P4 y P6
 
 ## Para quien responde
 
@@ -85,7 +85,7 @@ no hay denominador, y el mapa de cobertura muestra conteos pero nunca un porcent
 
 ---
 
-### P2 · ¿Qué es exactamente un «expediente»?
+### P2 · ¿Qué es exactamente un «expediente»? — **RESPONDIDA**
 
 **Por qué la preguntamos.** Es la entidad central del sistema —la unidad sobre la que se
 decide todo— y **el glosario la declara sin definir**. «Necesidad situada» queda abierta
@@ -100,9 +100,71 @@ contaminación?
 máquina de convertir aportes en expedientes. Y sin eso no hay BI, ni priorización, ni
 gestión — es el cuello de la ruta crítica.
 
-**Respuesta:**
+**Respuesta:** — Miguel Gómez, 2026-09-13
 
+> Un expediente es el **registro de trabajo y seguimiento de una necesidad situada**. Reúne
+> los aportes que la describen, sus evidencias, las aclaraciones pendientes y las actuaciones
+> del equipo responsable. **Puede comenzar con un solo aporte**; no requiere que varias
+> personas reporten el problema.
 >
+> Una **necesidad situada** es una afectación concreta, reportada en un territorio y un
+> contexto temporal, que afecta a una población y requiere un cambio identificable. Por
+> ejemplo: *«Baja presión de agua recurrente en la parte alta del barrio desde hace tres
+> meses»*.
+>
+> **Tres niveles:** *aporte* (lo que una persona o un grupo expresa, con su relato original y
+> su procedencia) → *expediente* (la necesidad concreta que se revisa y gestiona; puede reunir
+> varios aportes) → *agrupación temática o territorial* (relaciona expedientes para analizar
+> patrones, **sin fusionarlos**).
+>
+> **¿Cuándo dos aportes pertenecen al mismo expediente?** Cuando la revisión permite establecer
+> que describen la misma afectación, en un ámbito territorial y temporal coherente, y pueden
+> tener seguimiento conjunto sin ocultar diferencias relevantes. **Compartir tema, municipio,
+> entidad responsable o palabras similares no es suficiente.** Tampoco hace falta conocer la
+> causa técnica para abrir un expediente.
+>
+> | Caso | Regla |
+> |---|---|
+> | Dos barrios distintos del mismo municipio reportan problemas de agua | **Dos expedientes por defecto**, salvo que la revisión establezca una misma afectación compartida —por ejemplo, una interrupción de la misma red— |
+> | El problema aparece en dos municipios vecinos | **Dos expedientes por defecto**, relacionados para análisis regional. Podrían ser uno intermunicipal si se confirma afectación común **y la gestión conjunta conserva el seguimiento de cada territorio** |
+> | Una persona reporta baja presión y otra contaminación | **Dos expedientes relacionados**, aunque compartan territorio o infraestructura: son afectaciones diferentes con verificaciones y respuestas distintas |
+>
+> **La pregunta práctica para decidir:** *¿podríamos dar por atendida una de estas situaciones
+> mientras la otra sigue pendiente?* Si la respuesta es sí, deben poder gestionarse por separado.
+>
+> **Cinco reglas para el módulo de revisión:** (1) un aporte puede alimentar **varios**
+> expedientes; (2) la información incompleta permanece visible y no se fuerza su agrupación ni
+> se descarta; (3) la IA propone y el equipo confirma, con responsable y motivo; (4) los
+> expedientes pueden fusionarse o dividirse **conservando originales, referencias e historial**;
+> (5) cada expediente registra identificador, descripción, territorio, contexto temporal,
+> población cuando se conozca, cambio esperado, aportes vinculados, incertidumbres, responsable,
+> estado e historial.
+>
+> **Para BI se cuentan por separado aportes y expedientes.** Cien aportes siguen siendo **una**
+> necesidad registrada; ese volumen no demuestra mayor gravedad ni equivale a cien personas
+> afectadas. Si abarca varios municipios, es **un mismo expediente** al calcular totales.
+>
+> **Abrir un expediente significa iniciar una revisión y un seguimiento trazables.** No implica
+> aprobar una intervención, asignar recursos ni declarar resuelto el problema.
+
+Las consecuencias de modelado están en `AGENTS.md` §8 y §9, y en `vacios.md` V12.
+
+**Una corrección que esta respuesta obligó.** `AGENTS.md` §8 decía que un expediente «nunca se
+fusiona». Era **más estricto que la fuente**: la `I4` de la especificación prohíbe fusionar
+*«automáticamente por palabras compartidas»*, no fusionar. Corregido — la fusión se puede,
+pero nunca destruyendo filas: expediente nuevo, lápidas en los anteriores, vínculos
+conservados. Compone con el borrado lógico de la `P3`.
+
+**Lo que esta respuesta abrió:**
+
+- **`Q10` · el «contexto temporal» del ejemplo es una fecha relativa.** *«Desde hace tres
+  meses»*, guardado literalmente, deja de ser cierto mañana. Y falta si se distingue una
+  afectación recurrente de una puntual.
+- **`Q11` · «población afectada» choca con `C2`.** La definición pide registrarla; `C2` pide
+  agregar u ocultar para evitar reidentificación. *«Doce familias de la vereda X»* identifica.
+- **`Q12` · un aporte retirado que alimentaba varios expedientes.** Que un aporte alimente
+  varios es información nueva: el retiro ya no toca un expediente sino N, y alguno puede estar
+  en gestión.
 
 ---
 
@@ -177,7 +239,7 @@ la captura sin esto, pero no se puede terminar el recorrido — que es justo la 
 
 ---
 
-### P5 · Una necesidad que es una emergencia, ¿por dónde se sale de la cola normal?
+### P5 · Una necesidad que es una emergencia, ¿por dónde se sale de la cola normal? — **RESPONDIDA**
 
 **Por qué la preguntamos.** Alguien va a reportar un puente a punto de caerse, o un
 deslizamiento. Hoy eso cae en la misma bandeja que una petición de mejorar un parque, y sale
@@ -194,9 +256,62 @@ llamar y se marca para revisión inmediata».
 **Qué pasa si no se responde.** Es la única de las seis que no bloquea código: se puede
 construir todo lo demás sin ella. **Bloquea el primer piloto real con ciudadanía.**
 
-**Respuesta:**
+**Respuesta:** — Miguel Gómez, 2026-09-13. Protocolo completo en el hilo de esta pregunta.
 
+> **Los tiempos son una propuesta operativa para el piloto; deben quedar respaldados por
+> responsables y turnos antes de abrirlo a ciudadanía.**
 >
+> Todo aporte que señale una posible emergencia activa una **ruta de alerta urgente**,
+> separada de la cola normal. Orienta a la persona y traslada el aviso al canal competente,
+> con seguimiento humano. **La plataforma no despacha recursos ni garantiza la atención.**
+>
+> **Qué la activa:** un indicio de peligro inmediato o próximo para la vida o la integridad.
+> Puede activarla la persona, un facilitador, un revisor o una detección automática. **No
+> requiere corroboración, fotografías, identidad verificada ni un número mínimo de reportes.**
+> La IA ayuda a detectar, pero su valoración **no puede impedir ni desactivar** una alerta. Se
+> abre desde un aporte **sin esperar a crear, completar o agrupar un expediente**.
+>
+> **Qué ve la persona,** sin exigir que termine el formulario: *«Si hay personas en peligro,
+> llama ahora al 123. No esperes una respuesta de esta plataforma. Este formulario registra
+> información y no activa por sí mismo un servicio de emergencia.»* «Llamar al 123» es la
+> acción principal, lo escrito se conserva, y **nunca se pide acercarse al peligro, tomar
+> fotografías ni conseguir pruebas**.
+>
+> **Quién y en cuánto.** La entidad operadora nombra un **responsable de alertas por turno**,
+> un suplente y un coordinador de escalamiento. *Una bandeja compartida sin persona asignada no
+> cumple esta función.* Al activarse sale de la cola normal y genera notificación activa — no
+> basta con destacarla en rojo. Máximo 5 minutos para acusar recibo; sin demora ante peligro
+> evidente y máximo 10 minutos para iniciar contacto con el canal territorial; a los 5 minutos
+> sin aceptación se avisa al suplente y al coordinador. **Son plazos de actuación del equipo de
+> la plataforma, no tiempos de llegada de organismos de emergencia.**
+>
+> **Cuándo termina.** Mostrar un teléfono, enviar un correo o pulsar «remitir» **no equivale a
+> confirmar que una autoridad recibió el aviso**. El sistema distingue *orientación mostrada*,
+> *contacto intentado* y *recepción confirmada*, con responsable, canal, fecha y constancia. Una
+> transferencia confirmada tampoco significa emergencia resuelta. Si la revisión determina que
+> no hay indicios, devuelve el caso al flujo ordinario con justificación, conservando la
+> necesidad y el relato.
+>
+> **Condición para abrir el piloto:** recepción en horarios con cobertura humana efectiva. Si se
+> habilita 24 horas, esta ruta necesita guardia equivalente. Antes de abrir deben estar
+> definidos responsables, suplencias, directorio y protocolo, y **haberse probado casos con
+> ausencia del titular y fallos de contacto**. *Un aviso que diga «no atendemos emergencias» no
+> sustituye esa capacidad operativa.*
+
+Las consecuencias están en `AGENTS.md` §9 (el modelo) y §10 (la pantalla), y en `vacios.md` V13.
+
+**El 123 se verificó** antes de escribirlo en una pantalla: es la Línea Única de Atención de
+Emergencias, el NUSE, nacional, gratuita y 24/7. Y trae un matiz que respalda la propuesta:
+**quién contesta varía por municipio**.
+
+**Lo que esta respuesta abrió:**
+
+- **`Q13` · el directorio de canales por territorio no existe.** Sin él, «trasladar al canal
+  competente» no tiene a dónde. Es condición de piloto, no de construcción.
+- **`Q14` · si la recepción tiene horario, ¿qué pasa con la ventana de aportes de una
+  convocatoria?** Son dos cosas distintas y hoy no se sabe cuál manda fuera de horario.
+- **Y la entidad operadora dejó de ser un dato de publicación.** Sin ella no hay responsable de
+  turno, ni suplente, ni coordinador — así que **bloquea el piloto**, no solo la ficha pública.
 
 ---
 
@@ -276,7 +391,7 @@ una es un pliego que va a llegar después:
 | Respondido | — |
 | Qué destrabó | — |
 | Qué abrió que no estaba | — |
-| Respondido | P1 y P3, el 2026-09-13. Las dos a medias: cada una cerró el mecanismo y abrió su semántica |
-| Qué destrabó | El catálogo y el modo de borrado ya están en `AGENTS.md` §9. El esquema se puede empezar a pensar |
-| Qué abrió que no estaba | Seis preguntas nuevas: `Q4` a `Q9` en `vacios.md`. La más grave es `Q9` |
-| Contexto mínimo para retomar | Quedan P2, P4, P5 y P6. **Y apareció una que no estaba y bloquea más que todas: `Q9`, cuál es la unidad de pertenencia** — la columna que va en todas las tablas y que `metodo/frentes.md` señala como lo único que no se puede agregar después. La primera tabla espera esa, no las dos ya respondidas. |
+| Respondido | P1, P2, P3 y P5, el 2026-09-13. La P1 y la P3 a medias: cada una cerró el mecanismo y abrió su semántica. La P2 y la P5 completas, y las dos trajeron protocolo, no solo definición |
+| Qué destrabó | Catálogo, modo de borrado, la forma del expediente y la ruta de alerta ya están en `AGENTS.md`. El módulo de revisión tiene sus cinco reglas y su prueba de decisión |
+| Qué abrió que no estaba | Once preguntas nuevas, `Q4` a `Q14`. La más grave sigue siendo `Q9`. Y una corrección: `AGENTS.md` §8 decía «nunca se fusiona», que era más estricto que la `I4` de la especificación |
+| Contexto mínimo para retomar | Quedan **P4** (identidad) y **P6** (quién decide entre ciudadano y facilitador). **Y apareció una que no estaba y bloquea más que todas: `Q9`, cuál es la unidad de pertenencia** — la columna que va en todas las tablas y que `metodo/frentes.md` señala como lo único que no se puede agregar después. La primera tabla espera esa, no las dos ya respondidas. |
