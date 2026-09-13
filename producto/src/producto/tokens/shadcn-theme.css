@@ -1,0 +1,29 @@
+/* Importar después de participacion.css y del tema inicial shadcn. Sólo modo claro. */
+:root {
+  --background: var(--pc-semantic-color-surface-canvas);
+  --foreground: var(--pc-semantic-color-text-default);
+  --card: var(--pc-semantic-color-surface-base);
+  --card-foreground: var(--pc-semantic-color-text-default);
+  --popover: var(--pc-semantic-color-surface-base);
+  --popover-foreground: var(--pc-semantic-color-text-default);
+  --primary: var(--pc-semantic-color-action-primary-default);
+  --primary-foreground: var(--pc-semantic-color-action-primary-foreground);
+  --secondary: var(--pc-semantic-color-action-secondary-default);
+  --secondary-foreground: var(--pc-semantic-color-action-secondary-foreground);
+  --muted: var(--pc-semantic-color-surface-subtle);
+  --muted-foreground: var(--pc-semantic-color-text-secondary);
+  --accent: var(--pc-semantic-color-selection-background);
+  --accent-foreground: var(--pc-semantic-color-selection-foreground);
+  --destructive: var(--pc-semantic-color-feedback-error-foreground);
+  --destructive-foreground: var(--pc-semantic-color-surface-base);
+  --border: var(--pc-semantic-color-border-subtle);
+  --input: var(--pc-semantic-color-border-control);
+  --ring: var(--pc-semantic-color-focus-ring);
+  --chart-1: var(--pc-semantic-color-data-high);
+  --chart-2: var(--pc-semantic-color-feedback-success-foreground);
+  --chart-3: var(--pc-semantic-color-assist-foreground);
+  --chart-4: var(--pc-semantic-color-feedback-warning-foreground);
+  --chart-5: var(--pc-semantic-color-text-secondary);
+  --radius: var(--pc-primitive-radius-md);
+  --font-sans: var(--pc-semantic-fontFamily-body);
+}

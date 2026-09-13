@@ -87,6 +87,29 @@ else
   saltó "no hay sistema de tokens"
 fi
 
+# CHEQUEO: la copia de los tokens se desincronizó de su fuente
+# Se ve fallar: cambia un color a mano en producto/src/producto/tokens/participacion.css
+#
+# Es la Q3 de vacios.md, cerrada. El generador reescribe su propio archivo de
+# entrada y las copias se hacen con un guion; el día que alguien edite la copia,
+# el JSON deja de ser la fuente y nadie se entera. Ahora sí se entera.
+D=$(find negocio/linea-grafica/tokens -name "participacion.css" -not -path "*/producto/*" 2>/dev/null | head -1)
+if [ -n "$D" ] && [ -d producto/src/producto/tokens ]; then
+  DIFF=""
+  for f in participacion.css shadcn-theme.css; do
+    diff -q "$(dirname "$D")/$f" "producto/src/producto/tokens/$f" >/dev/null 2>&1 \
+      || DIFF="$DIFF $f"
+  done
+  if [ -z "$DIFF" ]; then
+    ok "la copia de los tokens está al día con su fuente"
+  else
+    mal "la copia de los tokens se editó a mano o quedó vieja:$DIFF"
+    printf '          corre ./scripts/tokens.sh y mira el diff antes de aceptarlo\n'
+  fi
+else
+  saltó "los tokens todavía no están en el producto"
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then

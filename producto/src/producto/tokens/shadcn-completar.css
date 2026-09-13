@@ -1,0 +1,33 @@
+/* Lo que este proyecto le agrega al tema shadcn de v0.5.
+ *
+ * GENERADO por scripts/tokens.sh. No editar a mano.
+ * Se importa DESPUÉS de participacion.css y de shadcn-theme.css.
+ *
+ * Las ocho de barra lateral apuntan a tokens que el sistema YA tiene
+ * para el backoffice. No se inventó ningún color.
+ *
+ * Las sombras van en `none` a propósito: el sistema de diseño no tiene
+ * ninguna, y eso es una decisión —«sin elevación decorativa»—, no un
+ * olvido. Antes de usar el primer Popover o Dialog hay que decidir cómo
+ * se distingue una capa que flota sin usar sombra. Está en vacios.md.
+ */
+:root {
+  --sidebar: var(--pc-semantic-color-internal-sidebar);
+  --sidebar-foreground: var(--pc-semantic-color-internal-navigationText);
+  --sidebar-primary: var(--pc-semantic-color-internal-navigationSelected);
+  --sidebar-primary-foreground: var(--pc-semantic-color-internal-navigationText);
+  --sidebar-accent: var(--pc-semantic-color-internal-rowHover);
+  --sidebar-accent-foreground: var(--pc-semantic-color-internal-rowText);
+  --sidebar-border: var(--pc-semantic-color-border-subtle);
+  --sidebar-ring: var(--pc-semantic-color-focus-ring);
+
+  /* HUECO CON DUEÑO — ver vacios.md, no es un valor decidido */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}

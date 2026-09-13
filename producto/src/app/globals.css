@@ -1,18 +1,29 @@
 /* El único punto de entrada de estilos del producto.
  *
- * Los tokens NO se escriben aquí: se generan desde
- * `negocio/linea-grafica/tokens/` y se importan. Editar un token a mano lo
- * desincroniza de su fuente, que es el JSON — y el JSON es lo que valida que
- * no haya ciclos de alias y que los 41 pares de contraste pasen.
+ * El orden NO es negociable: lo declara el propio sistema de diseño en su
+ * `LEEME.md`. Los tokens primero, el puente de shadcn después, y lo que este
+ * proyecto le agrega de últimas.
  *
- * El import llega en T013. Hasta entonces esto es solo la base.
+ * Ninguno de los tres se edita a mano. Salen de `../producto/tokens/`, que sale
+ * de `negocio/linea-grafica/tokens/` con `./scripts/tokens.sh`. Editar la copia
+ * la desincroniza del JSON, que es la fuente y es lo que valida que no haya
+ * ciclos de alias y que los 41 pares de contraste pasen.
  */
 @import "tailwindcss";
+@import "../producto/tokens/participacion.css";
+@import "../producto/tokens/shadcn-theme.css";
+@import "../producto/tokens/shadcn-completar.css";
 
 :root {
+  /* Modo claro y nada más: el sistema de diseño no define modo oscuro, y es
+   * una decisión, no un olvido. Declararlo aquí evita que el navegador pinte
+   * un fondo oscuro detrás de una paleta que no lo contempla. */
   color-scheme: light;
 }
 
 body {
   margin: 0;
+  background: var(--pc-semantic-color-surface-canvas);
+  color: var(--pc-semantic-color-text-default);
+  font-family: var(--pc-semantic-fontFamily-body);
 }
