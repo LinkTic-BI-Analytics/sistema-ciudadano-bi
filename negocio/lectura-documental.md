@@ -22,11 +22,12 @@ indicadores. Eso no lo hace falso; lo hace **no comprobado**.
 planeación nacional ya existe y está regulada: la **Ley 152 de 1994** organiza el
 procedimiento, el **Sistema Nacional de Planeación** articula el Consejo Nacional de
 Planeación y los Consejos Territoriales, y la discusión del proyecto de plan pasa por ellos
-produciendo recomendaciones y observaciones. Lo que se propone construir **no reemplaza ese
-mecanismo**: se conecta con él o queda al lado, y en ninguno de los 24 documentos está dicho
-cuál de las dos cosas.
+produciendo recomendaciones y observaciones. Lo que se construye **no reemplaza ese
+mecanismo: lo alimenta.**
 
-Esa es la pregunta más grande que dejó la lectura, y no es técnica.
+Esa era la pregunta más grande que dejó la lectura, y ninguno de los 24 documentos la
+contestaba. La contestó Miguel Gómez el mismo día. **De ella cuelga todo lo demás**, porque
+decide qué es el entregable: un corte que un consejo de planeación pueda recibir y verificar.
 
 Este archivo **no decide nada**. Es orientación para llegar con una idea de la forma del
 problema en vez de con una hoja en blanco. Si alguien del negocio dice otra cosa, manda la
