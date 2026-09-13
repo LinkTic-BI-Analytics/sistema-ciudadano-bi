@@ -52,7 +52,7 @@ T019, que es la primera tarea con autoridad real.
 | T012 | `producto/`: Next 15.5, React 19.1, TS estricto, Supabase local con puertos propios, esquema declarativo vacío | — | T006 | A | orquestador | listo | `npm run dev` levanta · `supabase start` sin choque de puertos |
 | T013 | Pipeline de tokens v0.5 → `producto/`, con el contraste en la compuerta | — | T012 | B | orquestador | candidato | `tokens:build` no deja diferencias · romper un color hace fallar el `assert` |
 | T014 | Vista `/construccion`, hermana de `/modulos` y `/telemetria` | — | T007, T012 | C | orquestador | candidato | muestra estas filas y aguanta 50 |
-| T015 | Cosecha: quitar «Depósitos Judiciales» y la marca Linktic de `harness/vista-modulos/` | — | T001 | C | orquestador | listo | `base-limpia.sh` devuelve 0 en la línea base |
+| T015 | Cosecha: sacar el negocio ajeno de `harness/vista-modulos/` **y hacer que el chequeo lo detecte** | — | T001 | C | orquestador | terminado | `1f29fe2` en la línea base. El chequeo se vio fallar contra la versión contaminada y pasar contra la limpia |
 | T016 | `negocio/integraciones.md` con las 6 dependencias externas y su nivel de mock | — | — | D | negocio | listo | ninguna frontera sin sus tres preguntas respondidas |
 | T017 | Pliego de las 12 decisiones abiertas, agrupado por quién puede responderlas | — | — | D | negocio | listo | cada pregunta con su porqué y con qué bloquea |
 | T020 | `negocio/especificacion.md` normalizada contra la plantilla, con `vacios.md` y `acuerdos.md` | — | T016, T017 | D | negocio | candidato | el escribano sin defectos · 0 códigos huérfanos |

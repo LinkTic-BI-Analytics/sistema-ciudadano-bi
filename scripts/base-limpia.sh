@@ -31,6 +31,9 @@ while read -r f; do decir "$f tiene líneas sin terminar"; done < <(
   grep -rlE '^[[:space:]]*> ➤' --include='*.md' . 2>/dev/null \
     | grep -v -e '^\./plantillas/' -e '^\./ejemplo/' -e '^\./negocio/')
 
+echo "Un negocio metido dentro del harness"
+python3 scripts/lib/harness_limpio.py || malo=1
+
 echo "Contradicciones: una regla definida dos veces"
 while read -r r; do decir "$r está definida más de una vez"; done < <(
   grep -rh '^## I[0-9]' harness/*.md 2>/dev/null | sed 's/^\(## I[0-9]*\) .*/\1/' \
