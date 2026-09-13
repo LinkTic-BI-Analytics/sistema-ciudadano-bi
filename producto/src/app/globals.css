@@ -1,0 +1,18 @@
+/* El único punto de entrada de estilos del producto.
+ *
+ * Los tokens NO se escriben aquí: se generan desde
+ * `negocio/linea-grafica/tokens/` y se importan. Editar un token a mano lo
+ * desincroniza de su fuente, que es el JSON — y el JSON es lo que valida que
+ * no haya ciclos de alias y que los 41 pares de contraste pasen.
+ *
+ * El import llega en T013. Hasta entonces esto es solo la base.
+ */
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+}
