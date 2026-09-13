@@ -77,7 +77,17 @@ Los comandos viven en `.claude/commands/`. Se escriben con `/` y son el proceso 
 /donde-voy   dónde vas, qué te bloquea, qué se está pudriendo
 ```
 
-Si no sabes cuál sigue, escribe `/donde-voy`.
+Y cuando un módulo ya pasó el sobre cerrado, la construcción formal tiene los suyos:
+
+```
+/hoja-de-ruta          el tablero: qué corre, qué puede empezar, qué bloquea
+/planear-construccion  un módulo entregable → plan y contratos de tarea
+/despachar             entregar una tarea a un agente, si pasa la prueba de paralelismo
+/revisar-tarea         primero cumplimiento, después calidad
+/integrar              en el orden del grafo, no en el de llegada
+```
+
+Si no sabes cuál sigue, escribe `/donde-voy`: reporta las dos capas.
 
 ## La regla de partición
 

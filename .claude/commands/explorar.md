@@ -1,3 +1,7 @@
+---
+description: Qué se puede construir con lo que hay cargado, medido antes de opinar.
+---
+
 Vas a decir qué se puede construir con lo que hay cargado. **Se corre después de `/leer` y
 antes de `/descubrir`.**
 
