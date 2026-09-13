@@ -1,6 +1,6 @@
 # Preguntas — las seis decisiones que bloquean la construcción
 
-**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** enviado, sin responder
+**Para:** Miguel Gómez · **Fecha:** 2026-09-13 · **Estado:** **2 de 6 respondidas** (P1 y P3)
 
 ## Para quien responde
 
@@ -46,7 +46,7 @@ proveedor de videollamada, proveedor de IA. Ninguno bloquea el modelo de datos.
 
 ## Las preguntas
 
-### P1 · ¿Cuál es la lista oficial de municipios que vamos a usar, y qué pasa cuando cambia?
+### P1 · ¿Cuál es la lista oficial de municipios que vamos a usar, y qué pasa cuando cambia? — **RESPONDIDA a medias**
 
 **Por qué la preguntamos.** Todo el análisis territorial se apoya en una lista de lugares.
 Y los municipios cambian: se crean, se fusionan, se les cambia el nombre. Un corte exportado
@@ -63,7 +63,25 @@ visible del tablero institucional.
 
 **Respuesta:**
 
->
+> **DIVIPOLA, del DANE.** — Miguel Gómez, 2026-09-13
+
+Queda en `AGENTS.md` §9 y en `vacios.md` V10. Departamento de 2 dígitos más municipio de 3;
+los centros poblados llevan 3 más; las áreas no municipalizadas también están.
+
+**Lo que esta respuesta abrió, y no estaba en la pregunta:**
+
+- **`Q4` · DIVIPOLA no tiene barrios.** Llega hasta el centro poblado, que es rural
+  —caseríos, corregimientos, inspecciones de policía—. La diferencia entre dos barrios de la
+  misma ciudad no se puede representar con este catálogo, y la visión dice que una necesidad
+  se puede perder *«dentro de una ciudad o de una misma comunidad»*. Hay que decidir si el
+  barrio va como texto libre sin catálogo —que es lo que `I2` permite: queda «por aclarar» y
+  no se infiere— o si se adopta un segundo catálogo urbano.
+- **`Q5` · qué versión, y qué pasa con la anterior.** No es hipotético: en 1997 los centros
+  poblados pasaron de 2 dígitos a 3, así que un código histórico significa cosas distintas
+  según la versión con que se escribió. La versión va guardada **en cada registro**.
+
+**Sigue abierta la otra mitad (`Q6`): cuáles son los municipios del piloto.** Sin esa lista
+no hay denominador, y el mapa de cobertura muestra conteos pero nunca un porcentaje.
 
 ---
 
@@ -88,7 +106,7 @@ gestión — es el cuello de la ruta crítica.
 
 ---
 
-### P3 · Cuando alguien pide que retiren lo que contó, ¿qué desaparece y qué queda?
+### P3 · Cuando alguien pide que retiren lo que contó, ¿qué desaparece y qué queda? — **RESPONDIDA a medias**
 
 **Por qué la preguntamos.** Ésta es la que toca las diez tablas, y `vacios.md` la marca como
 «la que bloquea todo lo demás».
@@ -113,7 +131,26 @@ se delega.
 
 **Respuesta:**
 
->
+> **Borrado lógico.** — Miguel Gómez, 2026-09-13
+
+Queda en `AGENTS.md` §9 y en `vacios.md` V11. La fila se queda y se marca; no se borra
+físicamente. El modelo es append-only con lápidas, y eso vale para las diez tablas.
+
+**Lo que esta respuesta abrió:**
+
+- **`Q7` · la parte jurídica sigue abierta.** La Ley 1581 de 2012 da derecho a que un dato
+  personal se **suprima**, y una fila marcada sigue estando ahí. La separación física entre
+  identidad y dato analítico que ya pide `AGENTS.md` §9 permite las dos cosas a la vez —
+  borrar de verdad lo que identifica, dejar lógico el registro analítico— pero **eso no lo
+  decide el equipo técnico.**
+- **`Q8` · un aporte retirado, ¿sigue contando?** «Lógico» dice qué pasa con la fila; no dice
+  si sigue en el total publicado, en el denominador de `R2`, ni en la necesidad donde ya
+  estaba agrupado. Las tres respuestas son defendibles y cambian los números.
+- **Cuánto tiempo se queda.** Sin política de retención, «borrado lógico» significa «para
+  siempre».
+
+**Y la respuesta destapó la pregunta que de verdad bloquea la primera tabla (`Q9`): cuál es
+la unidad de pertenencia.** Ver abajo.
 
 ---
 
@@ -239,4 +276,7 @@ una es un pliego que va a llegar después:
 | Respondido | — |
 | Qué destrabó | — |
 | Qué abrió que no estaba | — |
-| Contexto mínimo para retomar | Las seis deciden el modelo de datos. La P3 toca las diez tablas y bloquea la primera migración. La P1, la P2 y la P4 están en la ruta crítica. La P5 no bloquea código: bloquea el piloto con ciudadanía. |
+| Respondido | P1 y P3, el 2026-09-13. Las dos a medias: cada una cerró el mecanismo y abrió su semántica |
+| Qué destrabó | El catálogo y el modo de borrado ya están en `AGENTS.md` §9. El esquema se puede empezar a pensar |
+| Qué abrió que no estaba | Seis preguntas nuevas: `Q4` a `Q9` en `vacios.md`. La más grave es `Q9` |
+| Contexto mínimo para retomar | Quedan P2, P4, P5 y P6. **Y apareció una que no estaba y bloquea más que todas: `Q9`, cuál es la unidad de pertenencia** — la columna que va en todas las tablas y que `metodo/frentes.md` señala como lo único que no se puede agregar después. La primera tabla espera esa, no las dos ya respondidas. |

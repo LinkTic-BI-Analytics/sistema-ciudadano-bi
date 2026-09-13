@@ -159,11 +159,43 @@ hacen cada uno su propia cuenta, `I6` se rompe sola.
 administración: un cambio que no está en un archivo es un cambio que el siguiente entorno no
 tiene. `scripts/esquema.sh` genera la migración concatenando `supabase/schemas/*.sql`.
 
-**Antes de escribir la primera migración hay que cerrar `[B2]`.** La pregunta es si un aporte
-retirado por seguridad **se borra o se apaga**, y `vacios.md` la marca como *«la que bloquea
-todo lo demás»* con razón: decide si el modelo es append-only con lápidas o admite borrado
-físico, y eso **toca las diez tablas**. Escribir migraciones antes de esa respuesta es
-garantizar reescribirlas.
+**El borrado es lógico.** Decidido el 2026-09-13 (`negocio/vacios.md` V11). La fila se queda
+y se marca; no se borra físicamente. El modelo es **append-only con lápidas**, y eso vale para
+las diez tablas.
+
+Lo que esa decisión **no** cierra, y hay que resolver antes de tocar lo que toca cada una:
+
+- **La supresión del dato personal es otra cosa** (`Q7`). La Ley 1581 de 2012 da derecho a
+  que un dato personal se suprima, y una fila marcada sigue estando ahí. La separación física
+  entre identidad y dato analítico que se pide más abajo permite las dos cosas a la vez —
+  borrar de verdad lo que identifica, dejar lógico el registro analítico— pero **eso lo
+  confirma quien responda por la política de tratamiento, no el equipo técnico.**
+- **Un aporte retirado, ¿sigue contando?** (`Q8`). «Lógico» dice qué pasa con la fila; no dice
+  si sigue en el total publicado ni en el denominador de `R2`. Antes de implementar `R1` y `R2`.
+- **Cuánto tiempo se queda.** Sin política de retención, «borrado lógico» significa «para
+  siempre», y eso es una decisión que nadie tomó.
+
+**El catálogo geográfico es DIVIPOLA, del DANE.** Decidido el 2026-09-13 (`negocio/vacios.md`
+V10). Departamento de 2 dígitos más municipio de 3: el código de 5 con que se identifica
+cualquier municipio del país. Los centros poblados —caseríos, corregimientos, inspecciones de
+policía— llevan 3 dígitos más, y las áreas no municipalizadas también están.
+
+Dos cosas que hay que saber antes de modelar una ubicación:
+
+- **DIVIPOLA no tiene barrios** (`Q4`). Llega hasta el centro poblado, que es rural. La
+  diferencia entre dos barrios de la misma ciudad no se puede representar con este catálogo, y
+  la visión dice explícitamente que una necesidad se puede perder *«dentro de una ciudad o de
+  una misma comunidad»*. Mientras no se decida, `I2` manda: la ubicación sub-municipal queda
+  **«por aclarar»** y no se infiere.
+- **La versión va en cada registro, no en una tabla aparte** (`Q5`). DIVIPOLA cambia: en 1997
+  los centros poblados pasaron de 2 dígitos a 3, así que un código histórico significa cosas
+  distintas según la versión con que se escribió. Guardar la versión junto al dato es lo que
+  hace que `R2` se pueda cumplir — *un corte exportado no se reescribe*.
+
+**Y falta la unidad de pertenencia, que es la que de verdad bloquea** (`Q9`). `metodo/frentes.md`
+lo dice sin rodeos: es lo único que no se puede agregar después, porque no es una restricción
+sobre una tabla sino **una columna en todas** y una condición en cada consulta que alguien
+escriba desde ese momento. **La primera tabla espera esa respuesta, no las dos de arriba.**
 
 Lo que sí está decidido y no se discute por tabla:
 
