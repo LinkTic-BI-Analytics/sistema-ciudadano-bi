@@ -281,7 +281,21 @@ de qué se está corrigiendo.
   atribuye representación ni se entrega información reservada** a quien tenga la autorización
   pendiente — y eso necesita el mecanismo de identidad, que es la `P4`, todavía sin responder.
 
-**Y falta la unidad de pertenencia, que es la que de verdad bloquea** (`Q9`). `metodo/frentes.md`
+**La unidad de pertenencia es el proceso participativo, y su columna va desde la primera
+migración** (`Q9`). Esto merece explicarse porque es lo que permite construir con preguntas
+abiertas sin pagarlo después.
+
+`metodo/frentes.md` dice que es lo único que no se puede agregar después. Es cierto de **la
+columna**: no es una restricción sobre una tabla, es una columna en todas y una condición en
+cada consulta que alguien escriba desde ese momento.
+
+Pero **no es cierto de la política**. Si los procesos son compartimentos estancos, o si la
+Nación ve lo de todos y cada territorio solo lo suyo (`Q18`), eso se escribe como acceso a
+nivel de fila **sobre una columna que ya existe** — y eso sí es una regla, y las reglas se
+agregan.
+
+Entonces: **`proceso_id` en todas las tablas desde el primer día, con un solo proceso sembrado.**
+Arrancar sin la columna es lo que obliga a reescribir; arrancar sin la política, no. `metodo/frentes.md`
 lo dice sin rodeos: es lo único que no se puede agregar después, porque no es una restricción
 sobre una tabla sino **una columna en todas** y una condición en cada consulta que alguien
 escriba desde ese momento. **La primera tabla espera esa respuesta, no las dos de arriba.**

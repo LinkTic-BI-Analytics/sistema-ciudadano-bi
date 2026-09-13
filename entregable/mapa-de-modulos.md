@@ -125,7 +125,7 @@ paralelo la acorta.
 | **0 · cimientos** | **M10** + el modelo de datos común + el motor de conteo `R1`/`R2` + el catálogo geográfico versionado + el contrato del comprobante. **Secuencial: nadie más empieza antes** | — |
 | **1 · entrada** | **M01** · **M06** sin campañas · **M09** | ola 0 |
 | **2 · transformación** | **M02** · **M05** | M01, M06 |
-| **3 · el entregable** | **M03** — es lo que recibe el Sistema Nacional. Con **M04** y **M07** en paralelo | M02 |
+| **3 · explotación** | **M04** · **M07**. **M03 sale del alcance** (V20): lo construye otro equipo. De nuestro lado queda la exportación con contrato | M02 |
 | **4 · cierre** | **M08** · las campañas de M06 (`CAM-01/02` y los QR) | M03 |
 
 > **Corrección del 2026-09-13.** Este grafo ponía el BI como «explotación», después de todo lo
@@ -161,7 +161,15 @@ aplazando una mitad. Los cuatro, con su corte:
 
 El conjunto más pequeño que produce algo de principio a fin:
 
-> **M10 mínimo → M01 → M02 mínimo → M03 mínimo → M04 mínimo**
+> **M10 mínimo → M01 → M02 mínimo → M04 mínimo + el contrato de exportación**
+
+> **Corrección del 2026-09-13, la segunda del día.** V17 metió M03 al núcleo cuando se decidió
+> la línea de alimentación. **V20 lo saca:** el BI lo construye otro equipo con los datos que
+> producimos. Lo que queda de nuestro lado no es el tablero — es **la exportación con su
+> contrato**, que es menos trabajo y más fácil de verificar.
+>
+> Lo que no cambia: el corte sigue siendo el entregable al Sistema Nacional. Solo que lo
+> dibuja otro.
 
 **Son dos recorridos y el núcleo tiene que cerrar los dos**, porque el sistema le debe algo a
 dos partes distintas.
