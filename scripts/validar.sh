@@ -110,6 +110,29 @@ else
   saltó "los tokens todavía no están en el producto"
 fi
 
+# CHEQUEO: la copia de las vistas del harness se desincronizó
+# Se ve fallar: cambia una línea en producto/src/harness/vista-construccion/construccion.css
+#
+# Mismo defecto silencioso que el de los tokens: la copia se edita porque está
+# más a mano, y la fuente —que es la que se cosecha a la línea base— se queda
+# atrás sin que nadie se entere.
+if [ -d producto/src/harness ]; then
+  DIFF=""
+  while IFS= read -r c; do
+    o="harness/${c#producto/src/harness/}"
+    [ -f "$o" ] || continue
+    diff -q "$o" "$c" >/dev/null 2>&1 || DIFF="$DIFF $(basename "$c")"
+  done < <(find producto/src/harness -type f 2>/dev/null)
+  if [ -z "$DIFF" ]; then
+    ok "la copia de las vistas del harness está al día"
+  else
+    mal "la copia de las vistas se editó a mano o quedó vieja:$DIFF"
+    printf '          la fuente es harness/. Corre ./scripts/vistas-harness.sh\n'
+  fi
+else
+  saltó "las vistas del harness todavía no están en el producto"
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then

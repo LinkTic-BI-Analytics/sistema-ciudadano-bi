@@ -1,0 +1,111 @@
+/* Los tokens del harness.
+ *
+ * Las dos vistas internas —módulos y telemetría— comparten paleta y tipografía
+ * porque son el mismo instrumento. La regla I1 lo pide de frente: la forma no
+ * la cambia cada negocio, se ve igual en todos los proyectos que usen el
+ * harness. Alguien que llega de otro proyecto la sabe leer sin que se la
+ * expliquen, y eso es lo que la hace útil como mapa.
+ *
+ * Negro y sin retícula: el fondo no compite con lo único que hay que mirar.
+ */
+.harness {
+  color-scheme: dark;
+
+  --fondo:      #000000;
+  --superficie: #0b0b0c;
+  --reticula:   #1a1b1d;       /* la regla más tenue: separa filas, no dibuja */
+  --linea:      #2a2c2f;
+  --tinta:      #f2f3f5;
+  --tinta-2:    #8b8f96;
+  --corrido:    #4ec99e;
+  --medias:     #d9a05b;
+  --urgente:    #e8615c;
+
+  min-height: 100vh;
+  color: var(--tinta);
+  background-color: var(--fondo);
+
+  min-height: 100vh;
+  color: var(--tinta);
+  background-color: var(--fondo);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.harness__hoja { max-width: 62rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+/* Foco visible en todo lo interactivo. Nunca outline:none sin reemplazo. */
+.harness a:focus-visible,
+.harness summary:focus-visible {
+  outline: 2px solid var(--corrido);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.harness a { color: inherit; text-underline-offset: 3px; }
+.harness a:hover { color: var(--corrido); }
+
+/* El membrete: quién hizo el instrumento, y la salida. */
+.membrete {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.5rem; padding-bottom: .9rem;
+  border-bottom: 1px solid var(--reticula);
+}
+.membrete__logo { height: 20px; width: auto; opacity: .9; flex-shrink: 0; }
+.membrete a { color: var(--tinta-2); white-space: nowrap; }
+
+.seccion { margin-top: 2.75rem; }
+.seccion__titulo {
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--tinta-2); border-bottom: 1px solid var(--linea);
+  padding-bottom: .4rem; margin-bottom: 1rem;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+}
+
+/* Texto solo para lectores de pantalla: un estado no puede vivir únicamente
+ * en un símbolo de color. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Solo transform y opacity, y nada bajo prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .harness__hoja > * { animation: subir .45s cubic-bezier(.2,.7,.3,1) backwards; }
+  .harness__hoja > *:nth-child(2) { animation-delay: .05s }
+  .harness__hoja > *:nth-child(3) { animation-delay: .1s }
+  .harness__hoja > *:nth-child(4) { animation-delay: .15s }
+  .harness__hoja > *:nth-child(5) { animation-delay: .2s }
+  @keyframes subir { from { opacity: 0; transform: translateY(8px) } }
+}
+
+/* La variante clara.
+ *
+ * Redefine los MISMOS tokens, así que ningún componente sabe sobre qué fondo
+ * está: se escribe una vez y sirve en los dos. Las vistas internas no tienen
+ * por qué compartir fondo — comparten tipografía, vocabulario y membrete, que
+ * es lo que las hace reconocibles como el mismo instrumento.
+ *
+ * La telemetría es un diagnóstico y se lee de un vistazo: densa y oscura.
+ * Los módulos son el mapa que alguien recorre buscando algo: claro y aireado.
+ *
+ * Verde y ocre bajan de luminosidad porque sobre blanco el mismo tono no
+ * alcanza el contraste; son los únicos tres colores y los tres son estados.
+ */
+.harness--claro {
+  color-scheme: light;
+
+  --fondo:      #ffffff;
+  --superficie: #ffffff;
+  --reticula:   #ebedf0;
+  --linea:      #d5d9df;
+  --tinta:      #0f141b;
+  --tinta-2:    #5f6874;
+  --corrido:    #0d7a5c;
+  --medias:     #92620f;
+  --urgente:    #b02f2a;
+}
+/* El logo negro sobre claro es otro archivo, no un filtro: la marca es de
+ * alguien más y no se altera. */
+.harness--claro .membrete__logo { opacity: 1; }

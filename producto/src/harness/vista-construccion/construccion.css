@@ -1,0 +1,168 @@
+/* La vista de la construcción.
+ *
+ * Hereda la paleta y la tipografía de `harness.css`: las tres vistas internas
+ * son el mismo instrumento y la regla I1 pide que se vean igual en todos los
+ * proyectos. Aquí solo va lo que esta pantalla necesita y las otras no.
+ *
+ * Una decisión de forma que vale la pena decir: los estados se distinguen por
+ * **color y por palabra**, nunca solo por color. Ocho estados en ocho tonos son
+ * ocho tonos que nadie memoriza, y quien no distingue colores no lee nada.
+ */
+
+.construccion .cabecera { margin-bottom: 2rem; }
+.construccion .cabecera__titulo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.5rem;
+}
+.construccion .cabecera__objetivo {
+  margin: 0 0 0.5rem;
+  max-width: 48ch;
+  color: var(--tinta);
+}
+.construccion .cabecera__sello {
+  margin: 0;
+  color: var(--tinta-2);
+  font-size: 0.85em;
+}
+.construccion code {
+  background: var(--superficie);
+  padding: 0.05em 0.35em;
+  border-radius: 2px;
+}
+
+/* Las cifras. Se leen de un vistazo o no sirven, así que van arriba y grandes. */
+.construccion .cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+}
+.construccion .cifra {
+  flex: 1 1 7rem;
+  border: 1px solid var(--reticula);
+  border-radius: 3px;
+  padding: 0.7rem 0.8rem;
+  background: var(--superficie);
+}
+.construccion .cifra__n { font-size: 1.6rem; line-height: 1.1; }
+.construccion .cifra__de { font-size: 0.9rem; color: var(--tinta-2); }
+.construccion .cifra__que { color: var(--tinta-2); font-size: 0.85em; }
+
+.construccion .bloque { margin-bottom: 2.5rem; }
+.construccion .bloque__titulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--reticula);
+  padding-bottom: 0.4rem;
+  margin: 0 0 0.9rem;
+}
+.construccion .vacio { color: var(--tinta-2); margin: 0; }
+.construccion .nota {
+  color: var(--tinta-2);
+  margin: 0.8rem 0 0;
+  max-width: 62ch;
+}
+.construccion .nota strong { color: var(--tinta); font-weight: 600; }
+.construccion .nota--ojo { color: var(--medias); }
+
+/* La ruta crítica. En columna y numerada: es una secuencia, no un conjunto. */
+.construccion .ruta { list-style: none; margin: 0; padding: 0; }
+.construccion .ruta__paso {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  padding: 0.35rem 0 0.35rem 0.9rem;
+  border-left: 2px solid var(--linea);
+}
+.construccion .ruta__paso + .ruta__paso { border-top: 1px solid var(--reticula); }
+.construccion .ruta__id { font-weight: 600; min-width: 3.2rem; }
+.construccion .ruta__que { color: var(--tinta-2); }
+
+.construccion .lista { list-style: none; margin: 0; padding: 0; }
+.construccion .fila {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
+}
+.construccion .fila + .fila { border-top: 1px solid var(--reticula); }
+.construccion .fila__id { font-weight: 600; min-width: 3.2rem; }
+.construccion .fila__cuerpo { display: flex; flex-direction: column; gap: 0.2rem; }
+.construccion .fila__resultado { max-width: 68ch; }
+.construccion .fila__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--tinta-2);
+  font-size: 0.85em;
+}
+.construccion .fila__señal { color: var(--medias); font-size: 0.9em; max-width: 68ch; }
+
+/* Cada marca lleva su palabra. El color acompaña; no informa solo. */
+.construccion .marca {
+  border: 1px solid var(--reticula);
+  border-radius: 2px;
+  padding: 0 0.35em;
+}
+.construccion .marca--linea { border-color: var(--linea); }
+.construccion .marca--codigo { color: var(--tinta); }
+
+.construccion .e--curso   { color: var(--medias); }
+.construccion .e--urgente { color: var(--urgente); }
+.construccion .e--listo   { color: var(--corrido); }
+.construccion .e--hecho   { color: var(--tinta-2); }
+.construccion .e--tenue   { color: var(--tinta-2); }
+
+.construccion .agentes { list-style: none; margin: 1rem 0 0; padding: 0; }
+.construccion .agente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--reticula);
+  color: var(--tinta-2);
+}
+.construccion .agente__rama { color: var(--corrido); font-weight: 600; }
+.construccion .agente__ruta { font-size: 0.85em; }
+
+.construccion .lista--ojo .aviso {
+  padding: 0.5rem 0 0.5rem 0.9rem;
+  border-left: 2px solid var(--urgente);
+  max-width: 72ch;
+}
+.construccion .aviso + .aviso { margin-top: 0.4rem; }
+
+.construccion .pie {
+  border-top: 1px solid var(--linea);
+  padding-top: 1.2rem;
+  max-width: 72ch;
+}
+.construccion .pie__autoridad { margin: 0 0 0.6rem; }
+.construccion .pie__autoridad strong { color: var(--medias); }
+.construccion .pie__vacios { margin: 0; color: var(--tinta-2); }
+
+/* En pantalla angosta la fila se apila en vez de encogerse: un identificador
+   cortado a la mitad no identifica nada. */
+@media (max-width: 34rem) {
+  .construccion .fila,
+  .construccion .ruta__paso { flex-direction: column; gap: 0.2rem; }
+  .construccion .cifra { flex-basis: 45%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .construccion * { transition: none !important; animation: none !important; }
+}
+
+/* Con el contraste forzado del sistema, el color deja de existir. Las palabras
+   siguen ahí, que es por lo que cada estado lleva la suya. */
+@media (forced-colors: active) {
+  .construccion .cifra,
+  .construccion .marca { border-color: CanvasText; }
+  .construccion .ruta__paso,
+  .construccion .lista--ojo .aviso { border-left-color: CanvasText; }
+}

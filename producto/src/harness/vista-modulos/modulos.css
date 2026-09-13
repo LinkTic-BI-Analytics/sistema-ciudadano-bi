@@ -1,0 +1,401 @@
+@import "./harness.css";
+
+/* El tablero de módulos.
+ *
+ * No es una lista. Una lista contesta "¿qué hay?" y obliga a leerla entera
+ * para contestar "¿qué falta?", que es la mitad de la pregunta que esta
+ * pantalla existe para responder. Agrupado por estado, las dos se contestan
+ * de un vistazo y sin bajar.
+ *
+ * Y por eso son columnas y no bandas: las bandas crecen hacia abajo, y con
+ * cuarenta módulos habría que recorrer la pantalla tres veces.
+ */
+.tablero__hoja {
+  max-width: 108rem;
+  margin: 0 auto;
+  padding: 2rem clamp(1.25rem, 3vw, 3rem) 4rem;
+}
+
+.cinta {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(1.5rem, 4vw, 4rem); align-items: end;
+  border-bottom: 1.5px solid var(--tinta); padding-bottom: 1.1rem;
+}
+.cinta__eyebrow {
+  font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--tinta-2);
+}
+.cinta h1 {
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600; font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1;
+  letter-spacing: -.02em; margin: .25rem 0 .4rem; text-wrap: balance;
+}
+.cinta__frase { color: var(--tinta-2); max-width: 56ch; text-wrap: pretty; }
+
+/* El avance como barra, no como frase: "1 de 4" se lee, pero no se siente. */
+.avance { min-width: 14rem; }
+.avance__cifra {
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.avance__cifra span { color: var(--tinta-2); font-size: 1rem; }
+.avance__barra { display: flex; gap: 3px; margin-top: .6rem; }
+.avance__tramo { height: 6px; flex: 1 1 0; min-width: 2px; background: var(--reticula); }
+.avance__tramo--construido { background: var(--corrido); }
+.avance__tramo--medias     { background: var(--medias); }
+
+/* El tablero en blanco tiene que decir qué sigue. */
+.arranque {
+  margin-top: 1.25rem; color: var(--tinta-2); max-width: 70ch; text-wrap: pretty;
+}
+.arranque code { color: var(--tinta); }
+
+.advertencia {
+  border-left: 3px solid var(--medias);
+  background: color-mix(in srgb, var(--medias) 8%, transparent);
+  padding: .8rem 1.05rem; margin-top: 1.5rem; text-wrap: pretty;
+  max-width: 90ch;
+}
+
+
+.ficha {
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  padding: .9rem 1rem 1rem;
+  margin-bottom: .8rem;
+  transition: border-color .16s ease, transform .16s ease;
+}
+.ficha:hover { border-color: var(--marca, var(--linea)); }
+
+.ficha h3 {
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.15rem; font-weight: 600; line-height: 1.15;
+  letter-spacing: -.01em; text-wrap: balance;
+}
+.ficha__que { color: var(--tinta-2); margin-top: .35rem; text-wrap: pretty; }
+
+.ficha__pantallas { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .75rem; }
+.ficha__pantallas a {
+  border: 1px solid var(--linea); padding: .12rem .5rem; font-size: 12px;
+  transition: border-color .16s ease, color .16s ease;
+}
+.ficha__pantallas a:hover { border-color: var(--marca); }
+
+/* Lo que la ficha tiene que contestar es "qué llevo y cómo va" — no "de qué
+ * trata este módulo". Por eso son tres bloques: lo que ya se puede hacer, lo
+ * que todavía no, y una línea de cómo va. */
+.ficha__bloque { margin-top: .85rem; }
+.ficha__rotulo {
+  font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--tinta-2); margin-bottom: .35rem;
+}
+.ficha__rotulo--si { color: var(--marca-texto, var(--tinta-2)); }
+
+.ficha__lista { list-style: none; }
+.ficha__lista li {
+  position: relative; padding-left: 1rem; margin-top: .28rem;
+  color: var(--tinta-2); text-wrap: pretty; font-size: 12.5px; line-height: 1.5;
+}
+.ficha__lista li::before {
+  content: ""; position: absolute; left: 0; top: .6em;
+  width: 6px; height: 1px; background: var(--marca-texto, var(--tinta-2));
+}
+.ficha__lista--no li::before { background: var(--linea); }
+.ficha__lista--no b { color: var(--tinta); font-weight: 600; }
+
+/* Lo que espera una decisión se marca aparte: es lo único de esta lista que
+ * tiene dueño, y quien lo lee tiene que saber que la pelota está de su lado. */
+.ficha__falta--dato::before { background: var(--medias); }
+.ficha__falta--dato b { color: var(--medias); }
+
+/* Cómo va. Va en el resumen, no en el detalle: es lo que hay que poder leer
+ * recorriendo cincuenta módulos sin abrir ninguno. */
+.ficha__comova {
+  display: flex; flex-wrap: wrap; gap: .1rem .35rem;
+  margin-top: .5rem; font-size: 12px; color: var(--tinta-2);
+}
+.ficha__hayDato { color: var(--medias); font-style: normal; }
+.ficha__comova span + span::before { content: "· "; }
+.ficha__comova b { color: var(--tinta); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Que nadie lo haya mirado es el modo de falla más común del método, así que
+ * no se dice en gris junto a lo demás. */
+.ficha__sinmirar { color: var(--medias); }
+
+
+/* Lo que espera una decisión, junto.
+ *
+ * Existe porque el detalle de cada módulo vive en la ventana: sin esta banda,
+ * lo único de la pantalla sobre lo que alguien tiene que *hacer* algo estaría
+ * escondido detrás de un clic por módulo.
+ *
+ * Se agrupan **por decisión, no por módulo**: probándola con cincuenta, la
+ * misma cifra que falta bloqueaba muchos módulos, y la lista plana traía
+ * treinta y siete renglones que eran cuatro decisiones. Ordenadas por cuántos
+ * módulos destraba cada una, contestan lo único que sirve: cuál pedir primero.
+ */
+.decisiones {
+  margin-top: 1.5rem; border: 1px solid var(--medias);
+  background: color-mix(in srgb, var(--medias) 6%, transparent);
+  padding: 1rem 1.15rem;
+}
+.decisiones__titulo {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--medias);
+}
+.decisiones__porque { color: var(--tinta-2); margin-top: .3rem; max-width: 70ch; text-wrap: pretty; }
+.decisiones__lista {
+  list-style: none; margin-top: .85rem;
+  display: grid; gap: .1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+}
+.decisiones__lista li {
+  display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  gap: 0 1rem; padding: .4rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--medias) 25%, transparent);
+  font-size: 12.5px;
+}
+.decisiones__lista b { font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+.decisiones__cuantos { color: var(--tinta-2); min-width: 0; }
+.decisiones__cuantos b { color: var(--medias); font-variant-numeric: tabular-nums; }
+.decisiones__porque2 { grid-column: 2; color: var(--tinta-2); }
+
+.salida {
+  margin-top: 2.75rem; border-top: 1px solid var(--linea); padding-top: .9rem;
+  display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: baseline;
+}
+.salida span { color: var(--tinta-2); }
+
+/* ── Los roles ────────────────────────────────────────────────────────────
+ *
+ * La marca de un rol la asigna el harness por su posición en la lista, no la
+ * declara el proyecto: así ningún negocio escoge colores y la pantalla se ve
+ * igual en todos.
+ *
+ * Y se distinguen por relleno y borde, no por tono. El color en esta pantalla
+ * significa estado —construido, a medias, esperando una decisión— y meterle
+ * cuatro tonos más de rol lo volvería ruido. De paso funciona para quien no
+ * distingue colores.
+ */
+.rol {
+  display: inline-block; font-size: 10.5px; line-height: 1.5;
+  padding: .05rem .45rem; border: 1px solid var(--tinta); white-space: nowrap;
+  font-family: "IBM Plex Mono", monospace;
+}
+.rol[data-marca="0"] { background: transparent; color: var(--tinta); }
+.rol[data-marca="1"] { background: color-mix(in srgb, var(--tinta) 12%, transparent); }
+.rol[data-marca="2"] { background: var(--tinta); color: var(--fondo); }
+.rol[data-marca="3"] { background: transparent; border-style: dashed; }
+/* Un usuario que no sale de ningún documento es una hipótesis, no un usuario. */
+.rol[data-deducido] { border-style: dashed; color: var(--tinta-2); border-color: var(--tinta-2); background: transparent; }
+
+.roles { list-style: none; display: grid; gap: .5rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); }
+/* La columna del rol se mide sola: un nombre largo —"Administración del
+ * banco"— se montaba encima del texto con un ancho fijo. */
+.rolDef { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .75rem;
+  align-items: baseline; padding: .3rem 0; }
+.rolDef__quien { color: var(--tinta-2); text-wrap: pretty; }
+.uso__deducido { font-style: normal; color: var(--medias); }
+
+/* ── La lista de módulos ──────────────────────────────────────────────────
+ *
+ * Uno por fila y todos visibles. Antes eran fichas plegadas y el analista lo
+ * dijo: así quedan escondidos. Una pantalla que existe para saber qué hay no
+ * puede empezar tapando lo que hay.
+ */
+.lista { list-style: none; border-top: 1px solid var(--linea); }
+.reng {
+  display: grid; width: 100%; text-align: left; background: none;
+  border: 0; border-bottom: 1px solid var(--reticula); cursor: pointer;
+  grid-template-columns: 9rem minmax(0, 15rem) minmax(0, 1fr) auto auto;
+  gap: .2rem 1.25rem; align-items: baseline; padding: .8rem .5rem;
+  font: inherit; color: inherit;
+  transition: background-color .12s ease;
+}
+.reng:hover { background: color-mix(in srgb, var(--tinta) 4%, transparent); }
+.reng:focus-visible { outline: 2px solid var(--corrido); outline-offset: -2px; }
+
+/* Cada cosa en su celda. Con la segunda fila —lo que el módulo lleva adentro—
+ * la colocación automática mandaba los roles y el "cómo va" a un renglón
+ * nuevo a la izquierda. */
+.reng__estado { grid-area: 1 / 1; font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--tinta-2); white-space: nowrap; }
+.reng__punto { display: inline-block; width: 7px; height: 7px; margin-right: .4rem;
+  background: var(--linea); border-radius: 50%; }
+.es--construido .reng__punto, .es--construido { color: var(--corrido); }
+.es--construido .reng__punto { background: var(--corrido); }
+.es--medias .reng__punto, .es--medias { color: var(--medias); }
+.es--medias .reng__punto { background: var(--medias); }
+
+.reng__nombre {
+  grid-area: 1 / 2;
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem; font-weight: 600; min-width: 0; overflow-wrap: break-word;
+}
+.reng__que { grid-area: 1 / 3; color: var(--tinta-2); min-width: 0; font-size: 12.5px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Lo que el módulo lleva adentro, en la fila y no en la ventana.
+ *
+ * "Los módulos no sé qué llevo": los conteos dicen 4/4 y 2 esperan decisión, y
+ * eso no es qué hay. Y de qué sirve esta pantalla es de recordar después de
+ * varios días — recordar no se resuelve con un clic por módulo.
+ *
+ * Van en dos columnas y en frases cortas: leerlo en diagonal tiene que bastar
+ * para contestar qué está y qué falta. La razón completa de cada falta y quién
+ * lo usa siguen en la ventana. */
+.reng__dentro {
+  grid-area: 2 / 3 / 3 / -1; display: grid; gap: .25rem 2rem; margin-top: .5rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+.dentro { min-width: 0; }
+.dentro__rotulo {
+  display: block; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--tinta-2); margin-bottom: .15rem;
+}
+.dentro__rotulo--si { color: var(--marca-si, var(--corrido)); }
+.dentro__it {
+  display: block; position: relative; padding-left: .85rem;
+  font-size: 12px; line-height: 1.45; color: var(--tinta-2);
+  overflow-wrap: break-word;
+}
+.dentro__it::before {
+  content: ""; position: absolute; left: 0; top: .58em;
+  width: 5px; height: 1px; background: var(--linea);
+}
+.dentro__rotulo--si ~ .dentro__it::before { background: var(--corrido); }
+/* Lo que espera una decisión tiene dueño: no se lee igual que lo que solo no
+ * le tocaba todavía. */
+.dentro__it--dato { color: var(--medias); }
+.dentro__it--dato::before { background: var(--medias); }
+/* Con muchas filas, la descripción va a una línea: recorriendo cincuenta no se
+ * leen dos, y el texto entero está en la ventana. */
+.lista--densa .reng { padding: .5rem .5rem; }
+.lista--densa .reng__que { -webkit-line-clamp: 1; }
+.reng__roles { grid-area: 1 / 4; display: flex; flex-wrap: wrap; gap: .2rem; justify-content: flex-end; }
+.reng__comova { grid-area: 1 / 5; display: flex; flex-direction: column; align-items: flex-end;
+  font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
+.reng__comova b { color: var(--tinta); font-weight: 600; }
+.reng__dato { color: var(--medias); }
+.reng__sinmirar { color: var(--medias); }
+
+.grupo__salvedad { color: var(--tinta-2); max-width: 70ch; margin: -.4rem 0 .9rem;
+  text-wrap: pretty; }
+.columna__vacia { color: var(--tinta-2); padding: .5rem 0; }
+
+/* ── La ventana del detalle ───────────────────────────────────────────────
+ *
+ * En ventana y no desplegando la fila: desplegar empuja todo lo de abajo y
+ * obliga a volver a buscar dónde iba uno. Cierra con Escape, con el botón y
+ * haciendo clic afuera — las tres, porque quien no encuentra cómo salir de una
+ * ventana deja de abrirlas, y entonces el detalle vuelve a estar escondido.
+ */
+.telon {
+  position: fixed; inset: 0; z-index: 40;
+  background: color-mix(in srgb, #000 45%, transparent);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: clamp(1rem, 5vh, 4rem) 1rem; overflow-y: auto;
+}
+.ventana {
+  background: var(--fondo); border: 1.5px solid var(--tinta);
+  width: min(46rem, 100%); max-height: 100%; overflow-y: auto;
+}
+.ventana__cabeza {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: 1.1rem 1.35rem .9rem; border-bottom: 1.5px solid var(--tinta);
+  position: sticky; top: 0; background: var(--fondo);
+}
+.ventana__cabeza h2 {
+  font-family: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.6rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.1;
+  margin-top: .25rem; text-wrap: balance;
+}
+.ventana__cerrar {
+  border: 1px solid var(--linea); background: none; cursor: pointer;
+  width: 1.9rem; height: 1.9rem; flex-shrink: 0; color: var(--tinta-2);
+  font: inherit; font-size: 13px;
+  transition: border-color .12s ease, color .12s ease;
+}
+.ventana__cerrar:hover { border-color: var(--tinta); color: var(--tinta); }
+.ventana__cerrar:focus-visible { outline: 2px solid var(--corrido); outline-offset: 2px; }
+.ventana__cuerpo { padding: 1.1rem 1.35rem 1.5rem; }
+.ventana__que { color: var(--tinta-2); text-wrap: pretty; }
+.ventana__bloque { margin-top: 1.25rem; }
+
+/* Quién lo usa va primero en la ventana. La prioridad es el usuario: un módulo
+ * que no sabe decir quién lo usa se especificó desde la función y no desde la
+ * persona. */
+.usos { list-style: none; }
+.uso { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 .9rem;
+  padding: .45rem 0; border-top: 1px solid var(--reticula); align-items: baseline; }
+.uso__para { min-width: 0; text-wrap: pretty; }
+.uso__quien { grid-column: 2; color: var(--tinta-2); font-size: 12px; text-wrap: pretty; }
+
+@media (max-width: 62rem) {
+  .reng { grid-template-columns: minmax(0, 1fr) auto; gap: .2rem .75rem; }
+  .reng__estado { grid-column: 1; }
+  .reng__estado { grid-area: auto; }
+  .reng__nombre, .reng__que { grid-area: auto; grid-column: 1 / -1; }
+  .reng__roles { grid-area: auto; grid-column: 1 / -1; justify-content: flex-start; margin-top: .3rem; }
+  .reng__comova { grid-area: auto; }
+  .reng__dentro { grid-area: auto; grid-column: 1 / -1; }
+  .uso, .rolDef { grid-template-columns: minmax(0, 1fr); }
+  .uso__quien { grid-column: 1; }
+}
+
+/* ── ¿Alcanza para construir la pantalla? ─────────────────────────────────
+ *
+ * El umbral de este método no es la completitud: es si se puede dibujar.
+ *
+ * Se deriva de cuatro cosas contables y **se enseña de cuáles**. Un nivel de
+ * confianza escrito a mano es una opinión con formato de dato: nadie lo puede
+ * discutir y nadie lo actualiza. Desarmado, sí se puede discutir — y esa
+ * discusión es la que hace falta.
+ *
+ * No estrena colores: usa los tres que ya significan estado, porque esto es un
+ * estado — el de la información, en vez del de la construcción.
+ */
+.alcance {
+  display: inline-block; margin-top: .25rem; font-size: 9.5px;
+  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+  border: 1px solid currentColor; padding: 0 .3rem;
+}
+.alcance--alcanza      { color: var(--corrido); }
+.alcance--a-medias     { color: var(--medias); }
+.alcance--no-alcanza   { color: var(--urgente); }
+.reng__estado .alcance { display: block; width: fit-content; }
+
+.alcance__caja {
+  margin-top: 1.1rem; border: 1px solid var(--linea);
+  border-left-width: 3px; padding: .85rem 1rem;
+}
+.alcance__caja--alcanza    { border-left-color: var(--corrido); }
+.alcance__caja--a-medias   { border-left-color: var(--medias); }
+.alcance__caja--no-alcanza { border-left-color: var(--urgente); }
+
+.alcance__cabeza {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.alcance__cabeza b { font-weight: 600; }
+.alcance__cabeza .alcance { margin-top: 0; }
+.alcance__porque { color: var(--tinta-2); margin-top: .3rem; text-wrap: pretty; }
+
+.alcance__partes { list-style: none; margin-top: .8rem; }
+.alcance__parte {
+  display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  gap: .9rem; padding: .35rem 0 .35rem .8rem;
+  border-top: 1px solid var(--reticula); border-left: 2px solid transparent;
+  font-size: 12.5px;
+}
+.alcance__parte > span:last-child { color: var(--tinta-2); text-wrap: pretty; }
+/* Qué empuja hacia arriba y qué hacia abajo, sin dar un puntaje. */
+.alcance__parte--bien    { border-left-color: var(--corrido); }
+.alcance__parte--regular { border-left-color: var(--medias); }
+.alcance__parte--mal     { border-left-color: var(--urgente); }
+
+.alcance__nota {
+  margin-top: .8rem; color: var(--tinta-2); font-size: 11.5px; text-wrap: pretty;
+}
