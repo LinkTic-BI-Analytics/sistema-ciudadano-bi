@@ -7,12 +7,15 @@ llegar al primero. Hasta entonces gobierna `negocio/especificacion-v0-2026-09-13
 **no pasa la compuerta de la Capa B** (ver su `ESTADO.md`).
 **Actualizada:** 2026-09-13 · orquestador
 
-> Los estados de esta tabla todavía se escriben a mano. **`T007` los deriva**, y hasta que
-> exista, cada corrección manual es una oportunidad de que el tablero mienta.
+> **Los estados de esta tabla se escriben a mano, y eso es a propósito.** Cambiar de estado
+> es una decisión con evidencia, y una decisión la toma alguien. Lo que `scripts/construccion.sh`
+> hace no es corregirlos: es **señalar dónde lo declarado aquí y lo que muestran los archivos
+> no coinciden**. Un tablero que se corrige solo dice que todo está bien porque él mismo lo
+> escribió; uno que señala sus contradicciones se puede creer.
 
 <!-- derivado · lo escribe scripts/construccion.sh · NO editar a mano -->
-**Ruta crítica:** —
-**Líneas paralelas activas:** —
+**Ruta crítica:** T016 → T020 → T018 → T019
+**Líneas paralelas activas:** ninguna
 <!-- /derivado -->
 
 > Este tablero arranca con las tareas de su propia estructuración. No es un truco: es el
@@ -41,11 +44,11 @@ T019, que es la primera tarea con autoridad real.
 | T004 | `construccion/` con su tablero y las cuatro plantillas de la Capa B | — | T003 | A | orquestador | terminado | este archivo + 4 plantillas + índice |
 | T005 | `entregable/mapa-de-modulos.md`: grafo de los 10 módulos, olas, ciclos a romper y núcleo mínimo | — | T001 | B | orquestador | terminado | el grafo coincide con el que imprime `/hoja-de-ruta` |
 | T006 | `AGENTS.md` §8 a §12 llenas: lógica, base de datos, interfaz, entornos, terminado del código | — | T003 | C | orquestador | terminado | `grep "(pendiente)" AGENTS.md` vacío |
-| T007 | `scripts/construccion.sh` → `.estado.json` con grafo, ruta crítica, listas, bloqueos, deterioro y cobertura | — | T004 | A | orquestador | listo | corre sobre estas 19 filas y no miente |
-| T008 | `scripts/paralelismo.sh`: matriz de solapamiento leída de la superficie asignada de cada contrato | — | T007 | A | orquestador | candidato | **se le inyecta un solapamiento y devuelve 1** |
-| T009 | Los cinco comandos: `/hoja-de-ruta` `/planear-construccion` `/despachar` `/revisar-tarea` `/integrar` | — | T004 | B | orquestador | listo | cada uno lee su plantilla en ejecución, ninguno trae encabezados adentro |
+| T007 | `scripts/construccion.sh` → `.estado.json` con grafo, ruta crítica, listas, bloqueos, deterioro y cobertura | — | T004 | A | orquestador | terminado | corre sobre estas 20 filas; encontró un error de parseo y 6 contradicciones reales |
+| T008 | `scripts/paralelismo.sh`: matriz de solapamiento leída de la superficie asignada de cada contrato | — | T007 | A | orquestador | terminado | solapamiento inyectado → 1; quitado → 0. Se vio fallar |
+| T009 | Los cinco comandos: `/hoja-de-ruta` `/planear-construccion` `/despachar` `/revisar-tarea` `/integrar` | — | T004 | B | orquestador | candidato | cada uno lee su plantilla en ejecución, ninguno trae encabezados adentro |
 | T010 | `/donde-voy` extendido con la construcción, sin perder el diagnóstico de descubrimiento | — | T007 | B | orquestador | candidato | reporta las dos capas en una sola corrida |
-| T011 | `scripts/validar.sh` corriendo todos los chequeos, incluido el de invariantes | — | T007, T008 | C | orquestador | candidato | **cada chequeo se vio fallar antes de darse por bueno** |
+| T011 | `scripts/validar.sh` con seis chequeos, cada uno con su línea de «cómo hacerlo fallar» | — | T007, T008 | C | orquestador | terminado | **los seis se vieron fallar**, uno por uno, y volver a verde |
 | T012 | `producto/`: Next 15.5, React 19.1, TS estricto, Supabase local con puertos propios, esquema declarativo vacío | — | T006 | A | orquestador | listo | `npm run dev` levanta · `supabase start` sin choque de puertos |
 | T013 | Pipeline de tokens v0.5 → `producto/`, con el contraste en la compuerta | — | T012 | B | orquestador | candidato | `tokens:build` no deja diferencias · romper un color hace fallar el `assert` |
 | T014 | Vista `/construccion`, hermana de `/modulos` y `/telemetria` | — | T007, T012 | C | orquestador | candidato | muestra estas filas y aguanta 50 |
