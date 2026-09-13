@@ -46,24 +46,12 @@ else
 fi
 
 # CHEQUEO: enlaces internos que no resuelven
-# Se ve fallar: cambia un enlace de AGENTS.md a un archivo que no existe
-python3 - <<'PY' && ok "todos los enlaces internos resuelven" || mal "hay enlaces rotos"
-import re, sys
-from pathlib import Path
-rotos = []
-for f in Path().rglob("*.md"):
-    p = str(f)
-    if p.startswith((".agents/", "node_modules/", "ejemplo/", "negocio/linea-grafica/")):
-        continue
-    for d in re.findall(r"\]\(([^)#]+?)(?:#[^)]*)?\)", f.read_text(encoding="utf-8")):
-        if d.startswith(("http", "mailto:")) or d.startswith("<"):
-            continue
-        if not (f.parent / d).exists():
-            rotos.append(f"{f}: {d}")
-for r in rotos:
-    print(f"          {r}", file=sys.stderr)
-sys.exit(1 if rotos else 0)
-PY
+# Se ve fallar: cambia el DESTINO de un enlace de AGENTS.md a un archivo que no existe
+#               (el destino, no el texto entre comillas invertidas)
+python3 scripts/lib/enlaces.py >/tmp/en.$$ 2>&1 \
+  && ok "todos los enlaces internos resuelven" \
+  || { mal "hay enlaces rotos"; sed 's/^/          /' /tmp/en.$$; }
+rm -f /tmp/en.$$
 
 # CHEQUEO: el tablero de construcción no se contradice a sí mismo
 # Se ve fallar: pon una tarea en "listo" con una dependencia sin terminar
