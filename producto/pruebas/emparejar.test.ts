@@ -59,3 +59,52 @@ test("las tildes no cambian el sitio", async () => {
   const conTilde = await buscarMunicipios("en medellin antioquia");
   assert.ok(conTilde.length > 0, "«medellin» sin tilde tiene que encontrar MEDELLÍN");
 });
+
+test("la caja de búsqueda completa lo que la persona teclea", async () => {
+  const { buscarPorNombre } = await import("../src/territorio/emparejar.ts");
+  // Quien teclea «rio» busca Rionegro, no Puerto Rico. Poner los que solo lo
+  // contienen arriba obliga a leer una lista para encontrar lo obvio.
+  const c = await buscarPorNombre("rione");
+  assert.ok(c.every((x) => x.nombre.toUpperCase().startsWith("RIONE")), nombres(c).join(" · "));
+  assert.ok(c.length >= 2, "Rionegro está en más de un departamento");
+
+  // Como la gente lo dice y lo teclea: todo de corrido.
+  const juntos = await buscarPorNombre("rionegro antioq");
+  assert.equal(juntos[0]?.departamento, "ANTIOQUIA");
+
+  // Menos de tres letras no busca: devolvería media Colombia.
+  assert.deepEqual(await buscarPorNombre("ri"), []);
+});
+
+test("están TODOS los municipios, no los primeros mil", async () => {
+  // PostgREST corta en 1.000 filas y responde `200` como si fueran todas. Hay
+  // 1.122, así que faltaban 122 — y por el orden del código eran Amazonas,
+  // Guainía, Vaupés, Vichada, Guaviare, Putumayo, Arauca, Casanare, San Andrés
+  // y el Valle del Cauca entero. **La periferia.** Quien viviera ahí escribía
+  // el nombre de su municipio y le decíamos que no existe.
+  //
+  // Nada fallaba: las otras pruebas usan Rionegro, Medellín y Soacha, que están
+  // entre los primeros mil. Por eso esta cuenta contra la base.
+  const { cuantosMunicipios } = await import("../src/territorio/emparejar.ts");
+  const { clienteServidor } = await import("../src/datos/cliente.ts");
+  const { count } = await clienteServidor().schema("participacion")
+    .from("territorio").select("codigo", { count: "exact", head: true }).eq("nivel", "municipio");
+
+  assert.equal(await cuantosMunicipios(), count,
+    "el buscador tiene menos municipios que la base: alguien no aparece");
+});
+
+test("los municipios más lejanos también se encuentran", async () => {
+  // Uno de cada departamento que se estaba perdiendo. Son los que menos otra
+  // manera tienen de llegar a una mesa de planeación.
+  for (const [texto, depto] of [
+    ["vivo en leticia amazonas", "AMAZONAS"],
+    ["en mitú vaupés", "VAUPÉS"],
+    ["puerto carreño vichada", "VICHADA"],
+    ["en inírida guainía", "GUAINÍA"],
+    ["en buenaventura valle del cauca", "VALLE DEL CAUCA"],
+  ] as const) {
+    const c = await buscarMunicipios(texto);
+    assert.equal(c[0]?.departamento, depto, `no encontró nada para «${texto}»`);
+  }
+});

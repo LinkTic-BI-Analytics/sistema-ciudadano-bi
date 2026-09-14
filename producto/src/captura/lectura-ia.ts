@@ -73,6 +73,7 @@ Reglas absolutas:
 6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
 7. "afectados" son PERSONAS: quiénes o cuántos. Un sitio NUNCA va en "afectados". "en mi casa", "en el barrio", "en la vereda" son "lugar", no "afectados".
 8. "lugar" incluye el municipio y el departamento si aparecen, aunque estén sueltos al final ("... y rionegro antioquia").
+9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {

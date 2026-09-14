@@ -15,6 +15,11 @@ import { clienteServidor } from "../datos/cliente.ts";
  * texto no distingue, se le muestran los dos.
  */
 
+/** Cuántos municipios tiene cargados. Para comprobar que no falta ninguno. */
+export async function cuantosMunicipios(): Promise<number> {
+  return (await municipios()).length;
+}
+
 export type Candidato = {
   codigo: string;
   version: string;
@@ -46,23 +51,46 @@ type Fila = { codigo: string; version: string; nombre: string; departamento: str
 
 let catalogo: Fila[] | null = null;
 
-/** Se lee una vez. Son 1.122 filas y no cambian mientras corre el proceso. */
+/**
+ * Todos los municipios, leídos una vez.
+ *
+ * **Por páginas, y no es una optimización: es lo único que los trae todos.**
+ * PostgREST corta en 1.000 filas por respuesta y no avisa — devuelve 1.000 con
+ * un `200` como si fueran todas. Hay 1.122 municipios, así que **122 no
+ * existían para el buscador**, y por el orden del código eran Amazonas,
+ * Guainía, Vaupés, Vichada, Guaviare, Putumayo, Arauca, Casanare, San Andrés y
+ * el Valle del Cauca entero.
+ *
+ * Es decir: la periferia. Quien viviera ahí escribía el nombre de su municipio
+ * y le decíamos que no existe.
+ *
+ * Nada fallaba. Las pruebas usaban Rionegro, Medellín y Soacha, que están entre
+ * los primeros mil. Por eso ahora hay una que cuenta.
+ */
 async function municipios(): Promise<Fila[]> {
   if (catalogo) return catalogo;
   const p = clienteServidor().schema("participacion");
-  const { data, error } = await p.from("territorio")
-    .select("codigo, version, nombre, padre").eq("nivel", "municipio");
-  if (error) throw new Error(`no se pudo leer el catálogo: ${error.message}`);
+
+  const PAGINA = 1000;
+  const data: { codigo: string; version: string; nombre: string; padre: string }[] = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data: trozo, error } = await p.from("territorio")
+      .select("codigo, version, nombre, padre").eq("nivel", "municipio")
+      .order("codigo").range(desde, desde + PAGINA - 1);
+    if (error) throw new Error(`no se pudo leer el catálogo: ${error.message}`);
+    data.push(...((trozo ?? []) as typeof data));
+    if ((trozo?.length ?? 0) < PAGINA) break;
+  }
 
   const { data: deps } = await p.from("territorio")
     .select("codigo, nombre").eq("nivel", "departamento");
   const nombreDe = new Map((deps ?? []).map((d) => [d.codigo as string, d.nombre as string]));
 
-  catalogo = (data ?? []).map((m) => ({
-    codigo: m.codigo as string,
-    version: m.version as string,
-    nombre: m.nombre as string,
-    departamento: nombreDe.get(m.padre as string) ?? "",
+  catalogo = data.map((m) => ({
+    codigo: m.codigo,
+    version: m.version,
+    nombre: m.nombre,
+    departamento: nombreDe.get(m.padre) ?? "",
   }));
   return catalogo;
 }
@@ -116,4 +144,43 @@ export async function buscarMunicipios(texto: string, limite = 3): Promise<Candi
   return [...empatados, ...resto]
     .slice(0, Math.max(limite, empatados.length))
     .map(({ m }) => ({ codigo: m.codigo, version: m.version, nombre: m.nombre, departamento: m.departamento }));
+}
+
+
+/**
+ * Busca municipios por lo que la persona está escribiendo.
+ *
+ * Distinto de `buscarMunicipios`: aquel lee una frase entera y encuentra el
+ * nombre dentro; este recibe un nombre a medio escribir y completa. Uno sirve
+ * para leer el relato, el otro para una caja de búsqueda.
+ *
+ * Empieza por los que **empiezan** con lo escrito: quien teclea «rio» busca
+ * Rionegro antes que Puerto Rico, y poner los que solo lo contienen arriba
+ * obliga a leer una lista para encontrar lo obvio.
+ */
+export async function buscarPorNombre(parcial: string, limite = 8): Promise<Candidato[]> {
+  const q = plano(parcial);
+  if (q.length < 3) return [];
+
+  const puntuados = (await municipios())
+    .map((m) => {
+      const nombre = plano(m.nombre);
+      const departamento = plano(m.departamento);
+      // También se busca «rionegro antioquia» escrito de corrido, porque es
+      // como la gente lo dice y como lo va a teclear.
+      const junto = `${nombre} ${departamento}`;
+      let punto = 0;
+      if (nombre === q) punto = 400;
+      else if (nombre.startsWith(q)) punto = 300;
+      else if (junto.startsWith(q)) punto = 250;
+      else if (nombre.includes(q)) punto = 200;
+      else if (junto.includes(q)) punto = 100;
+      return punto ? { m, punto } : null;
+    })
+    .filter((x): x is { m: Fila; punto: number } => x !== null)
+    .sort((a, b) => b.punto - a.punto || a.m.nombre.localeCompare(b.m.nombre));
+
+  return puntuados.slice(0, limite).map(({ m }) => ({
+    codigo: m.codigo, version: m.version, nombre: m.nombre, departamento: m.departamento,
+  }));
 }

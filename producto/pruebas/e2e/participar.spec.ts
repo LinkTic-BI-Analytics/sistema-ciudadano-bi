@@ -7,6 +7,7 @@
 // persona, y para eso existe `/validar` — que no se ha corrido.
 
 import { test, expect } from "@playwright/test";
+import { salirDelMunicipio } from "./ayudas.ts";
 
 test("el campo de relato tiene etiqueta visible, no solo placeholder", async ({ page }) => {
   await page.goto("/participar");
@@ -128,6 +129,8 @@ test("lo que afina después queda guardado con el aporte", async ({ page }) => {
   // la primera vuelta y lo que debería cambiar en la segunda.
   const v2 = page.locator("[data-prueba='vuelta-2']");
   await v2.getByRole("button", { name: /continuar/i }).first().click();
+  // La vuelta 2 pregunta el lugar, así que ahora se pasa por el municipio.
+  await salirDelMunicipio(page);
   const v3 = page.locator("[data-prueba='vuelta-3']");
   await v3.locator("#resultadoEsperado").fill("que lo revisen antes de que se caiga");
   await v3.getByRole("button", { name: /listo/i }).first().click();

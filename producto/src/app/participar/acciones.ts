@@ -5,7 +5,7 @@ import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
 import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 import { precisarAporte } from "../../captura/precisar.ts";
-import { buscarMunicipios, type Candidato } from "../../territorio/emparejar.ts";
+import { buscarMunicipios, buscarPorNombre, type Candidato } from "../../territorio/emparejar.ts";
 import { resolverUbicacion } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
@@ -196,7 +196,9 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
  * eso», quede registrado *qué* le habíamos propuesto: una corrección sin el
  * texto corregido al lado no se puede leer después.
  */
-export async function prepararLectura(codigo: string): Promise<Lectura | null> {
+export type LecturaPreparada = { lectura: Lectura; municipios: Candidato[] };
+
+export async function prepararLectura(codigo: string): Promise<LecturaPreparada | null> {
   try {
     const c = await canjearComprobante(codigo, await procesoVigente());
     if (!c) return null;
@@ -208,10 +210,24 @@ export async function prepararLectura(codigo: string): Promise<Lectura | null> {
       resultadoEsperado: lectura.resultadoEsperado ?? undefined,
       solucionSugerida: lectura.solucionSugerida ?? undefined,
     });
-    return lectura;
+    // Se busca el municipio **en el relato entero**, no solo en el fragmento que
+    // el modelo marcó como lugar: alguien puede nombrar su municipio en mitad de
+    // una frase que habla de otra cosa.
+    const municipios = await buscarMunicipios(`${c.relato} ${lectura.lugar ?? ""}`);
+    return { lectura, municipios };
   } catch (e) {
     console.error("prepararLectura", e);
     return null;
+  }
+}
+
+/** Para la caja de búsqueda del paso del municipio. */
+export async function buscarMunicipio(texto: string): Promise<Candidato[]> {
+  try {
+    return await buscarPorNombre(texto);
+  } catch (e) {
+    console.error("buscarMunicipio", e);
+    return [];
   }
 }
 
@@ -232,6 +248,7 @@ export async function prepararLectura(codigo: string): Promise<Lectura | null> {
  */
 export async function confirmarMunicipio(
   codigo: string, territorio: string, version: string,
+  origen: "lo_dijo" | "vive_ahi" = "lo_dijo",
 ): Promise<PasoAfinado> {
   try {
     const aporteId = await aporteDelCodigo(codigo);
@@ -239,7 +256,14 @@ export async function confirmarMunicipio(
     await resolverUbicacion({
       aporteId, codigo: territorio, version,
       autor: "ciudadano",
-      motivo: "la persona lo confirmó al contar su aporte",
+      // El motivo distingue las dos rutas, y no es un detalle: `GEO-01` dice que
+      // **una dirección residencial no es el lugar del problema sin
+      // confirmación**. Cuando el municipio sale de dónde vive, se le preguntó
+      // aparte si el problema ocurre ahí, y eso queda escrito para que un
+      // revisor pueda pesarlo distinto.
+      motivo: origen === "vive_ahi"
+        ? "la persona vive en ese municipio y confirmó que el problema ocurre ahí"
+        : "la persona lo confirmó al contar su aporte",
     });
     return { ok: true };
   } catch (e) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio, type PasoAfinado } from "./acciones.ts";
+import { confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio, buscarMunicipio, type PasoAfinado } from "./acciones.ts";
 import type { Candidato } from "../../territorio/emparejar.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
@@ -42,9 +42,19 @@ function Guardado({ codigo }: { codigo: string }) {
 export function Afinado({ codigo }: { codigo: string }) {
   const [lect, setLect] = useState<Lectura | null>(null);
   const [leyendo, setLeyendo] = useState(true);
-  const [paso, setPaso] = useState<"entendimos" | "falta" | "municipio" | "listo">("entendimos");
+  const [paso, setPaso] = useState<"entendimos" | "falta" | "municipio" | "confirmar-residencia" | "listo">("entendimos");
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [guardandoMun, setGuardandoMun] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [hallados, setHallados] = useState<Candidato[]>([]);
+  const [porResidencia, setPorResidencia] = useState(false);
+  const [elegido, setElegido] = useState<Candidato | null>(null);
+  // A qué vuelta se vuelve al salir del municipio. Se fija **al entrar**, porque
+  // se puede llegar ahí desde dos sitios: desde «esto es lo que entendimos»
+  // —cuando el municipio salió del relato y aún no se ha hecho ninguna vuelta— o
+  // desde la vuelta que preguntó el lugar. Avanzar siempre `vuelta + 1` se
+  // saltaba la primera vuelta entera en el primer caso.
+  const [vueltaAlVolver, setVueltaAlVolver] = useState(0);
   const [vuelta, setVuelta] = useState(0);
   const [corrigiendo, setCorrigiendo] = useState(false);
   const [problema, setProblema] = useState("");
@@ -55,7 +65,12 @@ export function Afinado({ codigo }: { codigo: string }) {
   useEffect(() => {
     let vigente = true;
     prepararLectura(codigo)
-      .then((l) => { if (vigente && l) { setLect(l); setProblema(l.problema); } })
+      .then((r) => {
+        if (!vigente || !r) return;
+        setLect(r.lectura);
+        setProblema(r.lectura.problema);
+        setCandidatos(r.municipios);
+      })
       .finally(() => { if (vigente) setLeyendo(false); });
     return () => { vigente = false; };
   }, [codigo]);
@@ -63,16 +78,30 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Lo que falta, repartido en vueltas de tres. Si no falta nada, no hay vueltas
   // y la persona pasa directo al final: preguntarle por lo que ya dijo sería
   // castigarla por haberlo contado bien.
-  const faltan = lect ? loQueFalta(lect) : [];
+  const faltan = (lect ? loQueFalta(lect) : [])
+    .filter((k) => !(k === "lugar" && candidatos.length > 0));
   const vueltas: Preguntable[][] = [];
   for (let i = 0; i < faltan.length; i += POR_VUELTA) vueltas.push(faltan.slice(i, i + POR_VUELTA));
 
-  useEffect(() => { if (r1?.ok) setPaso(vueltas.length ? "falta" : "listo"); }, [r1]);
+  useEffect(() => {
+    if (!r1?.ok) return;
+    if (candidatos.length) { setVueltaAlVolver(0); setPaso("municipio"); return; }
+    setPaso(vueltas.length ? "falta" : "listo");
+  }, [r1]);
   useEffect(() => {
     if (!r2?.ok) return;
     // Si nombró un sitio y DIVIPOLA encontró candidatos, se le enseñan antes de
     // seguir: es el único momento en que está la persona que de verdad lo sabe.
-    if (r2.municipios?.length) { setCandidatos(r2.municipios); setPaso("municipio"); return; }
+    // **El municipio se pregunta siempre que se haya preguntado el lugar**, haya
+    // candidatos o no. Que la persona escriba «en mi casa» no es una respuesta:
+    // es un sitio que solo ella puede encontrar, y un problema que no se puede
+    // asociar a un territorio no se puede sumar a ningún lado.
+    if (vueltas[vuelta]?.includes("lugar")) {
+      setCandidatos(r2.municipios ?? []);
+      setVueltaAlVolver(vuelta + 1);
+      setPaso("municipio");
+      return;
+    }
     setVuelta((v) => {
       const siguiente = v + 1;
       if (siguiente >= vueltas.length) setPaso("listo");
@@ -80,17 +109,44 @@ export function Afinado({ codigo }: { codigo: string }) {
     });
   }, [r2]);
 
+  // La búsqueda va según se escribe. Sin espera artificial: son 1.122 filas ya
+  // en memoria del servidor, y hacer esperar medio segundo a quien teclea con
+  // una mano en un bus es peor que una petición de más.
+  async function buscar(texto: string) {
+    if (texto.trim().length < 3) { setHallados([]); return; }
+    const r = await buscarMunicipio(texto);
+    setHallados(r);
+  }
+
+  async function elegir(c: Candidato, origen: "lo_dijo" | "vive_ahi") {
+    // Si viene de dónde vive, todavía falta lo que `GEO-01` exige: que confirme
+    // que el problema ocurre ahí.
+    if (origen === "vive_ahi") { setElegido(c); setPaso("confirmar-residencia"); return; }
+    setGuardandoMun(true);
+    await confirmarMunicipio(codigo, c.codigo, c.version, origen);
+    setGuardandoMun(false);
+    seguirDespuesDelMunicipio();
+  }
+
   // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
   function seguirDespuesDelMunicipio() {
     setCandidatos([]);
-    const siguiente = vuelta + 1;
-    setVuelta(siguiente);
-    setPaso(siguiente >= vueltas.length ? "listo" : "falta");
+    setBusqueda(""); setHallados([]); setPorResidencia(false); setElegido(null);
+    setVuelta(vueltaAlVolver);
+    setPaso(vueltaAlVolver >= vueltas.length ? "listo" : "falta");
   }
 
   if (leyendo) {
     return (
       <section className="pc-section" data-prueba="afinar">
+        {/* **El código sale ya, antes de leer nada.** Lo tenía detrás de la
+            lectura, y eso contradecía el ADR 0012: el aporte se guarda en el
+            primer clic y el comprobante es lo único que la persona necesita de
+            nosotros. Si el servidor tardaba, se quedaba esperando sin él.
+
+            Lo encontró una prueba fallando de forma intermitente. Parecía un
+            problema de tiempos y era de orden. */}
+        <Guardado codigo={codigo} />
         <p className="pc-help" data-prueba="leyendo" aria-live="polite">Leyendo lo que contaste…</p>
       </section>
     );
@@ -207,34 +263,111 @@ export function Afinado({ codigo }: { codigo: string }) {
 
       {paso === "municipio" && (
         <div data-prueba="municipio">
-          <h2>{candidatos.length === 1 ? "¿Es aquí?" : "¿Cuál de estos es?"}</h2>
+          {candidatos.length > 0 ? (
+            <>
+              <h2>{candidatos.length === 1 ? "¿Es aquí?" : "¿Cuál de estos es?"}</h2>
+              <p className="pc-help">
+                Lo buscamos en el listado oficial de municipios del DANE por lo que escribiste.
+                {candidatos.length > 1 && <> Hay más de uno con ese nombre, <strong>y solo tú sabes cuál es</strong>.</>}
+              </p>
+              <div className="pc-actions">
+                {candidatos.map((c) => (
+                  <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
+                          onClick={() => elegir(c, "lo_dijo")}>
+                    {c.nombre}, {c.departamento}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="pc-mode" onClick={() => { setCandidatos([]); setBusqueda(""); }}>
+                Ninguno de estos
+              </button>
+            </>
+          ) : (
+            <>
+              {/* **Aquí está el arreglo.** Antes, si lo que escribió no llegaba a
+                  un municipio, la pregunta se daba por contestada y seguíamos.
+                  «En mi casa» pasaba de largo, y el aporte llegaba a la bandeja
+                  sin territorio al que sumarlo — que es como no tenerlo.
+
+                  Ahora se insiste, se le explica para qué sirve, y se le da una
+                  segunda vía: dónde vive. Salir sigue siendo posible: `N02` pide
+                  aceptar ubicación incompleta, y exigirla excluiría justo a quien
+                  menos puede precisarla. */}
+              <h2>{porResidencia ? "¿En qué municipio vives?" : "¿En qué municipio queda?"}</h2>
+              <p className="pc-help">
+                {porResidencia ? (
+                  <>Sirve para acercarnos. Después te preguntamos si el problema ocurre ahí mismo.</>
+                ) : (
+                  <>
+                    Sin municipio, tu aporte <strong>no se puede sumar al de tus vecinos</strong> ni
+                    llegar a quien responde por ese territorio. Escribe el nombre y te lo buscamos.
+                  </>
+                )}
+              </p>
+              <div className="pc-field">
+                <label className="pc-label" htmlFor="buscar-municipio">Nombre del municipio</label>
+                <input id="buscar-municipio" className="pc-input" type="text" value={busqueda}
+                       onChange={(e) => { setBusqueda(e.target.value); buscar(e.target.value); }}
+                       aria-describedby="buscar-ayuda" />
+                <p className="pc-help" id="buscar-ayuda">
+                  Con las primeras letras basta. Si hay varios con el mismo nombre, salen todos.
+                </p>
+              </div>
+              {hallados.length > 0 && (
+                <div className="pc-actions">
+                  {hallados.map((c) => (
+                    <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
+                            onClick={() => elegir(c, porResidencia ? "vive_ahi" : "lo_dijo")}>
+                      {c.nombre}, {c.departamento}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {busqueda.trim().length >= 3 && hallados.length === 0 && (
+                <p className="pc-note">No encontramos ninguno con ese nombre. Revisa cómo se escribe.</p>
+              )}
+              {!porResidencia ? (
+                <button type="button" className="pc-mode" onClick={() => { setPorResidencia(true); setBusqueda(""); setHallados([]); }}>
+                  No sé en qué municipio queda
+                </button>
+              ) : (
+                <button type="button" className="pc-mode" onClick={seguirDespuesDelMunicipio}>
+                  Prefiero no decirlo
+                </button>
+              )}
+              <p className="pc-help">
+                Lo que escribiste se guarda igual, tal como lo escribiste. Si no llegamos al
+                municipio, alguien lo revisa a mano — <strong>no lo vamos a suponer</strong>.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {paso === "confirmar-residencia" && elegido && (
+        <div data-prueba="confirmar-residencia">
+          <h2>¿El problema ocurre en {elegido.nombre}?</h2>
+          {/* `GEO-01`: **una dirección residencial no es el lugar del problema
+              sin confirmación.** Preguntar dónde vive acerca, pero dar por hecho
+              que el problema ocurre ahí es el error que esa regla nombra. */}
           <p className="pc-help">
-            Lo buscamos en el listado oficial de municipios del DANE por lo que escribiste.
-            {candidatos.length > 1 && <> Hay más de uno con ese nombre, <strong>y solo tú sabes cuál es</strong>.</>}
+            Nos dijiste que vives ahí. Lo que necesitamos saber es dónde <strong>ocurre el
+            problema</strong>, que no siempre es lo mismo.
           </p>
           <div className="pc-actions">
-            {candidatos.map((c) => (
-              <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
-                      onClick={async () => {
-                        setGuardandoMun(true);
-                        await confirmarMunicipio(codigo, c.codigo, c.version);
-                        setGuardandoMun(false);
-                        seguirDespuesDelMunicipio();
-                      }}>
-                {c.nombre}, {c.departamento}
-              </button>
-            ))}
+            <button type="button" className="pc-action" disabled={guardandoMun}
+                    onClick={async () => {
+                      setGuardandoMun(true);
+                      await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "vive_ahi");
+                      setGuardandoMun(false);
+                      seguirDespuesDelMunicipio();
+                    }}>
+              Sí, ocurre ahí
+            </button>
           </div>
-          {/* La salida es tan importante como la lista. Sin ella, quien no
-              reconozca ninguno escoge el primero por salir del paso — y un
-              municipio equivocado es peor que ninguno, porque parece un dato. */}
-          <button type="button" className="pc-mode" onClick={seguirDespuesDelMunicipio}>
-            Ninguno / no estoy seguro
+          <button type="button" className="pc-mode" onClick={() => { setElegido(null); setPaso("municipio"); }}>
+            No, ocurre en otra parte
           </button>
-          <p className="pc-help">
-            Lo que escribiste se guarda igual, tal como lo escribiste. Si no escoges ninguno,
-            alguien lo revisa después — <strong>no lo vamos a suponer</strong>.
-          </p>
         </div>
       )}
 
