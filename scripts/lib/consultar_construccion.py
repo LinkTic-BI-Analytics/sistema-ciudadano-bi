@@ -136,6 +136,12 @@ def informe(estado):
         w("  Ninguno declarado.")
     for b in estado["bloqueos"]:
         w(f"  {b['id']} · línea {b['linea']} — {b['resultado']}")
+    if estado["esperando_respuesta"]:
+        w("")
+        w("  **Esperando una respuesta** — declaradas así en su contrato:")
+        for e in estado["esperando_respuesta"]:
+            w(f"      {e['id']} espera {', '.join(e['espera'])} · {e['resultado']}")
+        w("      Qué sí se puede construir sin la respuesta está en cada contrato.")
     v = estado["vacios"]
     if v["archivo"] and v["abiertas"]:
         w(
@@ -164,6 +170,11 @@ def informe(estado):
         w("  Nada. Ninguna tarea lleva más tiempo del debido en su estado.")
     for d in det:
         w(f"  {d['id']} · {d['por_que']}")
+    if estado["cerradas_en_falso"]:
+        w("")
+        w("  **Cerradas en falso** — dicen estar hechas y su pregunta nunca se respondió:")
+        for c in estado["cerradas_en_falso"]:
+            w(f"      {c['id']} dice «{c['estado']}» y sigue esperando {', '.join(c['espera'])}")
     contra = estado["dice_listo_pero_no"]
     if contra:
         w("")
@@ -210,6 +221,10 @@ def siguiente(estado):
             f"{c['id']} dice «{c['estado']}» y {c['falta'][0]}. "
             "Alguien la va a despachar creyendo que está lista."
         )
+    if estado["cerradas_en_falso"]:
+        c = estado["cerradas_en_falso"][0]
+        return (f"{c['id']} dice «{c['estado']}» y {', '.join(c['espera'])} nunca se respondió. "
+                "O se responde, o la tarea vuelve a `listo` con la causa.")
     if estado["deterioro"]:
         d = estado["deterioro"][0]
         return f"{d['id']}: {d['por_que']}."
@@ -245,6 +260,10 @@ def revisar(estado):
     problemas += [
         f"{c['id']} dice «{c['estado']}» pero: " + "; ".join(c["falta"])
         for c in estado["dice_listo_pero_no"]
+    ]
+    problemas += [
+        f"{c['id']} dice «{c['estado']}» y su pregunta sigue abierta: " + ", ".join(c["espera"])
+        for c in estado["cerradas_en_falso"]
     ]
     problemas += [
         f"se pisan {'+'.join(p['par'])}: " + ", ".join(p["comparten"])

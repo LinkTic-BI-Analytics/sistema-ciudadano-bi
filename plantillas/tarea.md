@@ -9,6 +9,14 @@
 **Propietario:** <persona o agente. UNO solo>
 **Depende de:** <IDs, o «ninguna»>
 **Puede ejecutarse en paralelo con:** <IDs y la razón por la que no se pisan>
+**Bloqueada por:** <`Q7`, `P4`… o «ninguna»>
+
+> ➤ **La última línea no es decorativa.** `scripts/construccion.sh` la lee y se niega a dejar
+> pasar a `terminado` una tarea cuya pregunta siga abierta en `negocio/vacios.md`. Es lo que
+> convierte la lista de pendientes en algo que se comprueba en vez de recordarse.
+>
+> Y una tarea bloqueada **no se para entera**: la guía §5 pide decir siempre **qué sí se puede
+> construir sin la respuesta**. Eso va en «Dentro del alcance».
 
 ## Contexto suficiente
 

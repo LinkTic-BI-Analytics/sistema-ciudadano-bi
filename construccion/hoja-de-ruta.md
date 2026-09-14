@@ -14,7 +14,7 @@ llegar al primero. Hasta entonces gobierna `negocio/especificacion-v0-2026-09-13
 > escribió; uno que señala sus contradicciones se puede creer.
 
 <!-- derivado · lo escribe scripts/construccion.sh · NO editar a mano -->
-**Ruta crítica:** T016 → T020 → T018 → T019
+**Ruta crítica:** T016 → T020 → T023 → T024 → T025
 **Líneas paralelas activas:** ninguna
 <!-- /derivado -->
 
@@ -60,6 +60,17 @@ T019, que es la primera tarea con autoridad real.
 | T019 | `/entregar M10` y `/entregar M01`: los dos primeros módulos que pasan el sobre cerrado | — | T018 | D | negocio | candidato | las 5 casillas del sobre cerrado marcadas, en los dos |
 | T021 | La primera migración: `proceso_id` en todo, catálogo DIVIPOLA sembrado, aporte, ubicación, expediente y auditoría append-only | I1, I2, I4, R1 | T012, T020 | A | orquestador | terminado | 9.715 territorios sembrados · **12 comprobaciones de invariante contra la base, vistas fallar quitándole una restricción** |
 | T022 | `R1` y `R2` en Postgres, y el corte inmutable | R1, R2, I6 | T021 | A | orquestador | terminado | **9 cuentas contra los números calculados a mano de la §9**, vistas fallar quitándole el `distinct` al numerador: daba 80% donde la spec dice 70% |
+| T023 | Recibir un aporte: acción de servidor con `I1` de verdad y el lugar declarado guardado siempre | RF5, I1, I2, DAT-01 | T021 | A | orquestador | listo | paso 1 y 2 de la prueba de punta a punta: tres aportes por canales distintos, y un reintento que no duplica |
+| T024 | La pantalla «Cuéntanos qué pasa», con los tokens y el selector escribir/hablar | RF1, RF2, N02 | T023 | A | orquestador | candidato | una persona registra agua intermitente en una vereda sin saber la entidad ni adjuntar estudios, y recibe comprobante |
+| T025 | Síntesis corregible y confirmada por la persona, versionada | RF2, N03, V14 | T024 | A | orquestador | candidato | paso 3: una transcripción cambia acueducto por alcantarillado, la persona corrige antes de validar |
+| T026 | El comprobante: se emite tras persistir, y se consulta **sin correo** | RF4, RF5, RES-01 | T023 | A | orquestador | candidato | la persona consulta su código y ve qué pasó, sin dar correo. Nunca se muestra antes de persistir |
+| T027 | Bandeja de aclaración de ubicación, con los cuatro estados separados | RF7, GEO-01, CAL-01, I2 | T021 | B | orquestador | candidato | «cerca de San José» con varias coincidencias queda por aclarar y aparece en la bandeja |
+| T028 | Crear expediente y vincular aportes **con motivo**, y la prueba de decisión | RF7, NEC-01, I4, V12 | T027 | B | orquestador | candidato | paso 4: baja presión y contaminación no se fusionan por compartir el tema agua |
+| T029 | Desagrupar conservando originales y **reabriendo prioridad sin heredar aprobación** | RF7, I4 | T028 | B | orquestador | candidato | una desagrupación conserva aportes, referencias y cortes previos |
+| T030 | Los cinco eventos de gestión separados: recepción, remisión, decisión, respuesta, siguiente paso | RF8, RES-01 | T021 | C | orquestador | candidato | paso 7: una remisión no aceptada sigue pendiente y no aparece resuelta |
+| T031 | El corte exportable con su diccionario, filtros, zona horaria y versión de catálogo | RF6, TRA-01, R1, R2 | T022 | C | orquestador | listo | paso 8: otro analista reproduce el total a partir del mismo corte y regla |
+| T032 | Permisos de servidor por rol y ámbito, **también por URL directa** | RF14, SEG-01, I6 | T021 | D | negocio | bloqueado | paso 8, segunda mitad: otro rol no accede a datos protegidos |
+| T033 | El aporte colectivo y su vocería | RF16, V15, V19 | T028 | D | negocio | bloqueado | un cambio de vocero no transfiere notificaciones a alguien no validado |
 
 > **Por qué T020 va después de T018 en el número y antes en la dependencia.** Los códigos
 > son corridos y no se reciclan (`metodo/codigos.md`): la normalización apareció al montar
@@ -83,7 +94,9 @@ T019, que es la primera tarea con autoridad real.
 
 | Tarea | Causa | Dueño del desbloqueo | Urgente antes de | Qué SÍ se puede construir sin la respuesta |
 |---|---|---|---|---|
-| T019 | La especificación no pasa la compuerta: 12 decisiones sin tomar, `acuerdos.md` e `integraciones.md` vacíos, ningún módulo con una casilla del sobre cerrado marcada | negocio | antes de cualquier tarea de producto con autoridad | **Todo el andamiaje** — T004 a T015. Ninguna de esas tareas decide sobre una regla del negocio |
+| T019 | La especificación no pasa la compuerta: ningún módulo tiene una casilla del sobre cerrado marcada | negocio | antes de cualquier tarea con autoridad de módulo | **Todo lo demás.** Las tareas de producto se apoyan en las 21 decisiones ya tomadas, que sí están escritas |
+| T032 | `P4` · no hay **nada** escrito sobre identidad en los 24 documentos fuente. Y `Q18`: si la visibilidad es aislamiento o jerarquía | negocio | antes de la primera pantalla interna que alguien use de verdad | **Toda la captura pública** (T023–T026), que no necesita cuenta. Y las pantallas internas **contra datos de ejemplo**, sin conectar el permiso |
+| T033 | `Q23` · «colectivo» no existe como entidad en ningún documento. `Q24` · un expediente que mezcla aporte colectivo con individuales | negocio | antes del primer encuentro presencial | **El aporte individual completo.** La columna `es_colectivo` ya está y hoy solo se marca |
 
 > Ninguna otra tarea está bloqueada hoy. Las de la línea `D` esperan a una persona, que no
 > es lo mismo que estar bloqueadas: tienen propietario y pueden empezar.

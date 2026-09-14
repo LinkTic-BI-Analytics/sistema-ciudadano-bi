@@ -64,6 +64,7 @@ PUDRICION = {"en revisión": 2, "en integración": 1, "en construcción": 5}
 CODIGO = re.compile(r"\b(RF|C|P|R|I)(\d{1,3})\b")
 FILA_TAREA = re.compile(r"^\|\s*(T\d{3})\s*\|")
 SUPERFICIE = re.compile(r"^-\s*(Crear|Modificar|Leer|No modificar):\s*`([^`]+)`", re.M)
+BLOQUEA = re.compile(r"^\*\*Bloqueada por:\*\*\s*(.+)$", re.M)
 
 
 def _celdas(linea):
@@ -155,6 +156,11 @@ def leer_contratos():
         m = re.search(r"^\*\*Autoridad:\*\*\s*(.+)$", texto, re.M)
         if m:
             autoridad = m.group(1).strip()
+        # Qué pregunta abierta la bloquea. Una tarea que no lo declara no es una
+        # tarea sin bloqueos: es una que no se revisó.
+        mb = BLOQUEA.search(texto)
+        espera = re.findall(r"\b([QP]\d{1,3})\b", mb.group(1)) if mb else []
+        declara_bloqueo = mb is not None
         contratos[ident] = {
             "archivo": str(f.relative_to(RAIZ)),
             "superficie": superficie,
@@ -162,6 +168,8 @@ def leer_contratos():
             "codigos": [f"{a}{b}" for a, b in CODIGO.findall(autoridad)],
             # Una casilla de verificación sin marcar no es un defecto; una
             # sección de casos vacía sí.
+            "espera": espera,
+            "declara_bloqueo": declara_bloqueo,
             "casos": len(re.findall(r"^- \[[ x]\] .+→", texto, re.M)),
             "sin_llenar": texto.count("> ➤"),
         }
@@ -174,9 +182,66 @@ def leer_vacios():
         f = RAIZ / ruta
         if f.exists():
             texto = f.read_text(encoding="utf-8")
-            filas = [l for l in texto.splitlines() if re.match(r"^\|\s*\[?[A-F]\d", l.strip())]
-            return {"archivo": ruta, "abiertas": len(filas)}
-    return {"archivo": None, "abiertas": 0}
+            codigos = re.findall(r"^\|\s*(Q\d{1,3})\s*\|", texto, re.M)
+            if not codigos:  # la tabla v0, que numera con la forma de pregunta
+                codigos = [l.split("|")[1].strip() for l in texto.splitlines()
+                           if re.match(r"^\|\s*\[?[A-F]\d", l.strip())]
+            return {"archivo": ruta, "abiertas": len(codigos), "codigos": sorted(set(codigos))}
+    return {"archivo": None, "abiertas": 0, "codigos": []}
+
+
+def leer_pliegos():
+    """Las preguntas del pliego que siguen sin responder.
+
+    Se leen aparte de `vacios.md` porque viven en otro archivo y las numera `P`,
+    pero bloquean igual: la `P4` —la identidad— no la responde ningún documento
+    y sin ella no hay permisos de servidor.
+    """
+    abiertas = []
+    d = RAIZ / "negocio" / "preguntas"
+    if not d.is_dir():
+        return abiertas
+    for f in sorted(d.glob("*.md")):
+        for linea in f.read_text(encoding="utf-8").splitlines():
+            m = re.match(r"^### (P\d+) ·", linea)
+            if m and "RESPONDIDA" not in linea:
+                abiertas.append(m.group(1))
+    return sorted(set(abiertas))
+
+
+def preguntas_abiertas():
+    v = leer_vacios()
+    return sorted(set(v["codigos"]) | set(leer_pliegos()))
+
+
+def esperando(tareas, contratos, abiertas):
+    """Tareas que declaran esperar una pregunta que sigue abierta.
+
+    Devuelve dos cosas distintas y la segunda es la que duele:
+
+      `esperan`  — están declaradas como bloqueadas y su pregunta sigue abierta.
+                   Es correcto, y lo que hay que saber es **qué sí se puede
+                   hacer sin la respuesta**, que va en su contrato.
+
+      `cerradas_en_falso` — dicen `terminado` o `en integración` y su pregunta
+                   NUNCA se respondió. Es la forma en que una lista de pendientes
+                   se convierte en una lista que nadie miró.
+    """
+    abiertas = set(abiertas)
+    esperan, falso = [], []
+    for t in tareas:
+        c = contratos.get(t["id"])
+        if not c:
+            continue
+        pendientes = [q for q in c["espera"] if q in abiertas]
+        if not pendientes:
+            continue
+        if t["estado"] in CERRADOS:
+            falso.append({"id": t["id"], "estado": t["estado"], "espera": pendientes})
+        else:
+            esperan.append({"id": t["id"], "estado": t["estado"], "espera": pendientes,
+                            "resultado": t["resultado"]})
+    return esperan, falso
 
 
 def leer_modulos():
@@ -389,6 +454,19 @@ def revisar_listas(tareas, contratos, modulos):
         if t["estado"] in CERRADOS:
             continue
 
+        # `bloqueado` no se mide contra las condiciones de `listo`, y confundirlo
+        # produce una contradicción falsa: una tarea bloqueada tiene las
+        # dependencias sin resolver **por definición**. Lo que sí tiene que tener
+        # es una causa declarada, y eso se comprueba aparte.
+        if t["estado"] == "bloqueado":
+            c = contratos.get(t["id"])
+            if c is None or not c["espera"]:
+                no_deberia.append({
+                    "id": t["id"], "estado": "bloqueado",
+                    "falta": ["dice «bloqueado» y no declara qué pregunta la bloquea "
+                              "(**Bloqueada por:** en su contrato)"]})
+            continue
+
         # Las cuatro de §5.
         faltan = []
         deps = [por_id.get(d) for d in t["depende_de"]]
@@ -548,6 +626,8 @@ def recoger():
     tareas, quejas = leer_tareas()
     contratos = leer_contratos()
     modulos = leer_modulos()
+    abiertas = preguntas_abiertas()
+    esperan, cerradas_en_falso = esperando(tareas, contratos, abiertas)
     aristas, huerfanas = grafo(tareas)
     deberia, no_deberia, sin_contrato = revisar_listas(tareas, contratos, modulos)
     pares, sin_superficie = matriz_paralelismo(tareas, contratos)
@@ -573,6 +653,9 @@ def recoger():
         "listas_sin_contrato": sin_contrato,
         "paralelismo": {"pares": pares, "sin_superficie_declarada": sin_superficie},
         "bloqueos": bloqueos(tareas),
+        "preguntas_abiertas": abiertas,
+        "esperando_respuesta": esperan,
+        "cerradas_en_falso": cerradas_en_falso,
         "deterioro": deterioro(tareas),
         "cobertura": cobertura(tareas, modulos),
         "modulos": modulos,
