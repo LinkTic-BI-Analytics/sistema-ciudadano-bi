@@ -511,3 +511,106 @@ $$;
 comment on table participacion.corte is
   'Inmutable por regla. R2: un corte nuevo no reescribe el anterior.';
 
+-- ═══ 08_comprobante.sql ═══
+-- Emitir un comprobante sin exponer `identidad` por la API.
+--
+-- **Es una decisión, no una comodidad.** `identidad` guarda contacto y
+-- comprobantes, y existe como partición física para que el permiso se dé o se
+-- niegue de una sola vez (`SEG-01`, `I6`, `C2`). Exponerla a PostgREST la
+-- volvería alcanzable por URL directa, que es justo lo que `SEG-01` prohíbe:
+-- los permisos aplican *«también por URL directa»*.
+--
+-- Entonces el servidor no escribe ahí: pide que se escriba. La función corre con
+-- los privilegios de su dueño y devuelve solo el identificador del aporte.
+--
+-- **El código nunca entra ni sale por aquí.** Se genera en el servidor, se pasa
+-- su hash, y el código en claro solo existe en la respuesta al navegador. Si la
+-- función recibiera el código, quedaría en el registro de sentencias de Postgres.
+
+create or replace function participacion.emitir_comprobante(
+  p_proceso uuid,
+  p_aporte  uuid,
+  p_hash    text
+) returns void
+language plpgsql
+security definer
+set search_path = identidad, participacion, pg_temp
+as $$
+begin
+  if length(coalesce(p_hash, '')) <> 64 then
+    raise exception 'el comprobante se guarda como hash sha256, no como código';
+  end if;
+  insert into identidad.comprobante (proceso_id, aporte_id, codigo_hash)
+  values (p_proceso, p_aporte, p_hash);
+end;
+$$;
+
+revoke all on function participacion.emitir_comprobante(uuid, uuid, text) from public;
+
+comment on function participacion.emitir_comprobante is
+  'La única puerta a identidad.comprobante. El esquema identidad no se expone por la API a propósito (SEG-01).';
+
+-- Limpieza de pruebas. `identidad` no se expone por la API, así que una prueba
+-- que crea comprobantes necesita una puerta para llevárselos. Es de pruebas y lo
+-- dice el nombre: si apareciera en código de producto, se ve.
+create or replace function participacion.borrar_comprobantes_de_prueba(p_aportes uuid[])
+returns void
+language plpgsql
+security definer
+set search_path = identidad, participacion, pg_temp
+as $$
+begin
+  delete from identidad.comprobante where aporte_id = any(p_aportes);
+end;
+$$;
+
+revoke all on function participacion.borrar_comprobantes_de_prueba(uuid[]) from public;
+
+-- ═══ 09_acceso.sql ═══
+-- El acceso, en su versión mínima: **negar por defecto**.
+--
+-- La política de verdad —quién ve qué— es `T032`, y está bloqueada por `P4` (no
+-- hay mecanismo de identidad escrito en ningún documento) y `Q18` (si la
+-- visibilidad es aislamiento entre procesos o jerarquía por territorio). Las dos
+-- se implementan distinto y no se convierte una en la otra después.
+--
+-- Entonces esto **no decide nada de eso**. Hace lo único que no prejuzga:
+--
+--   · el acceso a nivel de fila queda ENCENDIDO en todas las tablas
+--   · sin ninguna política, que en Postgres significa: nadie ve nada
+--   · el rol del servidor —el de la llave `secret`— lo salta, que es como
+--     trabaja el servidor hoy
+--   · `anon` y `authenticated` —las llaves que llegan al navegador— no reciben
+--     ni un permiso
+--
+-- Cuando `T032` se desbloquee, agregar una política es escribir una regla sobre
+-- una tabla que ya tiene el interruptor puesto. Arrancar al revés —permitir y
+-- luego restringir— es cómo se filtran los datos: basta olvidar una tabla.
+
+grant usage on schema participacion to service_role;
+grant all on all tables in schema participacion to service_role;
+grant all on all sequences in schema participacion to service_role;
+grant execute on all functions in schema participacion to service_role;
+
+-- Y explícito, para que se lea como decisión y no como olvido.
+revoke all on schema participacion from anon, authenticated;
+revoke all on all tables in schema participacion from anon, authenticated;
+
+alter table participacion.proceso                     enable row level security;
+alter table participacion.territorio                  enable row level security;
+alter table participacion.aporte                      enable row level security;
+alter table participacion.sintesis                    enable row level security;
+alter table participacion.ubicacion                   enable row level security;
+alter table participacion.expediente                  enable row level security;
+alter table participacion.vinculo_aporte_expediente   enable row level security;
+alter table participacion.expediente_territorio       enable row level security;
+alter table participacion.auditoria                   enable row level security;
+alter table participacion.corte                       enable row level security;
+
+alter table identidad.contacto     enable row level security;
+alter table identidad.comprobante  enable row level security;
+
+-- Ni una política. Es el estado correcto mientras `P4` y `Q18` sigan abiertas:
+-- una política escrita antes de saber contra qué identidad se comprueba es una
+-- política equivocada escrita con confianza.
+

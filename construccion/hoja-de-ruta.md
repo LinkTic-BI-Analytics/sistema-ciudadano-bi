@@ -14,7 +14,7 @@ llegar al primero. Hasta entonces gobierna `negocio/especificacion-v0-2026-09-13
 > escribió; uno que señala sus contradicciones se puede creer.
 
 <!-- derivado · lo escribe scripts/construccion.sh · NO editar a mano -->
-**Ruta crítica:** T016 → T020 → T023 → T024 → T025
+**Ruta crítica:** T016 → T020 → T027 → T028 → T029
 **Líneas paralelas activas:** ninguna
 <!-- /derivado -->
 
@@ -60,7 +60,7 @@ T019, que es la primera tarea con autoridad real.
 | T019 | `/entregar M10` y `/entregar M01`: los dos primeros módulos que pasan el sobre cerrado | — | T018 | D | negocio | candidato | las 5 casillas del sobre cerrado marcadas, en los dos |
 | T021 | La primera migración: `proceso_id` en todo, catálogo DIVIPOLA sembrado, aporte, ubicación, expediente y auditoría append-only | I1, I2, I4, R1 | T012, T020 | A | orquestador | terminado | 9.715 territorios sembrados · **12 comprobaciones de invariante contra la base, vistas fallar quitándole una restricción** |
 | T022 | `R1` y `R2` en Postgres, y el corte inmutable | R1, R2, I6 | T021 | A | orquestador | terminado | **9 cuentas contra los números calculados a mano de la §9**, vistas fallar quitándole el `distinct` al numerador: daba 80% donde la spec dice 70% |
-| T023 | Recibir un aporte: acción de servidor con `I1` de verdad y el lugar declarado guardado siempre | RF5, I1, I2, DAT-01 | T021 | A | orquestador | listo | paso 1 y 2 de la prueba de punta a punta: tres aportes por canales distintos, y un reintento que no duplica |
+| T023 | Recibir un aporte: acción de servidor con `I1` de verdad y el lugar declarado guardado siempre | RF5, I1, I2, DAT-01 | T021 | A | orquestador | terminado | 7 casos vistos fallar antes · 10 más de acceso, vistos fallar abriéndole `territorio` a `anon` · registro en `construccion/progreso/T023-registro.md` |
 | T024 | La pantalla «Cuéntanos qué pasa», con los tokens y el selector escribir/hablar | RF1, RF2, N02 | T023 | A | orquestador | candidato | una persona registra agua intermitente en una vereda sin saber la entidad ni adjuntar estudios, y recibe comprobante |
 | T025 | Síntesis corregible y confirmada por la persona, versionada | RF2, N03, V14 | T024 | A | orquestador | candidato | paso 3: una transcripción cambia acueducto por alcantarillado, la persona corrige antes de validar |
 | T026 | El comprobante: se emite tras persistir, y se consulta **sin correo** | RF4, RF5, RES-01 | T023 | A | orquestador | candidato | la persona consulta su código y ve qué pasó, sin dar correo. Nunca se muestra antes de persistir |

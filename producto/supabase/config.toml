@@ -10,7 +10,11 @@ enabled = true
 port = 54821
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
-schemas = ["public", "graphql_public"]
+# `identidad` NO se expone a propósito: es la partición que guarda contacto y
+# comprobantes, y existe para que el permiso se dé o se niegue de una sola vez
+# (SEG-01, I6). Lo que necesite escribir ahí pasa por una función de
+# `participacion`, no por la API.
+schemas = ["public", "graphql_public", "participacion"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size

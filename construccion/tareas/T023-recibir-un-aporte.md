@@ -51,7 +51,7 @@ re-normalizar al barrio cuando llegue su catálogo (`V21`, `Q26`).
 - Crear: `producto/src/captura/recibir.ts`
 - Crear: `producto/src/captura/clave-envio.ts`
 - Crear: `producto/src/datos/cliente.ts`
-- Crear: `producto/pruebas/captura.py`
+- Crear: `producto/pruebas/captura.test.ts`
 - Leer: `producto/supabase/schemas/03_aporte.sql`
 - Leer: `producto/supabase/schemas/06_identidad.sql`
 - No modificar: `producto/supabase/schemas/`
@@ -92,7 +92,7 @@ Salen del paso 1 y 2 de la prueba de punta a punta, y de la aceptación de `DAT-
 
 ## Pasos de ejecución
 
-- [ ] Escribir `producto/pruebas/captura.py` con los siete casos, y **verla fallar** por no
+- [ ] Escribir `producto/pruebas/captura.test.ts` con los siete casos, y **verla fallar** por no
       existir `recibirAporte`.
 - [ ] Registrar la falla con su mensaje exacto.
 - [ ] Implementar el cambio mínimo.

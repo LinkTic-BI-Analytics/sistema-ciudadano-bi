@@ -2,6 +2,7 @@
   "name": "participacion-producto",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack -p 3100",
     "tokens:build": "../scripts/tokens.sh",
@@ -9,10 +10,11 @@
     "start": "next start -p 3100",
     "lint": "eslint",
     "tipos": "tsc --noEmit",
-    "test": "playwright test",
+    "test": "node --test --env-file=.env.local pruebas/*.test.ts",
     "db:arrancar": "supabase start",
     "db:parar": "supabase stop",
-    "db:esquema": "../scripts/esquema.sh"
+    "db:esquema": "../scripts/esquema.sh",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

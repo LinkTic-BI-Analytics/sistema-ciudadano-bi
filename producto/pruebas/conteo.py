@@ -49,8 +49,15 @@ def correr(sql):
 # distingue contar aportes de contar vínculos.
 ESCENARIO = """
 begin;
+-- Su propio proceso, no el sembrado. Contar sobre datos compartidos hace que
+-- la prueba dependa de lo que dejó la de al lado, y entonces deja de probar las
+-- reglas: prueba el orden en que se corrieron los archivos.
 create temporary table _p on commit drop as
-  select id from participacion.proceso limit 1;
+with nuevo as (
+  insert into participacion.proceso (nombre, compromiso)
+  values ('ESCENARIO DE PRUEBA — conteo', 'consulta')
+  returning id
+) select id from nuevo;
 
 insert into participacion.aporte (proceso_id, clave_envio, relato_original, canal, lugar_declarado)
 select (select id from _p), 'caso-' || n,

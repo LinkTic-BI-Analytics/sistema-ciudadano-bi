@@ -166,6 +166,17 @@ else
   saltó "la base local no está levantada (npm run db:arrancar)"
 fi
 
+# CHEQUEO: las pruebas del producto contra la base local
+# Se ve fallar: dale `select` a anon sobre una tabla de participacion
+if [ -f producto/.env.local ] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
+  (cd producto && npm test) >/tmp/pr.$$ 2>&1 \
+    && ok "$(grep -E '^. (pass|tests)' /tmp/pr.$$ | tr '\n' ' ' | sed 's/ℹ //g')" \
+    || { mal "pruebas del producto en rojo"; grep -E '^✖|AssertionError|Error:' /tmp/pr.$$ | head -6 | sed 's/^/          /'; }
+  rm -f /tmp/pr.$$
+else
+  saltó "no hay .env.local o la base no está levantada"
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then
