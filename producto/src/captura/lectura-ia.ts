@@ -59,6 +59,8 @@ Reglas absolutas:
 2. Si el relato no dice algo, devuelve null. NUNCA lo inventes, lo deduzcas ni lo completes.
 3. No agregues causas, culpables, entidades responsables ni soluciones que la persona no haya escrito.
 4. "desdeCuando" es el texto tal cual ("hace tres meses", "desde el invierno"). NUNCA lo conviertas en fecha.
+5. Un mismo fragmento puede ir en DOS campos. Si el lugar viene dentro de otra frase, extráelo igual: de "los niños de la vereda El Salado faltan", "afectados" es "los niños de la vereda El Salado" y "lugar" es "la vereda El Salado".
+6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {

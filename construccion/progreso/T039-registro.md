@@ -72,6 +72,41 @@ no se recupera nunca**.
 fuente. Mistral queda de suelo si no hay llave de OpenRouter. Los dos hablan la API de *chat
 completions*, así que es **un solo camino de código** y no dos integraciones.
 
+## Lo que se vio con el proveedor de verdad
+
+Con la llave puesta, cuatro relatos reales pasaron el guardián **los cuatro** —`fuente: ia`—
+entre 1,6 y 3,6 s. Eso no estaba garantizado: el guardián exige que cada palabra esté en el
+relato, y un modelo que parafrasee aunque sea poco lo habría dejado de adorno.
+
+**Y apareció un defecto real mirando la salida.** En «los niños de la vereda El Salado faltan»,
+el modelo dejaba `lugar` vacío porque había metido el sitio dentro de `afectados` — o sea, le
+habría preguntado a la persona dónde ocurre cuando ya lo había dicho, que es exactamente lo que
+esto viene a evitar. Se arregló diciéndole en la instrucción que **un mismo fragmento puede ir en
+dos campos** y que relea antes de poner `null`. Después, los cuatro relatos salen completos.
+
+## Las pruebas no hablan con el proveedor
+
+Con la llave puesta, cada recorrido salía a OpenRouter y **el flujo dependía de lo que el modelo
+decidiera esa vez**: cuántas partes encontrara cambiaba cuántas vueltas veía la persona, y las
+pruebas empezaron a pasar o fallar según el relato. Además tardaba 7,2 minutos y mandaba relatos
+de prueba a un tercero, uno por caso.
+
+Ahora los recorridos levantan **su propio servidor en el 3101, sin llave**. Ejercitan el camino
+determinista —cinco partes vacías, siempre dos vueltas— y el contrato con la IA se prueba aparte
+con el proveedor sustituido. El `npm run dev` de quien esté mirando la pantalla sigue en el 3100
+con su llave.
+
+## Una prueba que a veces fallaba
+
+Dos corridas dieron `1 failed` y nunca la misma. Las dos fueron **la primera corrida después de
+cambiar código**, que es el perfil de un arranque en frío: Next compila cada ruta la primera vez
+que alguien la pide, y esa primera vez puede pasarse del tiempo de espera de una prueba.
+
+`limpiar.ts` ahora toca las tres rutas antes de empezar, para que lo pague el arranque y no la
+primera prueba que pase por ahí. Con `.next` borrado a propósito, la corrida en frío pasa, y dos
+más detrás. **No lo reproduje a voluntad**, así que queda anotado como hipótesis que encaja y
+sobrevive al caso que antes fallaba, no como causa demostrada.
+
 ## Lo que queda abierto
 
 **`Q29` pesa más que ayer.** Antes era una llamada opcional; ahora es **una llamada por aporte**.

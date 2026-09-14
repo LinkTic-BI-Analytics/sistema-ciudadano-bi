@@ -14,15 +14,31 @@ export default defineConfig({
   workers: 1,
   globalSetup: "./pruebas/e2e/limpiar.ts",
   reporter: process.env.CI ? "list" : [["list"]],
-  use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure" },
+  use: { baseURL: "http://127.0.0.1:3101", trace: "retain-on-failure" },
   projects: [
     { name: "escritorio", use: { ...devices["Desktop Chrome"] } },
     { name: "telefono", use: { ...devices["Pixel 5"] } },
   ],
+  // **Su propio servidor, en su propio puerto y sin llave de IA.**
+  //
+  // Con la llave puesta, cada recorrido salía a OpenRouter y el flujo dependía
+  // de lo que el modelo decidiera esa vez: cuántas partes encontrara cambiaba
+  // cuántas vueltas veía la persona, y las pruebas empezaron a pasar o fallar
+  // según el relato. Una prueba que depende del humor de un modelo no prueba el
+  // producto. Además tardaba siete minutos y mandaba relatos de prueba a un
+  // tercero, uno por caso.
+  //
+  // Así que aquí se ejercita el camino determinista —`leer()`, que deja las
+  // cinco partes vacías y por lo tanto siempre dos vueltas— y el contrato con la
+  // IA se prueba aparte, con el proveedor sustituido (`pruebas/lectura-ia.test.ts`).
+  //
+  // Puerto propio para no pisar el `npm run dev` de quien esté mirando la
+  // pantalla, que sí tiene la llave.
   webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:3100",
-    reuseExistingServer: true,
+    command: "npm run dev -- --port 3101",
+    url: "http://127.0.0.1:3101",
+    reuseExistingServer: false,
     timeout: 120_000,
+    env: { OPENROUTER_API_KEY: "", MISTRAL_API_KEY: "" },
   },
 });
