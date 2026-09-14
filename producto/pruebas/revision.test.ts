@@ -45,7 +45,20 @@ after(async () => {
     await p.rpc("borrar_comprobantes_de_prueba", { p_aportes: ids });
     await p.from("aporte").delete().in("id", ids);
   }
-  if (procesos.length) await p.from("proceso").delete().in("id", procesos);
+  // Los expedientes también. La primera vez que faltó esto, la prueba de conteo
+  // de al lado empezó a fallar por una clave duplicada: los expedientes de aquí
+  // coincidían con su `like`. Una prueba que deja rastro rompe a la siguiente.
+  const { data: exps } = await p.from("expediente").select("id").in("proceso_id", procesos);
+  const expIds = (exps ?? []).map((e) => e.id as string);
+  if (expIds.length) {
+    await p.from("expediente_territorio").delete().in("expediente_id", expIds);
+    await p.from("vinculo_aporte_expediente").delete().in("expediente_id", expIds);
+    await p.from("expediente").delete().in("id", expIds);
+  }
+  if (procesos.length) {
+    await p.from("auditoria").delete().in("proceso_id", procesos);
+    await p.from("proceso").delete().in("id", procesos);
+  }
 });
 
 const nuevoAporte = (n: string) =>

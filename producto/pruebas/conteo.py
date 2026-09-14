@@ -101,12 +101,15 @@ select (select id from _p), e.id, t.codigo, t.version
 from participacion.expediente e,
      lateral (select codigo, version from participacion.territorio
               where nivel='municipio' order by codigo limit 2) t
-where e.descripcion like 'baja presión%';
+where e.descripcion like 'baja presión%' and e.proceso_id = (select id from _p);
 
 insert into participacion.vinculo_aporte_expediente (proceso_id, aporte_id, expediente_id, autor, motivo)
 select (select id from _p), a.id, e.id, 'revisora', 'describen la misma afectación'
 from participacion.aporte a, participacion.expediente e
-where a.clave_envio in ('caso-1','caso-2') and e.descripcion like 'baja presión%';
+where a.clave_envio in ('caso-1','caso-2')
+  and e.descripcion like 'baja presión%'
+  and a.proceso_id = (select id from _p)
+  and e.proceso_id = (select id from _p);
 """
 
 ACLARAR_UNO_MAS = """
