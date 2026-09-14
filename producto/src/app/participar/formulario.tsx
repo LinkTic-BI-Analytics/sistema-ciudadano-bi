@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { enviarAporte, type Resultado } from "./acciones.ts";
 import { claveEnvioVigente, olvidarClaveEnvio } from "../../captura/clave-envio.ts";
 import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
+import { Afinado } from "./afinado.tsx";
 
 export function Formulario() {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
@@ -53,6 +54,11 @@ export function Formulario() {
           Significa que quedó registrado y que alguien lo va a revisar.
         </p>
         <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
+
+        {/* El afinado va **debajo** del comprobante, nunca antes. Si el código
+            saliera solo al terminar las dos vueltas, quien abandone se quedaría
+            sin poder consultar lo que ya mandó. */}
+        <Afinado codigo={resultado.codigo} lectura={resultado.lectura} />
       </section>
     );
   }
@@ -121,33 +127,13 @@ export function Formulario() {
         </p>
       </div>
 
-      {/* Plegado a propósito. `N02` pide captura mínima y gradual: lo obligatorio
-          es el relato, y esto es para quien quiera precisar. Abrirlo de entrada
-          convierte un formulario de dos campos en uno de cinco, y eso es lo que
-          hace que alguien lo cierre. */}
-      <details className="pc-field">
-        <summary>Si quieres, ayúdanos a precisarlo</summary>
-        <p className="pc-help">
-          Todo esto es opcional. Nos ayuda a entenderlo mejor, pero <strong>no hace falta</strong>
-          {" "}para que lo revisemos.
-        </p>
-        <div className="pc-field">
-          <label className="pc-label" htmlFor="problema">¿Cuál es el problema?</label>
-          <input id="problema" name="problema" className="pc-input" type="text" />
-        </div>
-        <div className="pc-field">
-          <label className="pc-label" htmlFor="resultado">¿Qué debería cambiar?</label>
-          <input id="resultado" name="resultado" className="pc-input" type="text" />
-        </div>
-        <div className="pc-field">
-          <label className="pc-label" htmlFor="solucion">¿Se te ocurre cómo resolverlo?</label>
-          <input id="solucion" name="solucion" className="pc-input" type="text"
-                 aria-describedby="solucion-ayuda" />
-          <p className="pc-help" id="solucion-ayuda">
-            No hace falta proponer una solución para que el problema se escuche.
-          </p>
-        </div>
-      </details>
+      {/* Las tres partes de `N03` ya no se piden aquí. Se preguntan **después
+          de recibir**, en dos vueltas cortas (`afinado.tsx`), con lo que la
+          persona contó delante para que solo tenga que confirmarlo.
+
+          Pedirlas aquí convertía un formulario de dos campos en uno de cinco
+          antes de que hubiera nada guardado, y quien lo cerraba se iba sin
+          dejar nada. Ahora lo primero que pasa es que su aporte queda. */}
 
       <button type="submit" className="pc-action" disabled={enviando}>
         {enviando ? "Enviando…" : "Enviar lo que conté"}

@@ -16,6 +16,12 @@ async function abrirAporte(page: Page, marca: string) {
   const visibles = page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true });
   await expect(visibles).toHaveCount(1);
   await visibles.click();
+  // **Y esperar a que el panel esté.** Sin esto el ayudante devuelve con la
+  // navegación en curso, y lo que venga detrás corre contra la bandeja: una
+  // prueba que recorría los campos del aporte los contaba sobre una página que
+  // no tenía ninguno, y pasaba por vacía. Un falso verde no avisa.
+  await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
+  await expect(page.locator(".bo-inspector")).toBeVisible();
 }
 
 test("la bandeja muestra lo que llega y dice que no ordena por popularidad", async ({ page }) => {
@@ -101,4 +107,30 @@ test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
   // Que NO exista una puntuación se prueba donde de verdad importa: contra el
   // módulo y contra las columnas de la tabla, en pruebas/prioridad.test.ts.
   // Buscar la palabra aquí fallaba contra la propia frase que lo explica.
+});
+
+test("todo campo de la consola tiene etiqueta, no placeholder", async ({ page }) => {
+  // La pantalla ciudadana tiene esta prueba desde el primer día. La consola no
+  // la tenía, y se construyó entera con el nombre del campo metido en el
+  // placeholder: desaparece al escribir, no lo anuncia un lector de pantalla
+  // como nombre del campo, y en gris sobre blanco no pasa el contraste.
+  //
+  // Se recorre el panel de un aporte porque es donde están todos los campos
+  // juntos: ubicación, expediente y prioridad.
+  const marca = `etiquetas-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: la vía se inunda cada invierno`);
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto("/consola");
+  await abrirAporte(page, marca);
+
+  const sinEtiqueta = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("input, select, textarea")]
+      .filter((c) => (c as HTMLInputElement).type !== "hidden" && c.offsetParent !== null)
+      .filter((c) => !c.id || !document.querySelector(`label[for="${c.id}"]`))
+      .map((c) => c.getAttribute("name") ?? c.tagName.toLowerCase()),
+  );
+  expect(sinEtiqueta, "campos sin <label for>: su nombre vive en el placeholder").toEqual([]);
 });

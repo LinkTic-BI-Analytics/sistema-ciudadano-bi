@@ -100,25 +100,35 @@ test("el foco se ve en todo lo que se toca con el teclado", async ({ page }) => 
   expect(contorno!.estilo).not.toBe("none");
 });
 
-test("las tres partes opcionales se pueden dejar en blanco", async ({ page }) => {
-  // `N02` · captura mínima y gradual. Lo obligatorio es el relato; lo demás es
-  // para quien quiera precisar, y va plegado para no convertir un formulario de
-  // dos campos en uno de cinco.
+test("enviar no pide más que el relato", async ({ page }) => {
+  // `N02` · captura mínima y gradual. Lo obligatorio es el relato y nada más.
+  //
+  // Las tres partes de `N03` **se movieron detrás del envío**: ahora se
+  // preguntan en dos vueltas, con lo que la persona contó delante (ver
+  // `afinar.spec.ts`). Esta prueba vigila el lado que no cambió — que para
+  // dejar registrado un problema no haga falta nada más que contarlo.
   await page.goto("/participar");
-  await expect(page.locator("#problema")).toHaveCount(1);
+  const campos = page.locator("form input:not([type=hidden]), form textarea, form select");
+  expect(await campos.count(), "el formulario inicial volvió a crecer").toBeLessThanOrEqual(2);
+
   await page.fill("#relato", "no hay alumbrado en la calle de la escuela");
   await page.getByRole("button", { name: /enviar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 });
 
-test("si las llena, quedan guardadas con el aporte", async ({ page }) => {
+test("lo que afina después queda guardado con el aporte", async ({ page }) => {
   await page.goto("/participar");
   await page.fill("#relato", "el puente está agrietado");
-  await page.locator("details").first().click();
-  await page.fill("#problema", "el puente peatonal tiene una grieta que crece");
-  await page.fill("#resultado", "que lo revisen antes de que se caiga");
   await page.getByRole("button", { name: /enviar/i }).click();
   const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 15_000 });
+
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#resultado").fill("que lo revisen antes de que se caiga");
+  await v2.getByRole("button", { name: /listo/i }).click();
+  await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
+
+  // El código de antes de afinar sigue sirviendo: afinar no cambia el aporte.
   await page.goto("/mis-aportes");
   await page.fill("#codigo", codigo);
   await page.getByRole("button", { name: /consultar/i }).click();

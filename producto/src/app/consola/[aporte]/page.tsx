@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Campo, Opciones } from "../campos.tsx";
 import { clienteServidor } from "../../../datos/cliente.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { expedientesDe } from "../../../revision/expediente.ts";
@@ -6,6 +7,13 @@ import { prioridadVigente, historiaDePrioridad } from "../../../priorizacion/pri
 import { accionResolver, accionDevolver, accionCrearExpediente, accionPriorizar } from "../acciones.ts";
 
 export const dynamic = "force-dynamic";
+
+const FACTORES: [string, string, string[]][] = [
+  ["afectacion", "Afectación", ["alta", "media", "baja", "sin_establecer"]],
+  ["urgencia", "Urgencia reportada", ["alta", "media", "baja", "sin_declarar"]],
+  ["recurrencia", "Recurrencia", ["alta", "media", "baja", "unica"]],
+  ["competencia", "Competencia", ["clara", "en_disputa", "sin_establecer"]],
+];
 
 export default async function Ficha({ params }: { params: Promise<{ aporte: string }> }) {
   const { aporte: aporteId } = await params;
@@ -120,11 +128,11 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   ))}
 
                   {ubi?.some((u) => u.estado === "confirmada") && (
-                    <form action={accionDevolver} className="bo-field">
+                    <form action={accionDevolver}>
                       <input type="hidden" name="aporteId" value={aporteId} />
-                      <input name="motivo" className="bo-search-field" required
-                             placeholder="Por qué vuelve a por aclarar" />
-                      <input name="autor" className="bo-search-field" placeholder="Tu nombre" />
+                      <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
+                             ejemplo="la persona dijo otra cosa al llamarla" />
+                      <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
                       <button className="bo-button">Devolver a por aclarar</button>
                       <p className="bo-small">
                         El código se borra, no se queda de adorno: un código bajo «por aclarar»
@@ -134,20 +142,18 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   )}
 
                   {ubi?.some((u) => u.estado === "por_aclarar") && (
-                    <form action={accionResolver} className="bo-field">
+                    <form action={accionResolver}>
                       <input type="hidden" name="aporteId" value={aporteId} />
                       <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
-                      <label className="bo-label-tag" htmlFor="codigo">Municipio</label>
-                      <select id="codigo" name="codigo" className="bo-search-field" required>
+                      <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
                         <option value="">Escoge uno…</option>
                         {mun?.map((m) => (
                           <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
                         ))}
-                      </select>
-                      <label className="bo-label-tag" htmlFor="motivo-ubi">Por qué</label>
-                      <input id="motivo-ubi" name="motivo" className="bo-search-field" required
-                             placeholder="La persona lo confirmó / la referencia solo existe ahí…" />
-                      <input name="autor" className="bo-search-field" placeholder="Tu nombre" />
+                      </Opciones>
+                      <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
+                             ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
+                      <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
                       <button className="bo-button" data-variant="primary">Aceptar el municipio</button>
                       <p className="bo-small">
                         Una dirección residencial <strong>no es</strong> el lugar del problema sin
@@ -167,17 +173,15 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                 <p className="bo-small"><strong>Los cuatro estados se mueven por separado</strong> (CAL-01).</p>
 
                 {!exp ? (
-                  <form action={accionCrearExpediente} className="bo-field">
+                  <form action={accionCrearExpediente}>
                     <input type="hidden" name="aporteId" value={aporteId} />
                     <input type="hidden" name="procesoId" value={procesoId} />
                     <h3>Abrir expediente</h3>
-                    <input name="descripcion" className="bo-search-field" required
-                           placeholder="La afectación, en una frase" />
-                    <input name="cambioEsperado" className="bo-search-field"
-                           placeholder="Qué debería cambiar (opcional)" />
-                    <input name="motivo" className="bo-search-field" required
-                           placeholder="Por qué este aporte lo origina" />
-                    <input name="autor" className="bo-search-field" placeholder="Tu nombre" />
+                    <Campo id="exp-descripcion" name="descripcion" etiqueta="La afectación, en una frase"
+                           ejemplo="sin agua en la parte alta desde hace tres meses" />
+                    <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional />
+                    <Campo id="exp-motivo" name="motivo" etiqueta="Por qué este aporte lo origina" />
+                    <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
                     <button className="bo-button" data-variant="primary">Abrir</button>
                     <p className="bo-small">
                       <strong>La separación es el estado por defecto.</strong> Compartir tema o
@@ -210,22 +214,18 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <p className="bo-muted">Sin priorizar.</p>
                     )}
 
-                    <form action={accionPriorizar} className="bo-field">
+                    <form action={accionPriorizar}>
                       <input type="hidden" name="expedienteId" value={exp.id} />
-                      <input name="motivo" className="bo-search-field" required
-                             placeholder="Por qué examinar esto primero" />
-                      {[["afectacion", ["alta", "media", "baja", "sin_establecer"]],
-                        ["urgencia", ["alta", "media", "baja", "sin_declarar"]],
-                        ["recurrencia", ["alta", "media", "baja", "unica"]],
-                        ["competencia", ["clara", "en_disputa", "sin_establecer"]]].map(([n, ops]) => (
-                        <select key={n as string} name={n as string} className="bo-search-field" defaultValue="">
-                          <option value="">{n as string}: sin registrar</option>
-                          {(ops as string[]).map((o) => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                      <Campo id="pri-motivo" name="motivo" etiqueta="Por qué examinar esto primero"
+                             ejemplo="afecta a menores y es una sola fuente de agua" />
+                      {FACTORES.map(([n, etiqueta, ops]) => (
+                        <Opciones key={n} id={`pri-${n}`} name={n} etiqueta={etiqueta} opcional>
+                          <option value="">sin registrar</option>
+                          {ops.map((o) => <option key={o} value={o}>{o}</option>)}
+                        </Opciones>
                       ))}
-                      <input name="incertidumbre" className="bo-search-field"
-                             placeholder="Qué no sabemos (opcional)" />
-                      <input name="autor" className="bo-search-field" placeholder="Tu nombre" />
+                      <Campo id="pri-incertidumbre" name="incertidumbre" etiqueta="Qué no sabemos" opcional />
+                      <Campo id="pri-autor" name="autor" etiqueta="Tu nombre" opcional />
                       <button className="bo-button">Registrar prioridad</button>
                       <p className="bo-small">
                         <strong>No hay puntaje ni ranking.</strong> Los cinco factores van por
