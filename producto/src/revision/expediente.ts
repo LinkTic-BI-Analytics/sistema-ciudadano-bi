@@ -113,3 +113,50 @@ export async function expedientesDe(aporteId: string): Promise<string[]> {
   if (error) throw new Error(`no se pudieron leer los expedientes: ${error.message}`);
   return (data ?? []).map((v: any) => v.expediente_id);
 }
+
+/**
+ * Desvincula un aporte de un expediente.
+ *
+ * **Nada se borra.** La fila del vínculo se queda con su motivo original, y se le
+ * agrega quién lo deshizo y por qué. `I4`: *«conservar originales, diferencias,
+ * motivos y vínculos al desagrupar»*.
+ *
+ * Y hace la otra mitad, que es la que se olvida: **marca el expediente como
+ * reabierto**. `NEC-01` lo pide con esas palabras — *«reabre examen de prioridad
+ * y respuestas sin heredar aprobación»*. Si un aporte sale y la prioridad se
+ * queda como estaba, el sistema afirma algo que ya no sustenta.
+ *
+ * Lo que NO toca es el corte: ya es inmutable por regla de Postgres, y `R2` lo
+ * exige — *un corte nuevo no reescribe el anterior*.
+ */
+export async function desvincular(
+  v: { aporteId: string; expedienteId: string; autor: string; motivo: string },
+): Promise<void> {
+  if (!v.motivo?.trim()) {
+    throw new Error("desvincular exige motivo: I4 pide conservar el porqué, y un desagrupe sin razón no se puede explicar después");
+  }
+  const p = clienteServidor().schema("participacion");
+
+  const { data: vinculo } = await p.from("vinculo_aporte_expediente")
+    .select("id, proceso_id").eq("aporte_id", v.aporteId).eq("expediente_id", v.expedienteId)
+    .is("desvinculado_en", null).limit(1).single();
+  if (!vinculo) throw new Error("no hay un vínculo vigente entre ese aporte y ese expediente");
+
+  const { error } = await p.from("vinculo_aporte_expediente").update({
+    desvinculado_en: new Date().toISOString(),
+    desvinculado_motivo: v.motivo,
+    desvinculado_autor: v.autor,
+  }).eq("id", vinculo.id);
+  if (error) throw new Error(`no se pudo desvincular: ${error.message}`);
+
+  const { error: eReabrir } = await p.from("expediente").update({
+    reabierto_en: new Date().toISOString(),
+    reabierto_motivo: `desagrupado: ${v.motivo}`,
+  }).eq("id", v.expedienteId);
+  if (eReabrir) throw new Error(`no se pudo reabrir el expediente: ${eReabrir.message}`);
+
+  await p.from("auditoria").insert({
+    proceso_id: vinculo.proceso_id, actor: v.autor, accion: "desvincular",
+    entidad: "vinculo_aporte_expediente", entidad_id: v.expedienteId, motivo: v.motivo,
+  });
+}

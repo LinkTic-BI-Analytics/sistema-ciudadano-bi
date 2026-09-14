@@ -224,3 +224,90 @@ test("R1 · un expediente con DOS territorios es UNA necesidad", async () => {
   // Y cada uno lleva su propio estado: no es un expediente con territorio promedio.
   assert.ok(data!.every((t) => t.estado_atencion === "sin_atender"));
 });
+
+// ── T029 · desagrupar sin borrar, y reabrir sin heredar ─────────────────────
+//
+// `I4` es la invariante más cara de implementar mal. Lo que tiene que sobrevivir
+// a un desagrupe está escrito: *«conservar originales, diferencias, motivos y
+// vínculos»*, y *«reabre examen de prioridad y respuestas sin heredar
+// aprobación»*.
+//
+// Esa segunda mitad es la que se olvida.
+
+import { desvincular } from "../src/revision/expediente.ts";
+
+test("desvincular sin motivo se rechaza", async () => {
+  const a = await nuevoAporte("desv-sin-motivo");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  await assert.rejects(() => desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                                           autor: "revisora", motivo: "" }), /motivo/i);
+});
+
+test("el vínculo SIGUE en la base después de desvincular", async () => {
+  const a = await nuevoAporte("desv-conserva");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  await desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                      autor: "revisora", motivo: "era otra afectación" });
+  const { data } = await p.from("vinculo_aporte_expediente")
+    .select("motivo, desvinculado_motivo, desvinculado_autor")
+    .eq("aporte_id", a.aporteId).eq("expediente_id", e.expedienteId);
+  assert.equal(data?.length, 1, "la fila no se borra: se marca");
+  assert.equal(data?.[0]?.motivo, "origen", "el motivo original se conserva");
+  assert.equal(data?.[0]?.desvinculado_motivo, "era otra afectación");
+});
+
+test("el aporte deja de contar en el expediente", async () => {
+  const a = await nuevoAporte("desv-cuenta");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  assert.equal((await aportesDe(e.expedienteId)).length, 1);
+  await desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                      autor: "revisora", motivo: "no era" });
+  assert.equal((await aportesDe(e.expedienteId)).length, 0);
+});
+
+test("el expediente queda REABIERTO, con fecha y causa", async () => {
+  const a = await nuevoAporte("desv-reabre");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  await desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                      autor: "revisora", motivo: "el relato hablaba de otra cosa" });
+  const { data } = await p.from("expediente")
+    .select("reabierto_en, reabierto_motivo").eq("id", e.expedienteId).single();
+  assert.ok(data?.reabierto_en, "sin esto, la prioridad se hereda y el sistema afirma lo que ya no sustenta");
+  assert.match(data!.reabierto_motivo!, /desagrup/i);
+});
+
+test("un corte tomado ANTES sigue devolviendo lo mismo", async () => {
+  const a = await nuevoAporte("desv-corte");
+  await resolverUbicacion({ aporteId: a.aporteId, codigo: mun[0]!.codigo, version: mun[0]!.version,
+                            autor: "revisora", motivo: "aceptado" });
+  const e = await crearExpediente({ procesoId, descripcion: "agua del corte",
+                                    desdeAporte: a.aporteId, autor: "revisora", motivo: "origen" });
+  const { data: corteId } = await p.rpc("tomar_corte", { p_proceso: procesoId });
+  const { data: antes } = await p.from("corte").select("indicadores").eq("id", corteId).single();
+  const necesidadesAntes = (antes!.indicadores as any).necesidades;
+
+  await desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                      autor: "revisora", motivo: "revisión posterior" });
+
+  const { data: despues } = await p.from("corte").select("indicadores").eq("id", corteId).single();
+  assert.equal((despues!.indicadores as any).necesidades, necesidadesAntes,
+    "el corte es inmutable: R2 lo exige y la regla de Postgres lo garantiza");
+});
+
+test("volver a vincular crea un vínculo NUEVO, no revive el viejo", async () => {
+  const a = await nuevoAporte("desv-revincula");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  await desvincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                      autor: "revisora", motivo: "me equivoqué" });
+  await vincular({ aporteId: a.aporteId, expedienteId: e.expedienteId,
+                   autor: "revisora", motivo: "sí era, después de aclararlo con la persona" });
+  const { data } = await p.from("vinculo_aporte_expediente")
+    .select("motivo, desvinculado_en").eq("aporte_id", a.aporteId).eq("expediente_id", e.expedienteId);
+  assert.equal(data?.length, 2, "dos filas: la historia no se reescribe");
+  assert.equal(data!.filter((v) => v.desvinculado_en === null).length, 1);
+});

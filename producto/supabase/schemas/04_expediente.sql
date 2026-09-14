@@ -83,3 +83,21 @@ comment on table participacion.expediente is
   'La necesidad situada. Le pertenece al proceso, no a la convocatoria: sobrevive a su cierre.';
 comment on column participacion.expediente.fusionado_en_id is
   'Una fusión no destruye filas: apunta el viejo al nuevo y conserva los vínculos (I4).';
+
+-- Desagrupar **reabre** lo que dependía de la agrupación.
+--
+-- `I4` pide conservar originales, diferencias, motivos y vínculos. Y `NEC-01`
+-- añade la mitad que se olvida: *«reabre examen de prioridad y respuestas **sin
+-- heredar aprobación**»*.
+--
+-- Si un aporte sale de un expediente y la prioridad se queda como estaba, el
+-- sistema afirma algo que ya no sustenta. Estas columnas son la marca de que hay
+-- que volver a mirarlo — no borran la prioridad, la señalan como no vigente.
+alter table participacion.expediente
+  add column reabierto_en     timestamptz,
+  add column reabierto_motivo text,
+  add constraint reapertura_con_motivo
+    check ((reabierto_en is null) = (reabierto_motivo is null));
+
+comment on column participacion.expediente.reabierto_en is
+  'Marcado al desagrupar. La prioridad y la respuesta dejan de estar vigentes: no se heredan (NEC-01).';
