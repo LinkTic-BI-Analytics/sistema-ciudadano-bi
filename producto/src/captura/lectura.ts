@@ -15,15 +15,67 @@
 export type Lectura = {
   /** El problema, en una frase. Sale del relato, sin agregar nada. */
   problema: string;
-  /** Solo si la persona lo dijo. `null` es una respuesta: no lo dijo. */
-  resultadoEsperado: string | null;
-  /** Igual. `N03` la deja opcional y la visión insiste en que no sea requisito. */
-  solucionSugerida: string | null;
   /** Tal como lo dijo. `I2`: no se normaliza ni se le pone código. */
   lugar: string | null;
+  /** A quién afecta. `PRI-01` lo usa como factor, y hoy el revisor lo infiere. */
+  afectados: string | null;
+  /** **Texto, nunca fecha.** «Hace tres meses» no es una fecha (ADR 0012). */
+  desdeCuando: string | null;
+  /** Qué debería cambiar. `N03`. */
+  resultadoEsperado: string | null;
+  /** `N03` la deja opcional y la visión insiste en que no sea requisito. */
+  solucionSugerida: string | null;
   /** De dónde salió esta lectura. La pantalla no lo muestra; el registro sí. */
   fuente: "segmentacion" | "ia";
 };
+
+/**
+ * Las partes que se le pueden preguntar a la persona si no las dijo.
+ *
+ * El orden **es el orden en que se preguntan**, y va de lo que más le sirve a
+ * la revisión a lo que menos. Si la persona se cansa y se va a mitad de camino,
+ * lo que quedó sin preguntar es lo que menos falta hace.
+ */
+export const PREGUNTABLES = [
+  "lugar", "afectados", "desdeCuando", "resultadoEsperado", "solucionSugerida",
+] as const;
+
+export type Preguntable = (typeof PREGUNTABLES)[number];
+
+export const COMO_SE_PREGUNTA: Record<Preguntable, { etiqueta: string; ayuda: string }> = {
+  lugar: {
+    etiqueta: "¿Dónde ocurre?",
+    ayuda: "Como tú lo dirías: un barrio, una vereda, una referencia. Si no lo puedes precisar, déjalo en blanco — no lo vamos a suponer.",
+  },
+  afectados: {
+    etiqueta: "¿A quiénes les pasa?",
+    ayuda: "Cuánta gente, o quiénes. Si no sabes cuántos, dilo con tus palabras.",
+  },
+  desdeCuando: {
+    etiqueta: "¿Desde cuándo pasa?",
+    ayuda: "Como lo recuerdes. «Desde el invierno pasado» sirve igual que una fecha.",
+  },
+  resultadoEsperado: {
+    etiqueta: "¿Qué debería cambiar?",
+    ayuda: "Cómo se vería si esto estuviera resuelto.",
+  },
+  solucionSugerida: {
+    etiqueta: "¿Se te ocurre cómo?",
+    ayuda: "No hace falta proponer una solución para que el problema se escuche. Si no se te ocurre ninguna, déjalo en blanco.",
+  },
+};
+
+/**
+ * Lo que la persona no dijo, en el orden en que se le va a preguntar.
+ *
+ * **Es la mitad del valor de leer con IA.** Preguntar por todo convierte la
+ * captura en un formulario de seis campos; preguntar solo por lo que falta hace
+ * que quien ya lo contó todo no vea casi nada — y quien contó poco vea justo lo
+ * que hace falta para que su caso se pueda revisar.
+ */
+export function loQueFalta(l: Lectura): Preguntable[] {
+  return PREGUNTABLES.filter((k) => !l[k]);
+}
 
 /** Hasta dónde llega «una frase». Más largo que esto ya no se lee de un vistazo. */
 export const LARGO = 180;
@@ -82,12 +134,15 @@ export function leer(relato: string, lugar?: string | null): Lectura {
 
   return {
     problema: recortar(primera),
-    // Sin IA no se separan las otras dos partes: sacarlas con reglas de texto
-    // sería adivinar cuál frase era el deseo y cuál la propuesta, y equivocarse
-    // ahí le pone a la persona una opinión en la boca.
+    lugar: lugar?.trim() || null,
+    // Sin IA no se separan las otras partes: sacarlas con reglas de texto sería
+    // adivinar cuál frase era el deseo y cuál la propuesta, y equivocarse ahí le
+    // pone a la persona una opinión en la boca. `null` dice la verdad —no lo
+    // sabemos— y el resultado es que se le pregunta por todas.
+    afectados: null,
+    desdeCuando: null,
     resultadoEsperado: null,
     solucionSugerida: null,
-    lugar: lugar?.trim() || null,
     fuente: "segmentacion",
   };
 }

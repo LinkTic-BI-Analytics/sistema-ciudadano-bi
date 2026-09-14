@@ -9,22 +9,24 @@ acordado · 3 = se simula con contrato inventado por nosotros.
 
 ---
 
-## Mistral — el corte de la captura
+## OpenRouter (o Mistral) — el corte de la captura
 
 | | |
 |---|---|
 | **Código** | `INT-01` |
-| **Qué hace por nosotros** | Separa un relato libre en las tres partes de `N03` (problema, lo que se espera, la solución sugerida) y señala el fragmento donde la persona dice dónde ocurre |
+| **Qué hace por nosotros** | Separa un relato libre en las partes que la revisión necesita —problema, dónde, a quiénes, desde cuándo, qué debería cambiar, solución sugerida— y **dice cuáles no encontró**, para preguntar solo por esas (ADR 0012) |
 | **Nivel** | 1 · se usa de verdad, y es **opcional** |
 | **Dónde vive** | `producto/src/captura/lectura-ia.ts`, nivel de acción de servidor (`AGENTS.md` §8) |
-| **Modelo** | `mistral-small-latest`, temperatura 0, respuesta en JSON |
-| **Credencial** | `MISTRAL_API_KEY` en `.env.local`, **sin** `NEXT_PUBLIC_` |
+| **Proveedor** | OpenRouter si hay `OPENROUTER_API_KEY`; si no, Mistral directo. Los dos hablan la API de *chat completions*, así que es un solo camino de código |
+| **Modelo** | `mistralai/mistral-small-3.2-24b-instruct` por defecto, configurable. Temperatura 0, respuesta en JSON |
+| **Credencial** | `OPENROUTER_API_KEY` o `MISTRAL_API_KEY` en `.env.local`, **sin** `NEXT_PUBLIC_` |
 
 ### ¿Qué pasa si no está?
 
-**Nada que la persona note.** Se usa la segmentación determinista de
-`lectura.ts`, que es el camino por defecto y no un apaño. `IA-01` lo exige:
-*«no impide captura por ausencia de IA»*.
+**La captura sigue completa; la experiencia empeora.** Se usa la segmentación
+determinista de `lectura.ts` y se le pregunta a la persona por las cinco partes
+en vez de solo por las que le falten. `IA-01` lo exige: *«no impide captura por
+ausencia de IA»*.
 
 Todos los caminos de error terminan en el mismo sitio y ninguno lanza: sin
 llave, sin red, respuesta tardía (más de 6 s), `401`, JSON roto, o respuesta que
@@ -53,9 +55,14 @@ sobre eso creyéndolo suyo.
 
 ### Lo que falta decidir antes de abrir a ciudadanía
 
-**El plan contratado.** El gratuito «Experiment» de Mistral **entrena con lo que
-se le manda**, y lo que se le manda aquí son relatos ciudadanos que pueden traer
-salud, amenazas, nombres y direcciones. Con ese plan esto no se enciende.
+**La política de datos de la cuenta.** El plan gratuito «Experiment» de Mistral
+**entrena con lo que se le manda**, y OpenRouter **enruta a proveedores distintos
+según el modelo**, cada uno con su propia política. Lo que se manda aquí son
+relatos ciudadanos que pueden traer salud, amenazas, nombres y direcciones. Sin
+esto resuelto y fijado, esto no se enciende.
+
+Sube de importancia con el ADR 0012: antes era una llamada opcional, ahora es
+**una llamada por aporte**.
 
 **El aviso a la persona.** Hoy la pantalla no dice que un tercero procesa su
 relato. Mientras el plan no esté resuelto no hay qué avisar; cuando lo esté, el

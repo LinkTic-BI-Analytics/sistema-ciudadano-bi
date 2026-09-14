@@ -34,34 +34,12 @@ export function Formulario() {
     if (resultado?.ok && !resultado.yaExistia) olvidarClaveEnvio();
   }, [resultado]);
 
-  if (resultado?.ok) {
-    return (
-      <section className="pc-success" aria-live="polite">
-        <h2>Recibimos lo que nos contaste</h2>
-        <p>
-          Guarda este código. Con él puedes volver a ver tu aporte y qué pasó con él,
-          <strong> sin dar correo ni crear una cuenta</strong>.
-        </p>
-        <p className="pc-status" data-prueba="codigo" style={{ fontSize: "1.5rem", letterSpacing: "0.1em" }}>
-          {resultado.codigo}
-        </p>
-        <p className="pc-help">
-          Anótalo o tómale una foto. No te lo podemos volver a mostrar: en nuestro sistema solo
-          queda una huella del código, no el código.
-        </p>
-        <p className="pc-help">
-          Esto no significa que el problema esté resuelto ni que haya un compromiso de obra.
-          Significa que quedó registrado y que alguien lo va a revisar.
-        </p>
-        <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
-
-        {/* El afinado va **debajo** del comprobante, nunca antes. Si el código
-            saliera solo al terminar las dos vueltas, quien abandone se quedaría
-            sin poder consultar lo que ya mandó. */}
-        <Afinado codigo={resultado.codigo} lectura={resultado.lectura} />
-      </section>
-    );
-  }
+  // **No se muestra un «enviado» aquí.** El aporte se guardó —eso no se
+  // negocia, `N02` y `DAT-01`— pero decirle a la persona que terminó en el
+  // momento en que más dispuesta está a contar es perder la única oportunidad
+  // de preguntarle lo que falta (ADR 0012). El comprobante va discreto durante
+  // el afinado y grande al final.
+  if (resultado?.ok) return <Afinado codigo={resultado.codigo} />;
 
   return (
     <form action={accion} noValidate>
@@ -112,31 +90,21 @@ export function Formulario() {
           aria-describedby="relato-ayuda"
         />
         <p className="pc-help" id="relato-ayuda">
-          Cuéntalo con tus palabras. No necesitas saber qué entidad responde ni proponer una
-          solución.
+          Cuéntalo con tus palabras y sin apuro: qué pasa, dónde, a quiénes les pasa y desde
+          cuándo. No necesitas saber qué entidad responde ni proponer una solución.
         </p>
       </div>
 
-      <div className="pc-field">
-        <label className="pc-label" htmlFor="lugar">¿Dónde ocurre?</label>
-        <input id="lugar" name="lugar" className="pc-input" type="text"
-               value={undefined} defaultValue="" aria-describedby="lugar-ayuda" />
-        <p className="pc-help" id="lugar-ayuda">
-          Como tú lo dirías: un barrio, una vereda, una referencia. Si no lo puedes precisar,
-          déjalo en blanco — <strong>no lo vamos a suponer</strong>.
-        </p>
-      </div>
+      {/* Aquí solo se cuenta. El lugar, a quiénes afecta, desde cuándo, qué
+          debería cambiar y la solución sugerida **se preguntan después**, y
+          solo las que la persona no haya dicho ya (`afinado.tsx`).
 
-      {/* Las tres partes de `N03` ya no se piden aquí. Se preguntan **después
-          de recibir**, en dos vueltas cortas (`afinado.tsx`), con lo que la
-          persona contó delante para que solo tenga que confirmarlo.
-
-          Pedirlas aquí convertía un formulario de dos campos en uno de cinco
+          Pedirlas aquí convertía una caja en un formulario de seis campos
           antes de que hubiera nada guardado, y quien lo cerraba se iba sin
-          dejar nada. Ahora lo primero que pasa es que su aporte queda. */}
+          dejar nada. Ahora lo primero que pasa es que su relato queda. */}
 
       <button type="submit" className="pc-action" disabled={enviando}>
-        {enviando ? "Enviando…" : "Enviar lo que conté"}
+        {enviando ? "Guardando…" : "Continuar"}
       </button>
     </form>
   );

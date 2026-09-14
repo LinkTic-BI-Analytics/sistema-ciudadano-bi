@@ -3,7 +3,8 @@
 import { recibirAporte } from "../../captura/recibir.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
-import { leer, type Lectura } from "../../captura/lectura.ts";
+import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
+import { precisarAporte } from "../../captura/precisar.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
 import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
@@ -127,41 +128,51 @@ export async function confirmarLectura(_previo: PasoAfinado | null, datos: FormD
 }
 
 /**
- * Segunda vuelta: lo que debería cambiar y, si se le ocurre, cómo.
+ * Lo que la persona precisó en las vueltas de afinado.
  *
- * **Las dos son opcionales y se puede saltar entera.** La visión lo dice sin
- * rodeos: *«una solución sugerida es bienvenida, pero no debería ser requisito
- * para que un problema sea escuchado»*.
+ * **Se puede llamar varias veces y saltar entera.** Cada vuelta manda lo suyo;
+ * lo que llegue vacío no borra nada, porque vacío significa *no lo dijo*, no
+ * *bórralo*.
  *
- * Queda como una versión más de la síntesis, con clase `propuesta` y firmada por
- * la persona: es ella proponiendo qué dice su propia síntesis.
+ * Las cinco partes no van al mismo sitio, y no es un detalle de implementación:
+ * lugar, a quiénes y desde cuándo son **hechos declarados** y viven en el
+ * aporte; lo que debería cambiar y la solución sugerida son **la síntesis** de
+ * `N03`, que lleva versión y autor porque la persona puede cambiar de opinión.
  */
-export async function completarSintesis(_previo: PasoAfinado | null, datos: FormData): Promise<PasoAfinado> {
+export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: FormData): Promise<PasoAfinado> {
   const codigo = String(datos.get("codigo") ?? "");
-  const problema = String(datos.get("problema") ?? "").trim();
-  const resultado = String(datos.get("resultado") ?? "").trim();
-  const solucion = String(datos.get("solucion") ?? "").trim();
+  const dato = (k: Preguntable) => String(datos.get(k) ?? "").trim() || null;
 
-  // Sin nada que agregar no se escribe una versión igual a la anterior. Una
-  // versión que no cambia nada ensucia la historia que las versiones existen
-  // para contar.
-  if (!resultado && !solucion) return { ok: true };
+  if (PREGUNTABLES.every((k) => !dato(k))) return { ok: true };
 
   try {
     const aporteId = await aporteDelCodigo(codigo);
     if (!aporteId) return { ok: false, error: "No encontramos ese aporte. Tu código sigue sirviendo en «Consultar mi aporte»." };
-    await proponerSintesis({
-      aporteId, autor: "ciudadano",
-      problema, resultadoEsperado: resultado, solucionSugerida: solucion,
+
+    await precisarAporte({
+      aporteId,
+      lugarDeclarado: dato("lugar"),
+      afectados: dato("afectados"),
+      desdeCuando: dato("desdeCuando"),
     });
-    await confirmarSintesis({ aporteId, autor: "ciudadano" });
+
+    const resultado = dato("resultadoEsperado");
+    const solucion = dato("solucionSugerida");
+    if (resultado || solucion) {
+      await proponerSintesis({
+        aporteId, autor: "ciudadano",
+        problema: String(datos.get("problema") ?? "").trim(),
+        resultadoEsperado: resultado ?? undefined,
+        solucionSugerida: solucion ?? undefined,
+      });
+      await confirmarSintesis({ aporteId, autor: "ciudadano" });
+    }
     return { ok: true };
   } catch (e) {
-    console.error("completarSintesis", e);
+    console.error("guardarPrecisiones", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado; puedes intentarlo luego." };
   }
 }
-
 
 /**
  * La lectura que se le va a mostrar, ya con IA si la hay.

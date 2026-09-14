@@ -133,6 +133,16 @@ create table participacion.aporte (
 
   -- Colectivo: el aporte es del colectivo, no del vocero (`V19`). El colectivo
   -- todavía no existe como entidad (`Q23`), así que por ahora solo se marca.
+  -- Lo que la persona precisó después de contar, en las vueltas de afinado
+  -- (ADR 0012). Las dos son opcionales: vacío significa **no lo dijo**, y eso
+  -- es una respuesta, no un hueco por llenar.
+  --
+  -- `desde_cuando` es TEXTO y nunca una fecha. «Hace tres meses» no es una
+  -- fecha, y convertirlo en una sería exactamente la inferencia que `I2`
+  -- prohíbe: nadie sabe si son noventa días o el invierno pasado.
+  afectados         text,
+  desde_cuando      text,
+
   es_colectivo      boolean not null default false,
 
   retirado_en       timestamptz,

@@ -10,7 +10,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { leer, anclado } from "../src/captura/lectura.ts";
+import { leer, anclado, loQueFalta, PREGUNTABLES } from "../src/captura/lectura.ts";
 
 // La comprobación es la misma función que usa el producto en caliente para
 // decidir si acepta lo que devolvió la IA (`anclado`). Probar con una copia
@@ -44,14 +44,35 @@ test("un relato largo se recorta, y se ve que está recortado", () => {
   assert.ok(problema.endsWith("…"), "un recorte sin marca se lee como el texto entero");
 });
 
-test("sin IA no se separan las otras dos partes de N03", () => {
+test("sin IA no se separa nada más, y por eso se pregunta por todo", () => {
   // Sacarlas con reglas de texto sería adivinar cuál frase era el deseo y cuál
   // la propuesta. Equivocarse ahí le pone a la persona una opinión en la boca,
-  // y `null` dice la verdad: no lo sabemos.
+  // y `null` dice la verdad: no lo sabemos. La consecuencia es que se le
+  // pregunta por las cinco, que es peor experiencia y la misma captura.
   const l = leer("el agua llega turbia y deberían arreglar la bomba");
-  assert.equal(l.resultadoEsperado, null);
-  assert.equal(l.solucionSugerida, null);
   assert.equal(l.fuente, "segmentacion");
+  assert.deepEqual(loQueFalta(l), [...PREGUNTABLES]);
+});
+
+test("solo se pregunta por lo que la persona NO dijo", () => {
+  // Es la mitad del valor de leer con IA. Preguntarle por lo que ya contó la
+  // castiga por haberlo contado bien, y es exactamente lo que hace que alguien
+  // abandone a mitad de camino.
+  const completa = {
+    problema: "el agua llega turbia", lugar: "la parte alta",
+    afectados: "unas veinte familias", desdeCuando: "hace tres meses",
+    resultadoEsperado: "que llegue limpia", solucionSugerida: null,
+    fuente: "ia" as const,
+  };
+  assert.deepEqual(loQueFalta(completa), ["solucionSugerida"]);
+  assert.deepEqual(loQueFalta({ ...completa, lugar: null }), ["lugar", "solucionSugerida"]);
+});
+
+test("el orden de las preguntas va de lo más útil a lo menos", () => {
+  // Si la persona se cansa y se va a mitad, lo que quedó sin preguntar tiene
+  // que ser lo que menos falta hace.
+  assert.equal(PREGUNTABLES[0], "lugar");
+  assert.equal(PREGUNTABLES[PREGUNTABLES.length - 1], "solucionSugerida");
 });
 
 test("el guardián rechaza una palabra que la persona no dijo", () => {

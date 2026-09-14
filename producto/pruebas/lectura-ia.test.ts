@@ -15,11 +15,22 @@ import { leer } from "../src/captura/lectura.ts";
 
 const RELATO = "el agua llega turbia desde hace tres meses en la parte alta";
 
-async function sinLlave<T>(f: () => Promise<T>): Promise<T> {
-  const previa = process.env.MISTRAL_API_KEY;
-  delete process.env.MISTRAL_API_KEY;
-  try { return await f(); } finally { if (previa !== undefined) process.env.MISTRAL_API_KEY = previa; }
+const LLAVES = ["OPENROUTER_API_KEY", "MISTRAL_API_KEY"] as const;
+
+async function conEntorno<T>(puestas: Record<string, string>, f: () => Promise<T>): Promise<T> {
+  const antes = Object.fromEntries(LLAVES.map((k) => [k, process.env[k]]));
+  for (const k of LLAVES) delete process.env[k];
+  Object.assign(process.env, puestas);
+  try { return await f(); } finally {
+    for (const k of LLAVES) {
+      if (antes[k] === undefined) delete process.env[k];
+      else process.env[k] = antes[k]!;
+    }
+    for (const k of Object.keys(puestas)) if (!LLAVES.includes(k as never)) delete process.env[k];
+  }
 }
+
+const sinLlave = <T,>(f: () => Promise<T>) => conEntorno({}, f);
 
 test("sin llave, la captura funciona exactamente igual", async () => {
   const l = await sinLlave(() => leerConIA(RELATO, "la parte alta"));
@@ -30,16 +41,24 @@ test("sin llave, la captura funciona exactamente igual", async () => {
 test("con una llave que no sirve, tampoco se rompe", async () => {
   // El proveedor va a responder 401. Nada de eso puede llegar a la persona:
   // su aporte ya está guardado y lo único que cambia es el corte que ve.
-  const previa = process.env.MISTRAL_API_KEY;
-  process.env.MISTRAL_API_KEY = "no-sirve-esta-llave";
+  const l = await conEntorno({ OPENROUTER_API_KEY: "no-sirve-esta-llave" },
+                             () => leerConIA(RELATO));
+  assert.equal(l.fuente, "segmentacion", "un 401 tiene que caer en la segmentación");
+  assert.ok(l.problema.includes("turbia"));
+});
+
+test("manda OpenRouter cuando están las dos llaves", async () => {
+  // Es el proveedor que este proyecto ya usó para analizar sus documentos.
+  let pedido = "";
+  const fetchReal = globalThis.fetch;
+  globalThis.fetch = (async (u: string | URL | Request) => {
+    pedido = String(u);
+    return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+  }) as typeof fetch;
   try {
-    const l = await leerConIA(RELATO);
-    assert.equal(l.fuente, "segmentacion", "un 401 tiene que caer en la segmentación");
-    assert.ok(l.problema.includes("turbia"));
-  } finally {
-    if (previa === undefined) delete process.env.MISTRAL_API_KEY;
-    else process.env.MISTRAL_API_KEY = previa;
-  }
+    await conEntorno({ OPENROUTER_API_KEY: "a", MISTRAL_API_KEY: "b" }, () => leerConIA(RELATO));
+  } finally { globalThis.fetch = fetchReal; }
+  assert.match(pedido, /openrouter\.ai/);
 });
 
 test("el lugar que escribió la persona manda sobre el que encuentre la IA", async () => {
@@ -53,8 +72,8 @@ test("el lugar que escribió la persona manda sobre el que encuentre la IA", asy
 /** Pone a Mistral a responder lo que le digamos, sin salir a la red. */
 async function conRespuesta<T>(json: unknown, f: () => Promise<T>): Promise<T> {
   const fetchReal = globalThis.fetch;
-  const llaveReal = process.env.MISTRAL_API_KEY;
-  process.env.MISTRAL_API_KEY = "llave-de-prueba";
+  const llaveReal = process.env.OPENROUTER_API_KEY;
+  process.env.OPENROUTER_API_KEY = "llave-de-prueba";
   globalThis.fetch = (async () =>
     new Response(
       JSON.stringify({ choices: [{ message: { content: JSON.stringify(json) } }] }),
@@ -62,8 +81,8 @@ async function conRespuesta<T>(json: unknown, f: () => Promise<T>): Promise<T> {
     )) as typeof fetch;
   try { return await f(); } finally {
     globalThis.fetch = fetchReal;
-    if (llaveReal === undefined) delete process.env.MISTRAL_API_KEY;
-    else process.env.MISTRAL_API_KEY = llaveReal;
+    if (llaveReal === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = llaveReal;
   }
 }
 
@@ -119,7 +138,7 @@ test("«null» como texto no se convierte en la palabra null en pantalla", async
 
 test("una respuesta que no es JSON no se le muestra a nadie", async () => {
   const fetchReal = globalThis.fetch;
-  process.env.MISTRAL_API_KEY = "llave-de-prueba";
+  process.env.OPENROUTER_API_KEY = "llave-de-prueba";
   globalThis.fetch = (async () =>
     new Response(JSON.stringify({ choices: [{ message: { content: "lo siento, no puedo" } }] }),
                  { status: 200 })) as typeof fetch;
@@ -128,6 +147,6 @@ test("una respuesta que no es JSON no se le muestra a nadie", async () => {
     assert.equal(l.fuente, "segmentacion");
   } finally {
     globalThis.fetch = fetchReal;
-    delete process.env.MISTRAL_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
   }
 });

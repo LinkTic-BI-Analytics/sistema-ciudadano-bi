@@ -19,7 +19,7 @@ test("el campo de relato tiene etiqueta visible, no solo placeholder", async ({ 
 
 test("enviar vacío muestra el resumen de errores y le pone el foco", async ({ page }) => {
   await page.goto("/participar");
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   const resumen = page.locator(".pc-error-summary");
   await expect(resumen).toBeVisible();
   await expect(resumen).toBeFocused();
@@ -30,10 +30,11 @@ test("enviar vacío muestra el resumen de errores y le pone el foco", async ({ p
 test("enviar un relato devuelve un comprobante legible", async ({ page }) => {
   await page.goto("/participar");
   await page.fill("#relato", "el agua llega turbia desde hace tres meses en la parte alta");
-  await page.fill("#lugar", "la vereda de arriba, subiendo por la escuela");
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
+  // El código sale mientras se afina, no al final: quien abandone a mitad se va
+  // con lo suyo guardado y con cómo consultarlo.
   const codigo = page.locator("[data-prueba='codigo']");
-  await expect(codigo).toBeVisible({ timeout: 15_000 });
+  await expect(codigo).toBeVisible({ timeout: 20_000 });
   await expect(codigo).toHaveText(/^[A-Z0-9]{12}$/);
 });
 
@@ -69,7 +70,7 @@ test("con el código, mis-aportes muestra ese aporte", async ({ page }) => {
   await page.goto("/participar");
   const relato = "el puente peatonal está agrietado y la gente sigue pasando";
   await page.fill("#relato", relato);
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 15_000 });
 
   await page.goto("/mis-aportes");
@@ -112,20 +113,24 @@ test("enviar no pide más que el relato", async ({ page }) => {
   expect(await campos.count(), "el formulario inicial volvió a crecer").toBeLessThanOrEqual(2);
 
   await page.fill("#relato", "no hay alumbrado en la calle de la escuela");
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("lo que afina después queda guardado con el aporte", async ({ page }) => {
   await page.goto("/participar");
   await page.fill("#relato", "el puente está agrietado");
-  await page.getByRole("button", { name: /enviar/i }).click();
-  const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 15_000 });
+  await page.getByRole("button", { name: /continuar/i }).click();
+  const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
 
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+  // Este relato no dice dónde, ni a quiénes, ni desde cuándo: esas tres van en
+  // la primera vuelta y lo que debería cambiar en la segunda.
   const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#resultado").fill("que lo revisen antes de que se caiga");
-  await v2.getByRole("button", { name: /listo/i }).click();
+  await v2.getByRole("button", { name: /continuar/i }).first().click();
+  const v3 = page.locator("[data-prueba='vuelta-3']");
+  await v3.locator("#resultadoEsperado").fill("que lo revisen antes de que se caiga");
+  await v3.getByRole("button", { name: /listo/i }).first().click();
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
   // El código de antes de afinar sigue sirviendo: afinar no cambia el aporte.
@@ -157,6 +162,6 @@ test("la orientación no impide enviar", async ({ page }) => {
   await page.goto("/participar");
   await page.fill("#relato", "el muro de contención se va a caer sobre las casas");
   await expect(page.locator("[data-prueba='orientacion']")).toBeVisible();
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 });

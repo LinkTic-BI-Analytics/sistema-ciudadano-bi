@@ -21,7 +21,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const p = clienteServidor().schema("participacion");
 
   const { data: a } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision")
+    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision")
     .eq("id", aporteId).single();
   if (!a) return <div className="pc-backoffice"><p className="bo-empty">No existe ese aporte.</p></div>;
 
@@ -90,11 +90,23 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     <strong>El relato original no se edita.</strong> La síntesis nunca lo
                     sustituye (N03).
                   </p>
-                  {a.lugar_declarado && (
-                    <p className="bo-observation">
-                      Dónde dijo que ocurre, con sus palabras: <em>«{a.lugar_declarado}»</em>
-                    </p>
-                  )}
+                  {/* Lo que la persona precisó al contar, **con sus palabras**
+                      (ADR 0012). Lo que no dijo no aparece: un campo vacío es
+                      información —nadie se lo preguntó o no lo sabía— y
+                      rellenarlo con «sin dato» lo disfrazaría de omisión suya.
+
+                      `desde_cuando` se muestra tal cual y no se convierte en
+                      fecha: «hace tres meses» no es una fecha, y volverlo una
+                      sería la inferencia que `I2` prohíbe. */}
+                  {([["Dónde dijo que ocurre", a.lugar_declarado],
+                     ["A quiénes les pasa", a.afectados],
+                     ["Desde cuándo", a.desde_cuando]] as const)
+                    .filter(([, v]) => v)
+                    .map(([etiqueta, v]) => (
+                      <p className="bo-observation" key={etiqueta}>
+                        {etiqueta}, con sus palabras: <em>«{v}»</em>
+                      </p>
+                    ))}
                 </section>
 
                 {(sint?.length ?? 0) > 0 && (

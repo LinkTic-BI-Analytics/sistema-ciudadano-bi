@@ -26,10 +26,13 @@ async function abrirAporte(page: Page, marca: string) {
 
 test("la bandeja muestra lo que llega y dice que no ordena por popularidad", async ({ page }) => {
   await page.goto("/participar");
+  // El lugar ya no se pide aquí: se pregunta después y **solo si la persona no
+  // lo contó** (ADR 0012). Este relato no lo dice, así que el aporte llega a la
+  // bandeja sin ubicación, que es justo lo que esta pantalla existe para
+  // resolver.
   await page.fill("#relato", "no hay agua en la vereda desde hace dos semanas");
-  await page.fill("#lugar", "la vereda de arriba");
-  await page.getByRole("button", { name: /enviar/i }).click();
-  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 20_000 });
 
   await page.goto("/consola");
   await expect(page.locator("h1")).toContainText(/por aclarar/i);
@@ -65,7 +68,7 @@ test("abrir un aporte muestra el relato original y dice que no se edita", async 
   const relato = `${marca}: el puente peatonal está deteriorado`;
   await page.goto("/participar");
   await page.fill("#relato", relato);
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 
   await page.goto("/consola");
@@ -80,7 +83,7 @@ test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
   const marca = `escuela-${Date.now()}`;
   await page.goto("/participar");
   await page.fill("#relato", `${marca}: la escuela se quedó sin agua y los niños no van`);
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 
   await page.goto("/consola");
@@ -120,7 +123,7 @@ test("todo campo de la consola tiene etiqueta, no placeholder", async ({ page })
   const marca = `etiquetas-${Date.now()}`;
   await page.goto("/participar");
   await page.fill("#relato", `${marca}: la vía se inunda cada invierno`);
-  await page.getByRole("button", { name: /enviar/i }).click();
+  await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 
   await page.goto("/consola");
