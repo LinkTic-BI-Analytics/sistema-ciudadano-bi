@@ -151,6 +151,17 @@ if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participaci
     && ok "$(tail -1 /tmp/inv.$$)" \
     || { mal "hay invariantes que la base no hace imposibles"; sed 's/^/          /' /tmp/inv.$$; }
   rm -f /tmp/inv.$$
+
+  # CHEQUEO: R1 y R2 contra los números que la especificación calculó a mano
+  # Se ve fallar: quítale el `distinct` al numerador de participacion.indicadores
+  #
+  # Roto da 80% donde la especificación dice 70% — un número perfectamente
+  # plausible. Por eso el caso se compara contra lo que alguien sacó con la
+  # cabeza y no contra lo que devolvió la implementación (AGENTS.md §7).
+  python3 producto/pruebas/conteo.py >/tmp/cnt.$$ 2>&1 \
+    && ok "$(tail -1 /tmp/cnt.$$)" \
+    || { mal "las cuentas no coinciden con la especificación"; sed 's/^/          /' /tmp/cnt.$$; }
+  rm -f /tmp/cnt.$$
 else
   saltó "la base local no está levantada (npm run db:arrancar)"
 fi
