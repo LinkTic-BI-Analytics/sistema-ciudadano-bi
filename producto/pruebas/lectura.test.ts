@@ -10,19 +10,11 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { leer } from "../src/captura/lectura.ts";
+import { leer, anclado } from "../src/captura/lectura.ts";
 
-// Cada palabra de la lectura sale del relato. La comprobación es literal a
-// propósito: es más fácil de leer que cualquier regla, y es la regla entera.
-function todoSaleDelRelato(relato: string, problema: string) {
-  const original = relato.toLowerCase();
-  return problema
-    .replace(/…$/, "")
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((palabra) => original.includes(palabra));
-}
+// La comprobación es la misma función que usa el producto en caliente para
+// decidir si acepta lo que devolvió la IA (`anclado`). Probar con una copia
+// parecida dejaría que las dos se separaran sin que nadie lo notara.
 
 test("no agrega ni una palabra que la persona no haya dicho", () => {
   const casos = [
@@ -33,7 +25,7 @@ test("no agrega ni una palabra que la persona no haya dicho", () => {
   for (const relato of casos) {
     const { problema } = leer(relato);
     assert.ok(problema.length > 0, "una lectura vacía no se le muestra a nadie");
-    assert.ok(todoSaleDelRelato(relato, problema), `inventó palabras en: ${problema}`);
+    assert.ok(anclado(relato, problema), `inventó palabras en: ${problema}`);
   }
 });
 
@@ -50,6 +42,26 @@ test("un relato largo se recorta, y se ve que está recortado", () => {
   assert.ok(problema.length <= 180);
   // Sin la marca, la persona confirma una frase cortada creyéndola completa.
   assert.ok(problema.endsWith("…"), "un recorte sin marca se lee como el texto entero");
+});
+
+test("sin IA no se separan las otras dos partes de N03", () => {
+  // Sacarlas con reglas de texto sería adivinar cuál frase era el deseo y cuál
+  // la propuesta. Equivocarse ahí le pone a la persona una opinión en la boca,
+  // y `null` dice la verdad: no lo sabemos.
+  const l = leer("el agua llega turbia y deberían arreglar la bomba");
+  assert.equal(l.resultadoEsperado, null);
+  assert.equal(l.solucionSugerida, null);
+  assert.equal(l.fuente, "segmentacion");
+});
+
+test("el guardián rechaza una palabra que la persona no dijo", () => {
+  const relato = "el agua llega turbia desde hace tres meses";
+  assert.ok(anclado(relato, "agua turbia"), "reordenar y quitar conectores es recortar");
+  assert.ok(anclado(relato, "el AGUA llega Turbia"), "las tildes y mayúsculas no cambian lo dicho");
+  assert.ok(!anclado(relato, "el acueducto está contaminado"), "eso ya es un diagnóstico");
+  assert.ok(!anclado(relato, "el agua llega turbia por la mina"), "una sola palabra basta");
+  // Una parte vacía no es una infracción: es que la persona no lo dijo.
+  assert.ok(anclado(relato, "agua", null, undefined));
 });
 
 test("el lugar se devuelve tal como lo dijo, o no se devuelve", () => {

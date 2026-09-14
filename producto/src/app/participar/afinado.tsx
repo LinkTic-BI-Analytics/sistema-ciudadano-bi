@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { confirmarLectura, completarSintesis, type PasoAfinado } from "./acciones.ts";
+import { confirmarLectura, completarSintesis, prepararLectura, type PasoAfinado } from "./acciones.ts";
 import type { Lectura } from "../../captura/lectura.ts";
 
 // Afinar lo que la persona contó, en dos vueltas cortas y **después** de que el
@@ -28,13 +28,28 @@ function Error_({ paso }: { paso: PasoAfinado | null }) {
 
 export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura }) {
   const [vuelta, setVuelta] = useState<1 | 2 | 3>(1);
+  // La lectura empieza siendo la segmentación y se reemplaza cuando llega la de
+  // Mistral. **Se espera a que llegue antes de mostrar la vuelta 1**: enseñar
+  // una lectura y cambiarla debajo de quien la está leyendo es peor que
+  // esperarle dos segundos, y el comprobante ya está arriba mientras tanto.
+  const [leyendo, setLeyendo] = useState(true);
+  const [lect, setLect] = useState<Lectura>(lectura);
   const [corrigiendo, setCorrigiendo] = useState(false);
   // El problema vigente: el nuestro hasta que la persona lo cambie. Va a la
   // segunda vuelta para componer la síntesis completa sin volver a la base.
   const [problema, setProblema] = useState(lectura.problema);
+  useEffect(() => setProblema(lect.problema), [lect]);
 
   const [r1, accion1, guardando1] = useActionState<PasoAfinado | null, FormData>(confirmarLectura, null);
   const [r2, accion2, guardando2] = useActionState<PasoAfinado | null, FormData>(completarSintesis, null);
+
+  useEffect(() => {
+    let vigente = true;
+    prepararLectura(codigo)
+      .then((l) => { if (vigente && l) setLect(l); })
+      .finally(() => { if (vigente) setLeyendo(false); });
+    return () => { vigente = false; };
+  }, [codigo]);
 
   useEffect(() => { if (r1?.ok) setVuelta(2); }, [r1]);
   useEffect(() => { if (r2?.ok) setVuelta(3); }, [r2]);
@@ -59,7 +74,13 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
         cortos: nos ayuda a entenderlo mejor, y puedes irte cuando quieras.
       </p>
 
-      {vuelta === 1 && (
+      {leyendo && (
+        <p className="pc-help" data-prueba="leyendo" aria-live="polite">
+          Separando lo que contaste…
+        </p>
+      )}
+
+      {!leyendo && vuelta === 1 && (
         <div data-prueba="vuelta-1">
           <h2>Esto es lo que entendimos</h2>
 
@@ -69,8 +90,8 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
                   pantalla no dice «creemos entender»: dice esto es lo que nos
                   contaste, porque eso es exactamente lo que hay. */}
               <blockquote className="pc-quote">{problema}</blockquote>
-              {lectura.lugar && (
-                <p>Y que ocurre en: <strong>{lectura.lugar}</strong>.</p>
+              {lect.lugar && (
+                <p>Y que ocurre en: <strong>{lect.lugar}</strong>.</p>
               )}
               <p className="pc-help">
                 Lo separamos así para poder revisarlo. Si no es eso, corrígelo — mandas tú.
@@ -79,6 +100,7 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
               <form action={accion1}>
                 <input type="hidden" name="codigo" value={codigo} readOnly />
                 <input type="hidden" name="corrigio" value="no" readOnly />
+                <input type="hidden" name="mostrado" value={problema} readOnly />
                 <button type="submit" className="pc-action" disabled={guardando1}>
                   {guardando1 ? "Guardando…" : "Sí, es eso"}
                 </button>
@@ -91,6 +113,7 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
             <form action={accion1}>
               <input type="hidden" name="codigo" value={codigo} readOnly />
               <input type="hidden" name="corrigio" value="si" readOnly />
+              <input type="hidden" name="mostrado" value={lect.problema} readOnly />
               <div className="pc-field">
                 <label className="pc-label" htmlFor="problema-correccion">
                   Escríbelo con tus palabras
@@ -120,7 +143,12 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
             <input type="hidden" name="problema" value={problema} readOnly />
             <div className="pc-field">
               <label className="pc-label" htmlFor="resultado">¿Qué debería cambiar?</label>
+              {/* Si la persona ya dijo qué debería cambiar, la caja llega con
+                  sus palabras y solo tiene que confirmarlas. Si no lo dijo,
+                  llega vacía: rellenarla con una suposición nuestra sería
+                  ponerle un deseo en la boca. */}
               <input id="resultado" name="resultado" className="pc-input" type="text"
+                     defaultValue={lect.resultadoEsperado ?? ""}
                      aria-describedby="resultado-ayuda" />
               <p className="pc-help" id="resultado-ayuda">
                 Cómo se vería si esto estuviera resuelto.
@@ -129,6 +157,7 @@ export function Afinado({ codigo, lectura }: { codigo: string; lectura: Lectura 
             <div className="pc-field">
               <label className="pc-label" htmlFor="solucion">¿Se te ocurre cómo? <span className="pc-help">· opcional</span></label>
               <input id="solucion" name="solucion" className="pc-input" type="text"
+                     defaultValue={lect.solucionSugerida ?? ""}
                      aria-describedby="solucion-ayuda" />
               <p className="pc-help" id="solucion-ayuda">
                 <strong>No hace falta proponer una solución</strong> para que el problema se

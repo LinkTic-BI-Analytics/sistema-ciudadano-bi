@@ -2,8 +2,9 @@
 
 import { recibirAporte } from "../../captura/recibir.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
-import { proponerSintesis, corregirSintesis, confirmarSintesis } from "../../captura/sintesis.ts";
+import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
 import { leer, type Lectura } from "../../captura/lectura.ts";
+import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
 import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
 
@@ -60,14 +61,12 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
       canal: "web",
       lugarDeclarado: lugar || undefined,
     });
-    // **La lectura que le vamos a mostrar se guarda como versión 1, y va firmada
-    // por el sistema.** Guardarla antes de enseñarla es lo que permite que, si
-    // la persona dice «no es eso», quede registrado *qué* le habíamos propuesto.
-    // Una corrección sin el texto corregido al lado no se puede leer después.
+    // **Aquí no se llama a la IA.** `IA-01` dice que la recepción no depende de
+    // ella, y eso se cumple de una sola forma: no poniéndola en este camino. La
+    // lectura que vuelve es la segmentación, instantánea, y el comprobante sale
+    // ya. El corte de Mistral llega después, con `prepararLectura`, y con el
+    // aporte guardado detrás — si tarda o falla, nadie se entera.
     const lectura = leer(relato, lugar);
-    if (!r.yaExistia) {
-      await proponerSintesis({ aporteId: r.aporteId, autor: "sistema", problema: lectura.problema });
-    }
 
     // Si el relato trae un indicio, la alerta se levanta. **No bloquea el
     // envío**: `N02` pide aceptar relato libre, y retener a alguien que está
@@ -105,6 +104,15 @@ export async function confirmarLectura(_previo: PasoAfinado | null, datos: FormD
   try {
     const aporteId = await aporteDelCodigo(codigo);
     if (!aporteId) return { ok: false, error: "No encontramos ese aporte. Tu código sigue sirviendo en «Consultar mi aporte»." };
+
+    // Si `prepararLectura` no alcanzó a guardar la versión 1 —se cayó la red, o
+    // la base tardó— no se pierde lo que la persona acaba de decidir: se guarda
+    // aquí lo que tenía en pantalla. Confirmar algo que no existe fallaría, y
+    // fallaría justo después de que ella hizo su parte.
+    const mostrado = String(datos.get("mostrado") ?? "").trim();
+    if (mostrado && (await sintesisDe(aporteId)).length === 0) {
+      await proponerSintesis({ aporteId, autor: "sistema", problema: mostrado });
+    }
 
     if (corrigio) {
       if (!texto) return { ok: false, error: "Escribe con tus palabras cuál es el problema." };
@@ -151,5 +159,37 @@ export async function completarSintesis(_previo: PasoAfinado | null, datos: Form
   } catch (e) {
     console.error("completarSintesis", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado; puedes intentarlo luego." };
+  }
+}
+
+
+/**
+ * La lectura que se le va a mostrar, ya con IA si la hay.
+ *
+ * Corre **después** de que el comprobante está en pantalla. El aporte ya está
+ * guardado, así que el peor caso de esta función es que la persona vea la
+ * segmentación en vez del corte de Mistral.
+ *
+ * Guarda lo que se va a mostrar como **versión 1, firmada por el sistema**.
+ * Guardarlo antes de enseñarlo es lo que permite que, si la persona dice «no es
+ * eso», quede registrado *qué* le habíamos propuesto: una corrección sin el
+ * texto corregido al lado no se puede leer después.
+ */
+export async function prepararLectura(codigo: string): Promise<Lectura | null> {
+  try {
+    const c = await canjearComprobante(codigo, await procesoVigente());
+    if (!c) return null;
+
+    const lectura = await leerConIA(c.relato, c.lugarDeclarado);
+    await proponerSintesis({
+      aporteId: c.aporteId, autor: "sistema",
+      problema: lectura.problema,
+      resultadoEsperado: lectura.resultadoEsperado ?? undefined,
+      solucionSugerida: lectura.solucionSugerida ?? undefined,
+    });
+    return lectura;
+  } catch (e) {
+    console.error("prepararLectura", e);
+    return null;
   }
 }
