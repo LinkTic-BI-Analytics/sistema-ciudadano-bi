@@ -45,7 +45,11 @@ after(async () => {
     await p.rpc("borrar_comprobantes_de_prueba", { p_aportes: ids });
     await p.from("aporte").delete().in("id", ids);
   }
-  if (procesos.length) await p.from("proceso").delete().in("id", procesos);
+  if (procesos.length) {
+    await p.from("proceso")
+      .update({ retirado_en: new Date().toISOString(), retirado_motivo: "escenario de prueba" })
+      .in("id", procesos);
+  }
 });
 
 test("con el código bueno devuelve ESE aporte", async () => {

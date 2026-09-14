@@ -55,9 +55,14 @@ after(async () => {
     await p.from("vinculo_aporte_expediente").delete().in("expediente_id", expIds);
     await p.from("expediente").delete().in("id", expIds);
   }
+  // La auditoría NO se borra: la regla de Postgres lo impide y eso es la
+  // invariante, no un estorbo. Y como sus asientos sostienen el proceso por
+  // clave foránea, el proceso se **retira** en vez de borrarse — que es el
+  // borrado lógico que `V11` fijó para todo.
   if (procesos.length) {
-    await p.from("auditoria").delete().in("proceso_id", procesos);
-    await p.from("proceso").delete().in("id", procesos);
+    await p.from("proceso")
+      .update({ retirado_en: new Date().toISOString(), retirado_motivo: "escenario de prueba" })
+      .in("id", procesos);
   }
 });
 

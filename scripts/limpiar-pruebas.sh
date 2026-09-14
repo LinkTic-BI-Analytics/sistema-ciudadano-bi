@@ -1,32 +1,43 @@
 #!/usr/bin/env bash
 # Se lleva lo que dejaron las pruebas en la base local.
 #
-# Las pruebas limpian lo suyo, pero una que falla a mitad no alcanza a hacerlo.
-# Esto existe porque ya pasó dos veces: datos residuales de una prueba hicieron
-# fallar a la de al lado, y el síntoma —una clave duplicada— no se parecía en
-# nada a la causa.
+# **La auditoría no se toca, y eso no es una limitación: es la invariante.** Una
+# auditoría que se puede borrar no es una auditoría, y la regla de Postgres que
+# lo impide hizo fallar la primera versión de este guion. Se adaptó el guion, no
+# la regla.
 #
-# Solo toca lo que se llama ESCENARIO DE PRUEBA. Si algún día borra otra cosa,
-# es que alguien le puso ese nombre a algo de verdad.
+# Consecuencia: un proceso de prueba con asientos de auditoría **no se puede
+# borrar** —la clave foránea lo sostiene—, así que se **retira**, que es lo que
+# el propio modelo dice que se hace con todo (borrado lógico, V11).
+#
+# Existe porque ya pasó dos veces: datos residuales de una prueba hicieron fallar
+# a la de al lado, y el síntoma —una clave duplicada— no se parecía a la causa.
 set -euo pipefail
 C=${DB_CONTENEDOR:-supabase_db_participacion}
 docker exec -i "$C" psql -U postgres -d postgres -qAt <<'SQL'
-with p as (
+begin;
+create temporary table _p on commit drop as
   select id from participacion.proceso
-  where nombre like 'ESCENARIO DE PRUEBA%' and nombre <> 'ESCENARIO DE PRUEBA — no es un proceso real'
-), a as (
-  select id from participacion.aporte where proceso_id in (select id from p)
-), e as (
-  select id from participacion.expediente where proceso_id in (select id from p)
-), d1 as (delete from participacion.expediente_territorio where expediente_id in (select id from e) returning 1),
-   d2 as (delete from participacion.vinculo_aporte_expediente where proceso_id in (select id from p) returning 1),
-   d3 as (delete from participacion.ubicacion where proceso_id in (select id from p) returning 1),
-   d4 as (delete from participacion.sintesis where proceso_id in (select id from p) returning 1),
-   d5 as (delete from participacion.auditoria where proceso_id in (select id from p) returning 1),
-   d6 as (delete from participacion.expediente where id in (select id from e) returning 1),
-   d7 as (delete from participacion.aporte where id in (select id from a) returning 1),
-   d8 as (delete from participacion.proceso where id in (select id from p) returning 1)
-select 'limpiados: ' || (select count(*) from d7) || ' aportes, '
-                     || (select count(*) from d6) || ' expedientes, '
-                     || (select count(*) from d8) || ' procesos de prueba';
+  where nombre like 'ESCENARIO DE PRUEBA%'
+    and nombre <> 'ESCENARIO DE PRUEBA — no es un proceso real';
+
+delete from participacion.expediente_territorio
+ where expediente_id in (select id from participacion.expediente where proceso_id in (select id from _p));
+delete from participacion.vinculo_aporte_expediente where proceso_id in (select id from _p);
+delete from participacion.ubicacion  where proceso_id in (select id from _p);
+delete from participacion.sintesis   where proceso_id in (select id from _p);
+delete from identidad.comprobante    where proceso_id in (select id from _p);
+delete from identidad.contacto       where proceso_id in (select id from _p);
+delete from participacion.expediente where proceso_id in (select id from _p);
+delete from participacion.aporte     where proceso_id in (select id from _p);
+
+-- El proceso se RETIRA, no se borra: sus asientos de auditoría lo sostienen, y
+-- esos no se van. Es el borrado lógico que V11 fijó para todo.
+update participacion.proceso
+   set retirado_en = now(), retirado_motivo = 'escenario de prueba, limpiado'
+ where id in (select id from _p) and retirado_en is null;
+
+select 'retirados ' || count(*) || ' procesos de prueba; la auditoría se queda, como debe'
+  from _p;
+commit;
 SQL
