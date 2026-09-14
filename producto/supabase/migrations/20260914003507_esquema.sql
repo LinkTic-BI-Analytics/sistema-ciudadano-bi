@@ -566,6 +566,62 @@ $$;
 
 revoke all on function participacion.borrar_comprobantes_de_prueba(uuid[]) from public;
 
+-- Canjear un comprobante. **La única puerta de lectura a `identidad`.**
+--
+-- Recibe el hash, nunca el código: si recibiera el código quedaría en el
+-- registro de sentencias de Postgres, que es donde nadie lo busca y todo el
+-- mundo lo puede leer.
+--
+-- Devuelve **un aporte o nada**. Nunca una lista — `N16`: *«consulta por
+-- comprobante no expone expedientes ajenos»*. Y el proceso va en la condición:
+-- un código no cruza procesos.
+create or replace function participacion.canjear_comprobante(
+  p_proceso uuid,
+  p_hash    text
+) returns table (
+  aporte_id        uuid,
+  relato           text,
+  lugar_declarado  text,
+  estado_ubicacion text,
+  recibido_en      timestamptz
+)
+language sql
+security definer
+set search_path = identidad, participacion, pg_temp
+as $$
+  select a.id, a.relato_original, a.lugar_declarado,
+         (select ub.estado from participacion.ubicacion ub
+           where ub.aporte_id = a.id order by ub.creada_en desc limit 1),
+         a.recibido_en
+  from identidad.comprobante c
+  join participacion.aporte a on a.id = c.aporte_id
+  where c.codigo_hash = p_hash
+    and c.proceso_id = p_proceso
+    and c.revocado_en is null
+    and a.retirado_en is null
+  limit 1;
+$$;
+
+revoke all on function participacion.canjear_comprobante(uuid, text) from public;
+
+comment on function participacion.canjear_comprobante is
+  'Un comprobante abre UN aporte, nunca una lista (N16). Recibe el hash: el código en claro no entra a la base.';
+
+-- Solo para pruebas: comprueba que el código en claro no quedó guardado en
+-- ninguna parte de la tabla. Existe porque es la única forma de probarlo sin
+-- exponer `identidad`, y el nombre lo dice para que se vea si se cuela.
+create or replace function participacion.buscar_texto_en_comprobantes_de_prueba(p_texto text)
+returns bigint
+language sql
+security definer
+set search_path = identidad, participacion, pg_temp
+as $$
+  select count(*) from identidad.comprobante
+  where codigo_hash = p_texto or codigo_hash ilike '%' || p_texto || '%';
+$$;
+
+revoke all on function participacion.buscar_texto_en_comprobantes_de_prueba(text) from public;
+
 -- ═══ 09_acceso.sql ═══
 -- El acceso, en su versión mínima: **negar por defecto**.
 --
