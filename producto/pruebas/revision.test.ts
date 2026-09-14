@@ -118,3 +118,91 @@ test("los cuatro estados se mueven por separado", async () => {
   assert.equal(data?.estado_confirmacion, "sin_confirmar", "ni confirma el relato");
   assert.equal(data?.estado_revision, "sin_revisar", "ni da por revisado");
 });
+
+// ── T028 · crear expediente y vincular con motivo ───────────────────────────
+//
+// La separación es el estado por defecto (`V12`). Compartir tema, municipio o
+// palabras parecidas **no basta**, y la prueba para decidir es una sola:
+//
+//   ¿podríamos dar por atendida una mientras la otra sigue pendiente?
+//
+// Si la respuesta es sí, son dos expedientes. Los tres casos de la tabla de `V12`
+// están aquí tal como se escribieron.
+
+import { crearExpediente, vincular, aportesDe, expedientesDe } from "../src/revision/expediente.ts";
+
+test("crear un expediente desde un aporte lo deja vinculado con motivo", async () => {
+  const a = await nuevoAporte("exp-crear");
+  const e = await crearExpediente({
+    procesoId, descripcion: "baja presión de agua en la parte alta",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "es el relato que la origina",
+  });
+  const aportes = await aportesDe(e.expedienteId);
+  assert.equal(aportes.length, 1);
+  assert.equal(aportes[0]!.aporteId, a.aporteId);
+  assert.equal(aportes[0]!.motivo, "es el relato que la origina");
+});
+
+test("vincular sin motivo se rechaza", async () => {
+  const a = await nuevoAporte("exp-sin-motivo");
+  const e = await crearExpediente({ procesoId, descripcion: "agua", desdeAporte: a.aporteId,
+                                    autor: "revisora", motivo: "origen" });
+  const b = await nuevoAporte("exp-sin-motivo-b");
+  await assert.rejects(() => vincular({ aporteId: b.aporteId, expedienteId: e.expedienteId,
+                                        autor: "revisora", motivo: "" }), /motivo/i);
+});
+
+test("UN aporte puede alimentar DOS expedientes", async () => {
+  // El caso textual de V12: quien menciona contaminación del agua y falta de
+  // transporte escolar produce dos necesidades desde un mismo relato.
+  const a = await recibirAporte({
+    procesoId, claveEnvio: clave("dos-necesidades"),
+    relato: "el agua llega contaminada y además no hay transporte escolar", canal: "web",
+  });
+  const agua = await crearExpediente({ procesoId, descripcion: "agua contaminada",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "el relato menciona el agua" });
+  const bus = await crearExpediente({ procesoId, descripcion: "sin transporte escolar",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "el mismo relato menciona el transporte" });
+  const exps = await expedientesDe(a.aporteId);
+  assert.equal(exps.length, 2);
+  assert.notEqual(agua.expedienteId, bus.expedienteId);
+});
+
+test("dos barrios del mismo municipio son DOS expedientes por defecto", async () => {
+  const a = await nuevoAporte("barrio-a");
+  const b = await nuevoAporte("barrio-b");
+  const ea = await crearExpediente({ procesoId, descripcion: "baja presión en la parte alta",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "origen" });
+  const eb = await crearExpediente({ procesoId, descripcion: "baja presión en el barrio del sur",
+    desdeAporte: b.aporteId, autor: "revisora", motivo: "origen" });
+  assert.notEqual(ea.expedienteId, eb.expedienteId,
+    "compartir municipio y tema no basta: podrían atenderse por separado");
+});
+
+test("baja presión y contaminación son dos, aunque compartan territorio", async () => {
+  const a = await nuevoAporte("presion");
+  const b = await nuevoAporte("contaminacion");
+  const ea = await crearExpediente({ procesoId, descripcion: "baja presión",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "origen",
+    territorios: [{ codigo: mun[0]!.codigo, version: mun[0]!.version }] });
+  const eb = await crearExpediente({ procesoId, descripcion: "agua contaminada",
+    desdeAporte: b.aporteId, autor: "revisora", motivo: "origen",
+    territorios: [{ codigo: mun[0]!.codigo, version: mun[0]!.version }] });
+  assert.notEqual(ea.expedienteId, eb.expedienteId,
+    "requieren verificaciones y respuestas distintas (V12)");
+});
+
+test("R1 · un expediente con DOS territorios es UNA necesidad", async () => {
+  const a = await nuevoAporte("intermunicipal");
+  const e = await crearExpediente({
+    procesoId, descripcion: "la cuenca que cruza los dos municipios",
+    desdeAporte: a.aporteId, autor: "revisora", motivo: "origen",
+    territorios: [{ codigo: mun[0]!.codigo, version: mun[0]!.version },
+                  { codigo: mun[1]!.codigo, version: mun[1]!.version }],
+  });
+  const { data } = await p.from("expediente_territorio")
+    .select("territorio_codigo, estado_atencion").eq("expediente_id", e.expedienteId);
+  assert.equal(data?.length, 2, "dos territorios");
+  // Y cada uno lleva su propio estado: no es un expediente con territorio promedio.
+  assert.ok(data!.every((t) => t.estado_atencion === "sin_atender"));
+});
