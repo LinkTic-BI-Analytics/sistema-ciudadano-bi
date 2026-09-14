@@ -14,6 +14,13 @@
 @import "../producto/tokens/shadcn-theme.css";
 @import "../producto/tokens/shadcn-completar.css";
 
+/* Las capas de la interfaz ciudadana, en el orden que declara el sistema de
+ * diseño. Todo va namespaceado bajo `.pc-ui`, así que no se filtra a las vistas
+ * del harness — que traen su propia línea gráfica (`interfaz.md` I5). */
+@import "../producto/tokens/componentes.css";
+@import "../producto/tokens/marco.css";
+@import "../producto/tokens/estructura.css";
+
 :root {
   /* Modo claro y nada más: el sistema de diseño no define modo oscuro, y es
    * una decisión, no un olvido. Declararlo aquí evita que el navegador pinte

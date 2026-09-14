@@ -186,6 +186,21 @@ else
   saltó "no hay .env.local o la base no está levantada"
 fi
 
+# CHEQUEO: los recorridos en un navegador de verdad
+# Se ve fallar: quítale la etiqueta al campo de relato en participar/formulario.tsx
+#
+# Es lo que AGENTS.md §12 pide para una pantalla: no se da por terminada con una
+# afirmación. Lo que NO prueba es si se entiende — eso lo contesta una persona,
+# y para eso existe /validar.
+if [ -f producto/.env.local ] && [ -d "$HOME/Library/Caches/ms-playwright" ]; then
+  (cd producto && npx playwright test --reporter=line) >/tmp/e2e.$$ 2>&1 \
+    && ok "$(grep -oE '[0-9]+ passed.*' /tmp/e2e.$$ | tail -1) en navegador" \
+    || { mal "recorridos en rojo"; grep -E '✘|Error:' /tmp/e2e.$$ | head -5 | sed 's/^/          /'; }
+  rm -f /tmp/e2e.$$
+else
+  saltó "Playwright no está listo"
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then

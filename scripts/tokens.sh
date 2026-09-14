@@ -29,7 +29,10 @@ printf '  '; (cd "$DIR" && python3 generar_tokens.py)
 python3 scripts/lib/tokens_producto.py
 
 mkdir -p "$DESTINO"
-for f in participacion.css shadcn-theme.css; do
+# Las tres capas de componentes van en este orden y no en otro: lo declara el
+# propio LEEME del sistema de diseño. `marco.css` es el armazón y `estructura.css`
+# la composición que lo pisa — los nombres engañan.
+for f in participacion.css shadcn-theme.css componentes.css marco.css estructura.css backoffice.css; do
   if [ -f "$DESTINO/$f" ] && diff -q "$DIR/$f" "$DESTINO/$f" >/dev/null; then
     echo "  ya al día    $f"
   else
