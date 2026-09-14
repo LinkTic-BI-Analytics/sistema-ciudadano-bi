@@ -1,0 +1,374 @@
+-- GENERADO por scripts/esquema.sh desde supabase/schemas/.
+-- No se edita a mano: se edita el esquema y se vuelve a correr.
+
+-- ═══ 01_pertenencia.sql ═══
+-- La unidad de pertenencia, y va primero porque es lo único que no se puede
+-- agregar después (`metodo/frentes.md`).
+--
+-- No es una restricción sobre una tabla: es una columna en TODAS y una condición
+-- en cada consulta que alguien escriba a partir de ahora. Por eso existe antes
+-- que cualquier dato.
+--
+-- **Lo que sí se puede agregar después es la política sobre ella** (`Q9`/`Q18`).
+-- Si los procesos resultan ser compartimentos estancos, o si la Nación ve lo de
+-- todos y cada territorio solo lo suyo, eso se escribe como acceso a nivel de
+-- fila sobre esta columna. Hoy hay un solo proceso sembrado y la política queda
+-- abierta a propósito.
+
+create schema if not exists participacion;
+
+-- El contenedor. `definicion_producto_participacion_v1.md` §9 lo pone primero
+-- entre las entidades centrales, y dice que «el proceso define fases y reglas».
+--
+-- Que el expediente le pertenezca al proceso y no a la convocatoria sale de una
+-- frase del mismo documento: «el cierre de una convocatoria limita acciones de
+-- esa fase, pero no elimina la consulta de comprobantes y decisiones», y «una
+-- misma necesidad puede continuar en otro ciclo».
+create table participacion.proceso (
+  id              uuid primary key default gen_random_uuid(),
+  nombre          text not null,
+
+  -- Los tres niveles de la investigación §11.2, y no hay un cuarto. El propio
+  -- documento advierte: «sin usar vinculante como promesa genérica» (`Q17`).
+  compromiso      text not null
+                  check (compromiso in ('consulta',
+                                        'deliberacion_con_respuesta',
+                                        'decision_presupuestal_autorizada')),
+
+  -- Quién responde. Sin esto no se publica una promesa de respuesta (`N01`),
+  -- y sin esto tampoco hay responsable de alertas por turno (`V13`).
+  entidad         text,
+
+  creado_en       timestamptz not null default now(),
+
+  -- Borrado lógico en todas las tablas (`V11`, `V18`). La fila se queda y se
+  -- marca; nunca `delete`.
+  retirado_en     timestamptz,
+  retirado_motivo text,
+  constraint retiro_con_motivo
+    check ((retirado_en is null) = (retirado_motivo is null))
+);
+
+comment on table participacion.proceso is
+  'La unidad de pertenencia. Su columna va en todas las tablas; la política de acceso sobre ella está abierta (Q9/Q18).';
+comment on column participacion.proceso.compromiso is
+  'Qué se promete: consulta, deliberacion_con_respuesta o decision_presupuestal_autorizada. Nunca "vinculante" a secas.';
+
+-- ═══ 02_territorio.sql ═══
+-- El catálogo territorial: DIVIPOLA del DANE (`V10`).
+--
+-- **La versión va en cada fila, no en una tabla aparte** (`Q5`). DIVIPOLA
+-- cambia: en 1997 los centros poblados pasaron de 2 dígitos a 3, y las notas al
+-- pie de junio de 2026 mencionan un deslinde en curso entre Norte de Santander y
+-- Boyacá. Un código histórico significa cosas distintas según la versión con que
+-- se escribió, y `R2` exige que un corte exportado siga siendo reproducible.
+
+create table participacion.territorio (
+  -- El código compone: departamento 2, municipio 2+3, centro poblado 5+3.
+  codigo        text not null,
+  version       text not null,   -- 'junio 2026'
+
+  nivel         text not null check (nivel in ('departamento','municipio','centro_poblado')),
+  nombre        text not null,
+  -- Solo en municipio: Municipio · Isla · Área no municipalizada.
+  -- Solo en centro poblado: CM (cabecera) · CP.
+  tipo          text,
+  padre         text,            -- el código de arriba, dentro de la misma versión
+
+  -- Del municipio o del centro poblado, NUNCA de una necesidad. `GEO-01`:
+  -- «no presentar el centro de un municipio como coordenada exacta».
+  latitud       numeric,
+  longitud      numeric,
+
+  primary key (codigo, version),
+  foreign key (padre, version) references participacion.territorio (codigo, version),
+
+  constraint codigo_compone_con_su_padre
+    check (padre is null or codigo like padre || '%'),
+  constraint largo_del_codigo check (
+    (nivel = 'departamento'   and length(codigo) = 2) or
+    (nivel = 'municipio'      and length(codigo) = 5) or
+    (nivel = 'centro_poblado' and length(codigo) = 8)
+  )
+);
+
+create index on participacion.territorio (version, nivel);
+create index on participacion.territorio (padre, version);
+
+comment on table participacion.territorio is
+  'DIVIPOLA del DANE, del geoportal y no de una republicación. No llega al barrio: el nivel sub-municipal es rural (V21).';
+comment on column participacion.territorio.version is
+  'Va en la clave primaria a propósito: el mismo código puede significar otra cosa en otra versión (Q5).';
+
+-- ═══ 03_aporte.sql ═══
+-- El aporte: lo que una persona o un grupo expresa (`V12`, nivel 1 de 3).
+--
+-- Dos invariantes viven aquí y se hacen imposibles en este nivel, no en el
+-- servidor (`AGENTS.md` §8):
+--
+--   I1  un reintento técnico no duplica  → restricción única sobre la clave de
+--       envío. **No por similitud ni por IP**, que la propia I1 prohíbe.
+--   I2  no inferir lo que falta          → la ubicación tiene tres estados y el
+--       esquema no admite un cuarto implícito. Un NULL que se lee como
+--       «desconocido» ya es una inferencia.
+
+create table participacion.aporte (
+  id                uuid primary key default gen_random_uuid(),
+  proceso_id        uuid not null references participacion.proceso (id),
+
+  -- I1. La genera el cliente antes de enviar; el reintento trae la misma.
+  clave_envio       text not null,
+
+  -- Obligatorio y nunca se sustituye por la síntesis (`N03`).
+  relato_original   text not null,
+
+  canal             text not null check (canal in ('web','asistida','voz_transcrita')),
+  recibido_en       timestamptz not null default now(),
+  convocatoria      text,
+
+  -- **El lugar tal como la persona lo dijo. Se guarda SIEMPRE** (`GEO-01`), y es
+  -- lo que hace reversible aplazar el barrio (`V21`, `Q26`): sin este texto, el
+  -- día que llegue un catálogo urbano solo sirve para lo nuevo.
+  lugar_declarado   text,
+
+  -- Colectivo: el aporte es del colectivo, no del vocero (`V19`). El colectivo
+  -- todavía no existe como entidad (`Q23`), así que por ahora solo se marca.
+  es_colectivo      boolean not null default false,
+
+  retirado_en       timestamptz,
+  retirado_motivo   text,
+  constraint retiro_con_motivo
+    check ((retirado_en is null) = (retirado_motivo is null)),
+
+  -- I1: dentro de un proceso, una clave de envío es un aporte. Dos personas en
+  -- el mismo equipo traen claves distintas y crean dos aportes legítimos.
+  constraint un_envio_un_aporte unique (proceso_id, clave_envio)
+);
+
+create index on participacion.aporte (proceso_id, recibido_en desc);
+
+-- La síntesis es versionada y la persona tiene la última palabra sobre la suya
+-- (`V14`). Las dos clases de corrección se distinguen porque tienen efectos
+-- distintos sobre el registro histórico — cuáles, sigue abierto (`Q15`).
+create table participacion.sintesis (
+  id            uuid primary key default gen_random_uuid(),
+  proceso_id    uuid not null references participacion.proceso (id),
+  aporte_id     uuid not null references participacion.aporte (id),
+  version       integer not null,
+  texto         text not null,
+  clase         text not null
+                check (clase in ('propuesta','mal_interpretado','cambio_de_posicion')),
+  autor         text not null,
+  motivo        text,
+  creada_en     timestamptz not null default now(),
+  confirmada_en timestamptz,
+  unique (aporte_id, version)
+);
+
+-- La ubicación **no son columnas del aporte**: es una entidad con nivel y
+-- versión de catálogo. Por eso agregar el nivel `barrio` más adelante (`V21`) es
+-- una fila más y no una migración sobre datos que ya existen.
+--
+-- Un aporte puede tener varias: `GEO-01` permite vincular varios territorios.
+create table participacion.ubicacion (
+  id                uuid primary key default gen_random_uuid(),
+  proceso_id        uuid not null references participacion.proceso (id),
+  aporte_id         uuid not null references participacion.aporte (id),
+
+  -- I2: tres estados, y no hay un cuarto implícito.
+  estado            text not null check (estado in ('confirmada','por_aclarar','desconocida')),
+
+  -- Solo cuando el estado es 'confirmada'. Si no, no hay código — y no se
+  -- rellena con el municipio «más probable».
+  territorio_codigo text,
+  territorio_version text,
+
+  autor             text,
+  motivo            text,
+  creada_en         timestamptz not null default now(),
+
+  foreign key (territorio_codigo, territorio_version)
+    references participacion.territorio (codigo, version),
+
+  constraint solo_confirmada_lleva_codigo check (
+    (estado = 'confirmada' and territorio_codigo is not null)
+    or (estado <> 'confirmada' and territorio_codigo is null)
+  )
+);
+
+create index on participacion.ubicacion (aporte_id);
+create index on participacion.ubicacion (proceso_id, territorio_codigo, territorio_version);
+
+comment on column participacion.aporte.clave_envio is
+  'I1. Un reintento trae la misma clave y no crea otro aporte. Nunca se deduplica por similitud ni por IP.';
+comment on column participacion.aporte.lugar_declarado is
+  'GEO-01. Se guarda siempre: es lo único que permitirá re-normalizar al barrio cuando llegue su catálogo (Q26).';
+
+-- ═══ 04_expediente.sql ═══
+-- El expediente: el registro de trabajo y seguimiento de una necesidad situada
+-- (`V12`, nivel 2 de 3). Puede nacer de un solo aporte, y no hace falta conocer
+-- la causa técnica para abrirlo.
+--
+-- **Abrir un expediente no aprueba nada.** No asigna recursos, no compromete una
+-- intervención y no declara resuelto nada.
+
+create table participacion.expediente (
+  id                uuid primary key default gen_random_uuid(),
+  proceso_id        uuid not null references participacion.proceso (id),
+
+  descripcion       text not null,   -- la afectación
+  cambio_esperado   text,
+
+  -- `Q10`: «desde hace tres meses» es una fecha relativa y guardada literalmente
+  -- deja de ser cierta mañana. Por eso se guarda la fecha del reporte y la
+  -- duración declarada por separado, y la frase se deriva.
+  problema_desde    date,
+  duracion_declarada text,
+  recurrencia       text check (recurrencia in ('puntual','recurrente','desconocida')),
+
+  -- `Q11`: choca con C2 —«doce familias de la vereda X» identifica—. Queda como
+  -- texto declarado, no como cifra, y su publicación espera el umbral.
+  poblacion_declarada text,
+
+  responsable       text,
+  abierto_en        timestamptz not null default now(),
+
+  retirado_en       timestamptz,
+  retirado_motivo   text,
+  constraint retiro_con_motivo
+    check ((retirado_en is null) = (retirado_motivo is null)),
+
+  -- Fusionar y dividir NO destruyen filas (`I4` leída bien: lo que prohíbe es
+  -- fusionar *automáticamente por palabras compartidas*). Una fusión escribe un
+  -- expediente nuevo y apunta los anteriores hacia él.
+  fusionado_en_id   uuid references participacion.expediente (id),
+  constraint fusionado_no_es_el_mismo check (fusionado_en_id is distinct from id)
+);
+
+create index on participacion.expediente (proceso_id, abierto_en desc);
+
+-- **Un aporte puede alimentar varios expedientes, y un expediente reunir varios
+-- aportes** (`V12`). Es muchos a muchos, no una columna `expediente_id` en el
+-- aporte. El vínculo lleva autor, fecha y motivo, y es reversible: desagrupar
+-- marca la fila, no la borra (`I4`).
+create table participacion.vinculo_aporte_expediente (
+  id              uuid primary key default gen_random_uuid(),
+  proceso_id      uuid not null references participacion.proceso (id),
+  aporte_id       uuid not null references participacion.aporte (id),
+  expediente_id   uuid not null references participacion.expediente (id),
+
+  autor           text not null,
+  motivo          text not null,   -- obligatorio: I4 pide conservar el porqué
+  creado_en       timestamptz not null default now(),
+
+  desvinculado_en     timestamptz,
+  desvinculado_motivo text,
+  desvinculado_autor  text,
+  constraint desvinculo_con_motivo
+    check ((desvinculado_en is null) = (desvinculado_motivo is null))
+);
+
+create index on participacion.vinculo_aporte_expediente (expediente_id) where desvinculado_en is null;
+create index on participacion.vinculo_aporte_expediente (aporte_id) where desvinculado_en is null;
+
+-- **Un expediente puede abarcar varios territorios y conserva el seguimiento de
+-- cada uno** (`V12`). Un expediente intermunicipal no es uno con un territorio
+-- «promedio»: es uno con varios, cada uno con su propio estado de atención.
+create table participacion.expediente_territorio (
+  id                 uuid primary key default gen_random_uuid(),
+  proceso_id         uuid not null references participacion.proceso (id),
+  expediente_id      uuid not null references participacion.expediente (id),
+  territorio_codigo  text not null,
+  territorio_version text not null,
+  estado_atencion    text not null default 'sin_atender',
+  foreign key (territorio_codigo, territorio_version)
+    references participacion.territorio (codigo, version),
+  unique (expediente_id, territorio_codigo, territorio_version)
+);
+
+comment on table participacion.expediente is
+  'La necesidad situada. Le pertenece al proceso, no a la convocatoria: sobrevive a su cierre.';
+comment on column participacion.expediente.fusionado_en_id is
+  'Una fusión no destruye filas: apunta el viejo al nuevo y conserva los vínculos (I4).';
+
+-- ═══ 05_auditoria.sql ═══
+-- La auditoría es append-only y **no se reescribe cuando se revoca un permiso**.
+-- Una auditoría que se puede editar no es una auditoría.
+--
+-- Cada evento conserva fecha, actor, acción, versión y motivo cuando
+-- corresponda (`definicion_producto_participacion_v1.md` §9).
+
+create table participacion.auditoria (
+  id           bigserial primary key,
+  proceso_id   uuid not null references participacion.proceso (id),
+  ocurrido_en  timestamptz not null default now(),
+  actor        text not null,
+  accion       text not null,
+  entidad      text not null,
+  entidad_id   uuid,
+  motivo       text,
+  antes        jsonb,
+  despues      jsonb
+);
+
+create index on participacion.auditoria (proceso_id, ocurrido_en desc);
+create index on participacion.auditoria (entidad, entidad_id);
+
+-- Sin `update` ni `delete`. Es la diferencia entre un registro y una bitácora
+-- que alguien puede acomodar después.
+create rule auditoria_sin_update as on update to participacion.auditoria do instead nothing;
+create rule auditoria_sin_delete as on delete to participacion.auditoria do instead nothing;
+
+comment on table participacion.auditoria is
+  'Append-only por regla, no por costumbre. Una auditoría editable no es una auditoría.';
+
+-- ═══ 06_identidad.sql ═══
+-- **La identidad y el contacto viven separados del dato analítico.** No es una
+-- vista: es una partición, y es lo que hace cumplible que Comunicaciones no
+-- pueda descargar contactos (`SEG-01`, `I6`, `C2`).
+--
+-- Está en su propio esquema para que el permiso se dé o se niegue de una sola
+-- vez, y para que un `select *` sobre lo analítico no la traiga por descuido.
+--
+-- **Y es lo que permite resolver `Q7`**: quien retira por seguridad tiene miedo
+-- de que lo identifiquen, así que el borrado lógico del aporte no lo protege si
+-- esto se queda. Aquí sí se puede borrar de verdad, sin tocar el registro
+-- analítico. Falta confirmarlo con quien responda por la política de tratamiento.
+
+create schema if not exists identidad;
+
+create table identidad.contacto (
+  id           uuid primary key default gen_random_uuid(),
+  proceso_id   uuid not null references participacion.proceso (id),
+  aporte_id    uuid not null references participacion.aporte (id),
+  -- Opcional siempre: `N02` y `DAT-01` prohíben exigir contacto para recibir.
+  valor        text,
+  canal        text check (canal in ('correo','telefono','whatsapp')),
+  -- Recordatorios solo si la persona los pidió (`N18`).
+  acepta_avisos boolean not null default false,
+  creado_en    timestamptz not null default now()
+);
+
+-- El comprobante: cómo la persona vuelve a ver lo suyo **sin dar correo**
+-- (`RF4`, `RF5`, `RES-01`).
+--
+-- Se guarda el hash, no el código. El código lo ve la persona una vez; si se
+-- guardara en claro, quien lea la tabla puede consultar el aporte de cualquiera.
+--
+-- **El mecanismo completo sigue abierto** (`P4`): no hay nada escrito sobre
+-- identidad en ninguno de los 24 documentos fuente. Esto es lo mínimo que no
+-- prejuzga esa decisión.
+create table identidad.comprobante (
+  id            uuid primary key default gen_random_uuid(),
+  proceso_id    uuid not null references participacion.proceso (id),
+  aporte_id     uuid not null references participacion.aporte (id),
+  codigo_hash   text not null unique,
+  emitido_en    timestamptz not null default now(),
+  revocado_en   timestamptz
+);
+
+comment on schema identidad is
+  'Partición física, no una vista. Separar aquí es lo que hace cumplible I6 y C2, y lo que permite borrar de verdad sin tocar lo analítico (Q7).';
+comment on column identidad.comprobante.codigo_hash is
+  'El hash, nunca el código. Guardarlo en claro haría que leer la tabla permitiera consultar el aporte de cualquiera.';
+

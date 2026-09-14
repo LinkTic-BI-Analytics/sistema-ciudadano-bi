@@ -140,6 +140,21 @@ python3 scripts/lib/divipola_integro.py >/tmp/dv.$$ 2>&1 \
   || { mal "el catálogo territorial no cuadra"; sed 's/^/          /' /tmp/dv.$$; }
 rm -f /tmp/dv.$$
 
+# CHEQUEO: las invariantes se cumplen en la BASE, no en los comentarios
+# Se ve fallar: quítale a la base la restricción un_envio_un_aporte y vuelve a correr
+#
+# AGENTS.md §8: una invariante baja hasta donde se vuelve imposible, no hasta
+# donde se valida. Esto no comprueba que el servidor las respete: comprueba que
+# Postgres rechaza lo que debe rechazar.
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
+  python3 producto/pruebas/invariantes.py >/tmp/inv.$$ 2>&1 \
+    && ok "$(tail -1 /tmp/inv.$$)" \
+    || { mal "hay invariantes que la base no hace imposibles"; sed 's/^/          /' /tmp/inv.$$; }
+  rm -f /tmp/inv.$$
+else
+  saltó "la base local no está levantada (npm run db:arrancar)"
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then

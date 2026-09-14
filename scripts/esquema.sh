@@ -9,7 +9,12 @@
 # **Se corre cada vez que cambie un archivo de schemas/.** Un chequeo que hay que
 # acordarse de correr no es un chequeo, así que esto además lo reaplica.
 set -euo pipefail
-cd "$(dirname "$0")/../mvp"
+cd "$(dirname "$0")/.."
+# El harness nació con el MVP en `mvp/`. Cuando lo que hay es el producto formal,
+# vive en `producto/`. Se usa el que exista; si están los dos, manda el producto.
+if [ -d producto/supabase/schemas ]; then cd producto
+elif [ -d mvp/supabase/schemas ]; then cd mvp
+else echo "No hay supabase/schemas ni en producto/ ni en mvp/"; exit 1; fi
 S=supabase/schemas
 M=supabase/migrations
 [ -d "$S" ] || { echo "No hay $S"; exit 1; }

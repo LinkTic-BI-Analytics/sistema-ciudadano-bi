@@ -182,11 +182,20 @@ policía— llevan 3 dígitos más, y las áreas no municipalizadas también est
 
 Dos cosas que hay que saber antes de modelar una ubicación:
 
-- **DIVIPOLA no tiene barrios** (`Q4`). Llega hasta el centro poblado, que es rural. La
-  diferencia entre dos barrios de la misma ciudad no se puede representar con este catálogo, y
-  la visión dice explícitamente que una necesidad se puede perder *«dentro de una ciudad o de
-  una misma comunidad»*. Mientras no se decida, `I2` manda: la ubicación sub-municipal queda
-  **«por aclarar»** y no se infiere.
+- **DIVIPOLA no tiene barrios, y el barrio se aplaza** (V21). Llega hasta el centro poblado,
+  que es rural: Barranquilla tiene **uno**, y el casco urbano de Medellín es **uno**. El barrio
+  queda como una **dimensión adicional que se agrega más adelante**, y sigue siendo importante.
+
+  **Lo que hace ese aplazamiento reversible es una sola cosa, y hay que no romperla:** el
+  aporte guarda **el lugar tal como la persona lo dijo**, siempre, además del código
+  normalizado. `GEO-01` ya lo exige. Sin ese texto, el día que llegue un catálogo urbano solo
+  sirve para lo nuevo — **todo lo capturado antes queda sin barrio para siempre**, porque no
+  hay con qué re-normalizarlo.
+
+  Por eso la ubicación **no son columnas del aporte**: es una entidad con `nivel`, `código` y
+  versión de catálogo. Agregar el nivel `barrio` es entonces una fila más, no una migración
+  sobre datos que ya existen. Y mientras tanto manda `I2`: lo sub-municipal queda **«por
+  aclarar»** y no se infiere.
 - **La versión va en cada registro, no en una tabla aparte** (`Q5`). DIVIPOLA cambia: en 1997
   los centros poblados pasaron de 2 dígitos a 3, así que un código histórico significa cosas
   distintas según la versión con que se escribió. Guardar la versión junto al dato es lo que

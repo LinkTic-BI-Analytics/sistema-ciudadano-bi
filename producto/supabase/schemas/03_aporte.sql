@@ -1,0 +1,102 @@
+-- El aporte: lo que una persona o un grupo expresa (`V12`, nivel 1 de 3).
+--
+-- Dos invariantes viven aquí y se hacen imposibles en este nivel, no en el
+-- servidor (`AGENTS.md` §8):
+--
+--   I1  un reintento técnico no duplica  → restricción única sobre la clave de
+--       envío. **No por similitud ni por IP**, que la propia I1 prohíbe.
+--   I2  no inferir lo que falta          → la ubicación tiene tres estados y el
+--       esquema no admite un cuarto implícito. Un NULL que se lee como
+--       «desconocido» ya es una inferencia.
+
+create table participacion.aporte (
+  id                uuid primary key default gen_random_uuid(),
+  proceso_id        uuid not null references participacion.proceso (id),
+
+  -- I1. La genera el cliente antes de enviar; el reintento trae la misma.
+  clave_envio       text not null,
+
+  -- Obligatorio y nunca se sustituye por la síntesis (`N03`).
+  relato_original   text not null,
+
+  canal             text not null check (canal in ('web','asistida','voz_transcrita')),
+  recibido_en       timestamptz not null default now(),
+  convocatoria      text,
+
+  -- **El lugar tal como la persona lo dijo. Se guarda SIEMPRE** (`GEO-01`), y es
+  -- lo que hace reversible aplazar el barrio (`V21`, `Q26`): sin este texto, el
+  -- día que llegue un catálogo urbano solo sirve para lo nuevo.
+  lugar_declarado   text,
+
+  -- Colectivo: el aporte es del colectivo, no del vocero (`V19`). El colectivo
+  -- todavía no existe como entidad (`Q23`), así que por ahora solo se marca.
+  es_colectivo      boolean not null default false,
+
+  retirado_en       timestamptz,
+  retirado_motivo   text,
+  constraint retiro_con_motivo
+    check ((retirado_en is null) = (retirado_motivo is null)),
+
+  -- I1: dentro de un proceso, una clave de envío es un aporte. Dos personas en
+  -- el mismo equipo traen claves distintas y crean dos aportes legítimos.
+  constraint un_envio_un_aporte unique (proceso_id, clave_envio)
+);
+
+create index on participacion.aporte (proceso_id, recibido_en desc);
+
+-- La síntesis es versionada y la persona tiene la última palabra sobre la suya
+-- (`V14`). Las dos clases de corrección se distinguen porque tienen efectos
+-- distintos sobre el registro histórico — cuáles, sigue abierto (`Q15`).
+create table participacion.sintesis (
+  id            uuid primary key default gen_random_uuid(),
+  proceso_id    uuid not null references participacion.proceso (id),
+  aporte_id     uuid not null references participacion.aporte (id),
+  version       integer not null,
+  texto         text not null,
+  clase         text not null
+                check (clase in ('propuesta','mal_interpretado','cambio_de_posicion')),
+  autor         text not null,
+  motivo        text,
+  creada_en     timestamptz not null default now(),
+  confirmada_en timestamptz,
+  unique (aporte_id, version)
+);
+
+-- La ubicación **no son columnas del aporte**: es una entidad con nivel y
+-- versión de catálogo. Por eso agregar el nivel `barrio` más adelante (`V21`) es
+-- una fila más y no una migración sobre datos que ya existen.
+--
+-- Un aporte puede tener varias: `GEO-01` permite vincular varios territorios.
+create table participacion.ubicacion (
+  id                uuid primary key default gen_random_uuid(),
+  proceso_id        uuid not null references participacion.proceso (id),
+  aporte_id         uuid not null references participacion.aporte (id),
+
+  -- I2: tres estados, y no hay un cuarto implícito.
+  estado            text not null check (estado in ('confirmada','por_aclarar','desconocida')),
+
+  -- Solo cuando el estado es 'confirmada'. Si no, no hay código — y no se
+  -- rellena con el municipio «más probable».
+  territorio_codigo text,
+  territorio_version text,
+
+  autor             text,
+  motivo            text,
+  creada_en         timestamptz not null default now(),
+
+  foreign key (territorio_codigo, territorio_version)
+    references participacion.territorio (codigo, version),
+
+  constraint solo_confirmada_lleva_codigo check (
+    (estado = 'confirmada' and territorio_codigo is not null)
+    or (estado <> 'confirmada' and territorio_codigo is null)
+  )
+);
+
+create index on participacion.ubicacion (aporte_id);
+create index on participacion.ubicacion (proceso_id, territorio_codigo, territorio_version);
+
+comment on column participacion.aporte.clave_envio is
+  'I1. Un reintento trae la misma clave y no crea otro aporte. Nunca se deduplica por similitud ni por IP.';
+comment on column participacion.aporte.lugar_declarado is
+  'GEO-01. Se guarda siempre: es lo único que permitirá re-normalizar al barrio cuando llegue su catálogo (Q26).';

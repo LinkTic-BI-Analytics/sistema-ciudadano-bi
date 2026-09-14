@@ -58,6 +58,7 @@ T019, que es la primera tarea con autoridad real.
 | T020 | `negocio/especificacion.md` normalizada contra la plantilla, con `vacios.md` y `acuerdos.md` | — | T016, T017 | D | negocio | candidato | el escribano sin defectos · 0 códigos huérfanos |
 | T018 | §3 Principios, §4 Taxonomías, §8 Rituales, §9 Fallas y §10 Estado cerradas | — | T020 | D | negocio | candidato | ninguna sección vacía · al menos una invariante suprema escogida |
 | T019 | `/entregar M10` y `/entregar M01`: los dos primeros módulos que pasan el sobre cerrado | — | T018 | D | negocio | candidato | las 5 casillas del sobre cerrado marcadas, en los dos |
+| T021 | La primera migración: `proceso_id` en todo, catálogo DIVIPOLA sembrado, aporte, ubicación, expediente y auditoría append-only | I1, I2, I4, R1 | T012, T020 | A | orquestador | terminado | 9.715 territorios sembrados · **12 comprobaciones de invariante contra la base, vistas fallar quitándole una restricción** |
 
 > **Por qué T020 va después de T018 en el número y antes en la dependencia.** Los códigos
 > son corridos y no se reciclan (`metodo/codigos.md`): la normalización apareció al montar
