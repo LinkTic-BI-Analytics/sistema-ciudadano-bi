@@ -14,7 +14,7 @@ llegar al primero. Hasta entonces gobierna `negocio/especificacion-v0-2026-09-13
 > escribió; uno que señala sus contradicciones se puede creer.
 
 <!-- derivado · lo escribe scripts/construccion.sh · NO editar a mano -->
-**Ruta crítica:** T016 → T020 → T027 → T028 → T029
+**Ruta crítica:** T016 → T020 → T018 → T019
 **Líneas paralelas activas:** ninguna
 <!-- /derivado -->
 
@@ -64,7 +64,7 @@ T019, que es la primera tarea con autoridad real.
 | T024 | La pantalla «Cuéntanos qué pasa», con los tokens y el selector escribir/hablar | RF1, RF2, N02 | T023 | A | orquestador | candidato | una persona registra agua intermitente en una vereda sin saber la entidad ni adjuntar estudios, y recibe comprobante |
 | T025 | Síntesis corregible y confirmada por la persona, versionada | RF2, N03, V14 | T024 | A | orquestador | candidato | paso 3: una transcripción cambia acueducto por alcantarillado, la persona corrige antes de validar |
 | T026 | El comprobante: se emite tras persistir, y se consulta **sin correo** | RF4, RF5, RES-01 | T023 | A | orquestador | terminado | 7 casos vistos fallar antes · visto fallar otra vez quitándole el alcance por proceso a la función |
-| T027 | Bandeja de aclaración de ubicación, con los cuatro estados separados | RF7, GEO-01, CAL-01, I2 | T021 | B | orquestador | candidato | «cerca de San José» con varias coincidencias queda por aclarar y aparece en la bandeja |
+| T027 | Bandeja de aclaración de ubicación, con los cuatro estados separados | RF7, GEO-01, CAL-01, I2 | T021 | B | orquestador | terminado | 7 casos vistos fallar antes · los cuatro estados de `CAL-01` se mueven por separado, comprobado |
 | T028 | Crear expediente y vincular aportes **con motivo**, y la prueba de decisión | RF7, NEC-01, I4, V12 | T027 | B | orquestador | candidato | paso 4: baja presión y contaminación no se fusionan por compartir el tema agua |
 | T029 | Desagrupar conservando originales y **reabriendo prioridad sin heredar aprobación** | RF7, I4 | T028 | B | orquestador | candidato | una desagrupación conserva aportes, referencias y cortes previos |
 | T030 | Los cinco eventos de gestión separados: recepción, remisión, decisión, respuesta, siguiente paso | RF8, RES-01 | T021 | C | orquestador | candidato | paso 7: una remisión no aceptada sigue pendiente y no aparece resuelta |
