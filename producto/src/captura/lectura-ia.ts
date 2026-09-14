@@ -26,6 +26,16 @@ import { anclado, leer, recortar, PREGUNTABLES, type Lectura } from "./lectura.t
  * ya usó para analizar sus propios documentos; Mistral queda como suelo.
  */
 function proveedor(): { url: string; llave: string; modelo: string; cabeceras: Record<string, string> } | null {
+  // **Apagado explícito, para los recorridos.** Vaciar la variable no bastaba:
+  // Next carga `.env.local` del disco al arrancar, y si una cadena vacía cuenta
+  // o no como «ya definida» depende de la versión. Un interruptor propio no
+  // depende de eso, y se lee por lo que es.
+  //
+  // Hace falta porque con IA el flujo depende de lo que el modelo encuentre
+  // —cuántas partes halle cambia cuántas vueltas ve la persona— y una prueba
+  // que depende del humor de un modelo no prueba el producto.
+  if (process.env.SIN_IA === "1") return null;
+
   const or = process.env.OPENROUTER_API_KEY?.trim();
   if (or) {
     return {
@@ -61,6 +71,8 @@ Reglas absolutas:
 4. "desdeCuando" es el texto tal cual ("hace tres meses", "desde el invierno"). NUNCA lo conviertas en fecha.
 5. Un mismo fragmento puede ir en DOS campos. Si el lugar viene dentro de otra frase, extráelo igual: de "los niños de la vereda El Salado faltan", "afectados" es "los niños de la vereda El Salado" y "lugar" es "la vereda El Salado".
 6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
+7. "afectados" son PERSONAS: quiénes o cuántos. Un sitio NUNCA va en "afectados". "en mi casa", "en el barrio", "en la vereda" son "lugar", no "afectados".
+8. "lugar" incluye el municipio y el departamento si aparecen, aunque estén sueltos al final ("... y rionegro antioquia").
 
 Devuelve SOLO un objeto JSON con estas claves:
 {

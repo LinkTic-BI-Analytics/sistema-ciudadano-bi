@@ -107,3 +107,66 @@ test("lo que precisa después llega al aporte y a la consola", async ({ page }) 
   await expect(page.locator("blockquote")).toContainText(marca);
   await expect(page.locator("body")).toContainText(/El Salado/);
 });
+
+
+test("si nombra un municipio, se lo ofrecemos para que lo confirme", async ({ page }) => {
+  // El texto es el que escribió una persona de verdad probando la pantalla:
+  // trae vereda, municipio y departamento mezclados en una frase.
+  const marca = `divipola-${Date.now()}`;
+  await contar(page, `${marca}: está llegando el agua con olor a gasolina`);
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("en la verede la martinita y rionegro antioquia");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await expect(mun).toContainText(/RIONEGRO/i);
+  await expect(mun).toContainText(/ANTIOQUIA/i);
+  // La salida importa tanto como la lista: sin ella, quien no reconozca ninguno
+  // escoge el primero por salir del paso.
+  await expect(mun.getByRole("button", { name: /ninguno|no estoy seguro/i })).toBeVisible();
+
+  await mun.getByRole("button", { name: /RIONEGRO/i }).first().click();
+
+  // Y en la consola ya no aparece como «por aclarar»: la persona lo resolvió.
+  await page.goto("/consola");
+  await page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true })
+    .click({ timeout: 15_000 });
+  await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
+  await expect(page.locator("body")).toContainText(/confirmada/);
+  await expect(page.locator("body")).toContainText(/la persona lo confirmó/);
+  // Y el texto que ella escribió sigue ahí, sin que el código lo sustituya.
+  await expect(page.locator("body")).toContainText(/martinita/);
+});
+
+test("un nombre que existe en dos departamentos los muestra los dos", async ({ page }) => {
+  // **Es la regla entera.** Elegir por la persona cuando el texto no distingue
+  // es exactamente la inferencia que `I2` prohíbe.
+  await contar(page, "se cayó el puente y no podemos pasar");
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("en rionegro");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await expect(mun).toContainText(/ANTIOQUIA/i);
+  await expect(mun).toContainText(/SANTANDER/i);
+  await expect(mun).toContainText(/solo tú sabes cuál/i);
+});
+
+test("si no nombró ningún municipio, no se le inventa un paso", async ({ page }) => {
+  await contar(page, "no hay agua");
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("la vereda de arriba, subiendo por la escuela");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  // Pasa directo a la vuelta siguiente: no hay nada que confirmar.
+  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("[data-prueba='municipio']")).toHaveCount(0);
+});

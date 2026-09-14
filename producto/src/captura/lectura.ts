@@ -45,19 +45,25 @@ export type Preguntable = (typeof PREGUNTABLES)[number];
 export const COMO_SE_PREGUNTA: Record<Preguntable, { etiqueta: string; ayuda: string }> = {
   lugar: {
     etiqueta: "¿Dónde ocurre?",
-    ayuda: "Como tú lo dirías: un barrio, una vereda, una referencia. Si no lo puedes precisar, déjalo en blanco — no lo vamos a suponer.",
+    // Se le piden las tres cosas juntas porque así es como la gente lo dice
+    // —«la vereda La Martinita, Rionegro, Antioquia»— y porque el municipio y el
+    // departamento son lo que permite ofrecerle el código de DIVIPOLA para que
+    // lo confirme. Sin ellos, su aporte llega a la bandeja sin ubicación.
+    ayuda: "El barrio o la vereda, el municipio y el departamento. Si solo sabes una parte, escríbela igual.",
   },
   afectados: {
     etiqueta: "¿A quiénes les pasa?",
-    ayuda: "Cuánta gente, o quiénes. Si no sabes cuántos, dilo con tus palabras.",
+    ayuda: "Si son solo ustedes, una cuadra, una vereda entera. Un número aproximado sirve; si no lo sabes, dilo con tus palabras.",
   },
   desdeCuando: {
     etiqueta: "¿Desde cuándo pasa?",
-    ayuda: "Como lo recuerdes. «Desde el invierno pasado» sirve igual que una fecha.",
+    // «Invierno» era un ejemplo mal traído: en Colombia no hay invierno, y un
+    // ejemplo que no es del país enseña a contestar cualquier cosa.
+    ayuda: "Como lo recuerdes: «hace dos meses», «desde que empezaron las lluvias», «desde diciembre». Si viene pasando hace años, dilo así.",
   },
   resultadoEsperado: {
     etiqueta: "¿Qué debería cambiar?",
-    ayuda: "Cómo se vería si esto estuviera resuelto.",
+    ayuda: "Cómo se vería tu día si esto estuviera resuelto. No hace falta que sepas quién debe hacerlo.",
   },
   solucionSugerida: {
     etiqueta: "¿Se te ocurre cómo?",

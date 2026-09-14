@@ -15,7 +15,7 @@ import { leer } from "../src/captura/lectura.ts";
 
 const RELATO = "el agua llega turbia desde hace tres meses en la parte alta";
 
-const LLAVES = ["OPENROUTER_API_KEY", "MISTRAL_API_KEY"] as const;
+const LLAVES = ["OPENROUTER_API_KEY", "MISTRAL_API_KEY", "SIN_IA"] as const;
 
 async function conEntorno<T>(puestas: Record<string, string>, f: () => Promise<T>): Promise<T> {
   const antes = Object.fromEntries(LLAVES.map((k) => [k, process.env[k]]));
@@ -149,4 +149,27 @@ test("una respuesta que no es JSON no se le muestra a nadie", async () => {
     globalThis.fetch = fetchReal;
     delete process.env.OPENROUTER_API_KEY;
   }
+});
+
+
+test("SIN_IA=1 apaga la IA aunque haya llave: no sale ni una llamada", async () => {
+  // Es el interruptor de los recorridos. Lo que hay que afirmar es que **no se
+  // llama a nadie**, no que el resultado sea la segmentación: con el
+  // interruptor quitado, una llave inválida da 401 y también cae en la
+  // segmentación, así que mirar el resultado no distingue las dos cosas.
+  //
+  // La primera versión de esta prueba hacía exactamente eso y pasaba con el
+  // interruptor borrado.
+  let llamadas = 0;
+  const fetchReal = globalThis.fetch;
+  globalThis.fetch = (async (...a: Parameters<typeof fetch>) => {
+    llamadas++;
+    return fetchReal(...a);
+  }) as typeof fetch;
+  try {
+    const l = await conEntorno({ SIN_IA: "1", OPENROUTER_API_KEY: "una-llave-buena" },
+                               () => leerConIA(RELATO));
+    assert.equal(l.fuente, "segmentacion");
+  } finally { globalThis.fetch = fetchReal; }
+  assert.equal(llamadas, 0, "con SIN_IA=1 no puede salir ninguna petición");
 });

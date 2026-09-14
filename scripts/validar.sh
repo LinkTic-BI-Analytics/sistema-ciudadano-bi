@@ -166,6 +166,13 @@ else
   saltó "la base local no está levantada (npm run db:arrancar)"
 fi
 
+# CHEQUEO: ninguna clase del producto se la inventó alguien
+# Se ve fallar: poner className="pc-inventada" en cualquier pantalla
+python3 scripts/lib/clases_inventadas.py . >/tmp/ci.$$ 2>&1 \
+  && ok "todas las clases del producto existen en el sistema de diseño" \
+  || { mal "hay clases que el navegador va a ignorar"; sed 's/^/          /' /tmp/ci.$$; }
+rm -f /tmp/ci.$$
+
 # CHEQUEO: ninguna hoja del sistema de diseño se queda sin importar
 # Se ve fallar: quitar el `@import` de backoffice.css de producto/src/app/globals.css
 python3 scripts/lib/hojas_importadas.py . >/tmp/hi.$$ 2>&1 \

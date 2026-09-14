@@ -5,6 +5,8 @@ import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
 import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 import { precisarAporte } from "../../captura/precisar.ts";
+import { buscarMunicipios, type Candidato } from "../../territorio/emparejar.ts";
+import { resolverUbicacion } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
 import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
@@ -14,7 +16,9 @@ export type Resultado =
   | { ok: false; errores: string[] };
 
 /** Lo que devuelve cada vuelta de afinado. Nunca bloquea: el aporte ya está. */
-export type PasoAfinado = { ok: true } | { ok: false; error: string };
+export type PasoAfinado =
+  | { ok: true; municipios?: Candidato[] }
+  | { ok: false; error: string };
 
 /**
  * Resuelve el código a un aporte.
@@ -156,6 +160,12 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
       desdeCuando: dato("desdeCuando"),
     });
 
+    // Si nombró un sitio, se buscan los municipios que encajan **para que ella
+    // los confirme**. No se elige ninguno aquí: `I2` prohíbe inferir, y si el
+    // texto dice «Rionegro» y nada más, hay dos y escoge ella.
+    const lugar = dato("lugar");
+    const municipios = lugar ? await buscarMunicipios(lugar) : [];
+
     const resultado = dato("resultadoEsperado");
     const solucion = dato("solucionSugerida");
     if (resultado || solucion) {
@@ -167,7 +177,7 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
       });
       await confirmarSintesis({ aporteId, autor: "ciudadano" });
     }
-    return { ok: true };
+    return { ok: true, municipios };
   } catch (e) {
     console.error("guardarPrecisiones", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado; puedes intentarlo luego." };
@@ -202,5 +212,38 @@ export async function prepararLectura(codigo: string): Promise<Lectura | null> {
   } catch (e) {
     console.error("prepararLectura", e);
     return null;
+  }
+}
+
+
+/**
+ * La persona confirma en qué municipio ocurre.
+ *
+ * **Es su papel, no un atajo nuestro.** La especificación dice que el ciudadano
+ * *«cuenta qué pasa, confirma la síntesis del problema y el lugar afectado»*, y
+ * él es quien lo sabe: hoy esa confirmación la hace un revisor que no estuvo
+ * ahí y que solo tiene el texto delante.
+ *
+ * El motivo queda escrito en la ubicación, porque `I2` pide que resolverla sea
+ * **un acto de alguien** y no una deducción. Aquí el alguien es la persona.
+ *
+ * Y el texto que escribió se queda igual en `lugar_declarado`: el código no lo
+ * sustituye. Es lo que mantiene reversible haber aplazado el barrio (`Q26`).
+ */
+export async function confirmarMunicipio(
+  codigo: string, territorio: string, version: string,
+): Promise<PasoAfinado> {
+  try {
+    const aporteId = await aporteDelCodigo(codigo);
+    if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+    await resolverUbicacion({
+      aporteId, codigo: territorio, version,
+      autor: "ciudadano",
+      motivo: "la persona lo confirmó al contar su aporte",
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error("confirmarMunicipio", e);
+    return { ok: false, error: "No pudimos guardar el municipio. Tu aporte ya quedó registrado." };
   }
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { confirmarLectura, guardarPrecisiones, prepararLectura, type PasoAfinado } from "./acciones.ts";
+import { confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio, type PasoAfinado } from "./acciones.ts";
+import type { Candidato } from "../../territorio/emparejar.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
@@ -41,7 +42,9 @@ function Guardado({ codigo }: { codigo: string }) {
 export function Afinado({ codigo }: { codigo: string }) {
   const [lect, setLect] = useState<Lectura | null>(null);
   const [leyendo, setLeyendo] = useState(true);
-  const [paso, setPaso] = useState<"entendimos" | "falta" | "listo">("entendimos");
+  const [paso, setPaso] = useState<"entendimos" | "falta" | "municipio" | "listo">("entendimos");
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [guardandoMun, setGuardandoMun] = useState(false);
   const [vuelta, setVuelta] = useState(0);
   const [corrigiendo, setCorrigiendo] = useState(false);
   const [problema, setProblema] = useState("");
@@ -67,6 +70,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   useEffect(() => { if (r1?.ok) setPaso(vueltas.length ? "falta" : "listo"); }, [r1]);
   useEffect(() => {
     if (!r2?.ok) return;
+    // Si nombró un sitio y DIVIPOLA encontró candidatos, se le enseñan antes de
+    // seguir: es el único momento en que está la persona que de verdad lo sabe.
+    if (r2.municipios?.length) { setCandidatos(r2.municipios); setPaso("municipio"); return; }
     setVuelta((v) => {
       const siguiente = v + 1;
       if (siguiente >= vueltas.length) setPaso("listo");
@@ -74,9 +80,17 @@ export function Afinado({ codigo }: { codigo: string }) {
     });
   }, [r2]);
 
+  // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
+  function seguirDespuesDelMunicipio() {
+    setCandidatos([]);
+    const siguiente = vuelta + 1;
+    setVuelta(siguiente);
+    setPaso(siguiente >= vueltas.length ? "listo" : "falta");
+  }
+
   if (leyendo) {
     return (
-      <section className="pc-refine" data-prueba="afinar">
+      <section className="pc-section" data-prueba="afinar">
         <p className="pc-help" data-prueba="leyendo" aria-live="polite">Leyendo lo que contaste…</p>
       </section>
     );
@@ -119,11 +133,13 @@ export function Afinado({ codigo }: { codigo: string }) {
     );
   }
 
-  const total = 1 + (vueltas.length ? vueltas.length : 0) + 1;
-  const actual = paso === "entendimos" ? 2 : 2 + vuelta + 1;
+  // Se cuenta el del municipio solo cuando existe: prometer un paso que no va a
+  // aparecer es peor que no decir cuántos hay.
+  const total = 2 + vueltas.length + (candidatos.length ? 1 : 0);
+  const actual = paso === "entendimos" ? 2 : paso === "municipio" ? 2 + vuelta + 2 : 2 + vuelta + 1;
 
   return (
-    <section className="pc-refine" data-prueba="afinar">
+    <section className="pc-section" data-prueba="afinar">
       {/* Decir cuánto falta es lo que impide que alguien abandone creyendo que
           esto no se acaba nunca. */}
       <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
@@ -138,8 +154,8 @@ export function Afinado({ codigo }: { codigo: string }) {
               {/* Se le devuelve **lo que dijo**, no una interpretación. La
                   pantalla no dice «creemos entender»: dice esto es lo que nos
                   contaste, porque eso es exactamente lo que hay. */}
-              <blockquote className="pc-quote">{problema}</blockquote>
-              <dl className="pc-read">
+              <blockquote className="pc-context">{problema}</blockquote>
+              <dl className="pc-detail-facts">
                 {(["lugar", "afectados", "desdeCuando"] as const)
                   .filter((k) => lect[k])
                   .map((k) => (
@@ -186,6 +202,39 @@ export function Afinado({ codigo }: { codigo: string }) {
               </button>
             </form>
           )}
+        </div>
+      )}
+
+      {paso === "municipio" && (
+        <div data-prueba="municipio">
+          <h2>{candidatos.length === 1 ? "¿Es aquí?" : "¿Cuál de estos es?"}</h2>
+          <p className="pc-help">
+            Lo buscamos en el listado oficial de municipios del DANE por lo que escribiste.
+            {candidatos.length > 1 && <> Hay más de uno con ese nombre, <strong>y solo tú sabes cuál es</strong>.</>}
+          </p>
+          <div className="pc-actions">
+            {candidatos.map((c) => (
+              <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
+                      onClick={async () => {
+                        setGuardandoMun(true);
+                        await confirmarMunicipio(codigo, c.codigo, c.version);
+                        setGuardandoMun(false);
+                        seguirDespuesDelMunicipio();
+                      }}>
+                {c.nombre}, {c.departamento}
+              </button>
+            ))}
+          </div>
+          {/* La salida es tan importante como la lista. Sin ella, quien no
+              reconozca ninguno escoge el primero por salir del paso — y un
+              municipio equivocado es peor que ninguno, porque parece un dato. */}
+          <button type="button" className="pc-mode" onClick={seguirDespuesDelMunicipio}>
+            Ninguno / no estoy seguro
+          </button>
+          <p className="pc-help">
+            Lo que escribiste se guarda igual, tal como lo escribiste. Si no escoges ninguno,
+            alguien lo revisa después — <strong>no lo vamos a suponer</strong>.
+          </p>
         </div>
       )}
 

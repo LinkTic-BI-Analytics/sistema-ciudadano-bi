@@ -39,6 +39,6 @@ export default defineConfig({
     url: "http://127.0.0.1:3101",
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { OPENROUTER_API_KEY: "", MISTRAL_API_KEY: "" },
+    env: { SIN_IA: "1", OPENROUTER_API_KEY: "", MISTRAL_API_KEY: "" },
   },
 });
