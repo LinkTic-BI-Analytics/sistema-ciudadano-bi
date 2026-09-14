@@ -1,5 +1,11 @@
 -- El acceso, en su versión mínima: **negar por defecto**.
 --
+-- **Va de último en el orden del esquema, y por eso se llama 99.** La primera vez
+-- se llamó 09 y las tablas creadas después —`actuacion`— quedaron sin permiso:
+-- `grant on all tables` solo alcanza a las que existen cuando corre. El síntoma
+-- fue «permission denied», que no se parece en nada a «el archivo está en el
+-- orden equivocado».
+--
 -- La política de verdad —quién ve qué— es `T032`, y está bloqueada por `P4` (no
 -- hay mecanismo de identidad escrito en ningún documento) y `Q18` (si la
 -- visibilidad es aislamiento entre procesos o jerarquía por territorio). Las dos
@@ -27,19 +33,18 @@ grant execute on all functions in schema participacion to service_role;
 revoke all on schema participacion from anon, authenticated;
 revoke all on all tables in schema participacion from anon, authenticated;
 
-alter table participacion.proceso                     enable row level security;
-alter table participacion.territorio                  enable row level security;
-alter table participacion.aporte                      enable row level security;
-alter table participacion.sintesis                    enable row level security;
-alter table participacion.ubicacion                   enable row level security;
-alter table participacion.expediente                  enable row level security;
-alter table participacion.vinculo_aporte_expediente   enable row level security;
-alter table participacion.expediente_territorio       enable row level security;
-alter table participacion.auditoria                   enable row level security;
-alter table participacion.corte                       enable row level security;
-
-alter table identidad.contacto     enable row level security;
-alter table identidad.comprobante  enable row level security;
+-- Se recorren todas, no se enumeran. Enumerar es exactamente cómo se olvida
+-- una tabla nueva, y una tabla sin acceso a nivel de fila es una tabla abierta.
+do $$
+declare r record;
+begin
+  for r in
+    select schemaname, tablename from pg_tables
+     where schemaname in ('participacion', 'identidad')
+  loop
+    execute format('alter table %I.%I enable row level security', r.schemaname, r.tablename);
+  end loop;
+end $$;
 
 -- Ni una política. Es el estado correcto mientras `P4` y `Q18` sigan abiertas:
 -- una política escrita antes de saber contra qué identidad se comprueba es una

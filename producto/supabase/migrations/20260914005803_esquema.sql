@@ -640,8 +640,125 @@ $$;
 
 revoke all on function participacion.buscar_texto_en_comprobantes_de_prueba(text) from public;
 
--- ═══ 09_acceso.sql ═══
+-- ═══ 10_estados.sql ═══
+-- Los cuatro estados de `CAL-01`, **separados**.
+--
+-- La tentación es un campo `estado` con todos los valores. Es el error que
+-- `CAL-01` existe para impedir: pide *«mantener estados separados para
+-- ubicación, clasificación, confirmación del relato y revisión institucional»*
+-- y que *«cada indicador declare qué estados incluye»* — con un campo no se
+-- puede declarar nada.
+--
+-- El de ubicación ya vive en `participacion.ubicacion`, porque un aporte puede
+-- tener varias. Estos tres son del aporte.
+
+alter table participacion.aporte
+  add column estado_clasificacion text not null default 'por_clasificar'
+    check (estado_clasificacion in ('por_clasificar','clasificado')),
+  -- Confirmación del RELATO por la persona, no de los hechos. `backoffice-especificacion.md`:
+  -- *«validar una síntesis no equivale a verificar los hechos»*.
+  add column estado_confirmacion text not null default 'sin_confirmar'
+    check (estado_confirmacion in ('sin_confirmar','confirmado')),
+  add column estado_revision text not null default 'sin_revisar'
+    check (estado_revision in ('sin_revisar','en_revision','revisado'));
+
+comment on column participacion.aporte.estado_confirmacion is
+  'Que la persona confirmó su síntesis. NO que los hechos estén verificados: son cosas distintas.';
+
+-- ═══ 11_gestion.sql ═══
+-- Las actuaciones: **un hecho por fila**.
+--
+-- La tentación es un campo `estado` en el expediente con cinco valores. Es el
+-- error que `RES-01` existe para impedir: *«recepción, respuesta, solución,
+-- financiación y ejecución son cinco eventos distintos»*. Con un campo no se
+-- puede decir que algo fue recibido y remitido **pero no respondido**, que es
+-- justo el estado en que va a estar casi todo.
+--
+-- Y por eso el estado de atención **se deriva** de estas filas y no se guarda:
+-- un campo almacenado se desincroniza de sus hechos, y entonces el tablero
+-- afirma algo que la historia contradice.
+
+create table participacion.actuacion (
+  id             uuid primary key default gen_random_uuid(),
+  proceso_id     uuid not null references participacion.proceso (id),
+  expediente_id  uuid not null references participacion.expediente (id),
+
+  -- Cinco, y no hay un sexto. `N14` distingue además recibido, examinado,
+  -- incorporado, financiado, ejecutado y resultado — pero eso es incidencia, y
+  -- la incidencia no está en esta entrega.
+  tipo           text not null check (tipo in
+                   ('recepcion','remision','decision','respuesta','siguiente_paso')),
+
+  autor          text not null,
+  ocurrida_en    timestamptz not null default now(),
+  motivo         text,
+
+  -- Solo en `remision`. **Una remisión no aceptada sigue pendiente** (`N13`), y
+  -- por eso la aceptación es su propio hecho con su propia fecha: no un booleano
+  -- que alguien cambia sin dejar cuándo.
+  destino        text,
+  aceptada_en    timestamptz,
+
+  -- Solo en `siguiente_paso`. Nunca una promesa de plazo: `Q20` está abierta y
+  -- el plazo no se inventa.
+  siguiente_paso text,
+
+  constraint destino_solo_en_remision
+    check (destino is null or tipo = 'remision'),
+  constraint aceptacion_solo_en_remision
+    check (aceptada_en is null or tipo = 'remision'),
+  constraint paso_solo_en_siguiente_paso
+    check (siguiente_paso is null or tipo = 'siguiente_paso')
+);
+
+create index on participacion.actuacion (expediente_id, ocurrida_en);
+create index on participacion.actuacion (proceso_id, tipo);
+
+-- El estado de atención, **derivado**. Nunca almacenado.
+--
+-- Devuelve `sin_respuesta_registrada` cuando no hay respuesta, y **nunca
+-- «vencido»**: el plazo no existe (`Q20`), y el paquete es explícito — *«no
+-- inventar incumplimiento de plazo si no existe plazo definido»*.
+create or replace function participacion.estado_de_atencion(p_expediente uuid)
+returns table (
+  estado           text,
+  ultima_actuacion timestamptz,
+  dias_sin_actuar  numeric,
+  remision_pendiente boolean
+)
+language sql stable as $$
+  select
+    case
+      when exists (select 1 from participacion.actuacion a
+                    where a.expediente_id = p_expediente and a.tipo = 'respuesta')
+        then 'respondido'
+      when exists (select 1 from participacion.actuacion a
+                    where a.expediente_id = p_expediente and a.tipo = 'remision')
+        then 'remitido'
+      when exists (select 1 from participacion.actuacion a
+                    where a.expediente_id = p_expediente and a.tipo = 'recepcion')
+        then 'recibido'
+      else 'sin_respuesta_registrada'
+    end,
+    (select max(a.ocurrida_en) from participacion.actuacion a where a.expediente_id = p_expediente),
+    round(extract(epoch from (now() - coalesce(
+      (select max(a.ocurrida_en) from participacion.actuacion a where a.expediente_id = p_expediente),
+      (select e.abierto_en from participacion.expediente e where e.id = p_expediente)))) / 86400, 1),
+    exists (select 1 from participacion.actuacion a
+             where a.expediente_id = p_expediente and a.tipo = 'remision' and a.aceptada_en is null);
+$$;
+
+comment on function participacion.estado_de_atencion is
+  'Derivado de los hechos, nunca almacenado. Y nunca devuelve "vencido": el plazo no existe (Q20).';
+
+-- ═══ 99_acceso.sql ═══
 -- El acceso, en su versión mínima: **negar por defecto**.
+--
+-- **Va de último en el orden del esquema, y por eso se llama 99.** La primera vez
+-- se llamó 09 y las tablas creadas después —`actuacion`— quedaron sin permiso:
+-- `grant on all tables` solo alcanza a las que existen cuando corre. El síntoma
+-- fue «permission denied», que no se parece en nada a «el archivo está en el
+-- orden equivocado».
 --
 -- La política de verdad —quién ve qué— es `T032`, y está bloqueada por `P4` (no
 -- hay mecanismo de identidad escrito en ningún documento) y `Q18` (si la
@@ -670,46 +787,20 @@ grant execute on all functions in schema participacion to service_role;
 revoke all on schema participacion from anon, authenticated;
 revoke all on all tables in schema participacion from anon, authenticated;
 
-alter table participacion.proceso                     enable row level security;
-alter table participacion.territorio                  enable row level security;
-alter table participacion.aporte                      enable row level security;
-alter table participacion.sintesis                    enable row level security;
-alter table participacion.ubicacion                   enable row level security;
-alter table participacion.expediente                  enable row level security;
-alter table participacion.vinculo_aporte_expediente   enable row level security;
-alter table participacion.expediente_territorio       enable row level security;
-alter table participacion.auditoria                   enable row level security;
-alter table participacion.corte                       enable row level security;
-
-alter table identidad.contacto     enable row level security;
-alter table identidad.comprobante  enable row level security;
+-- Se recorren todas, no se enumeran. Enumerar es exactamente cómo se olvida
+-- una tabla nueva, y una tabla sin acceso a nivel de fila es una tabla abierta.
+do $$
+declare r record;
+begin
+  for r in
+    select schemaname, tablename from pg_tables
+     where schemaname in ('participacion', 'identidad')
+  loop
+    execute format('alter table %I.%I enable row level security', r.schemaname, r.tablename);
+  end loop;
+end $$;
 
 -- Ni una política. Es el estado correcto mientras `P4` y `Q18` sigan abiertas:
 -- una política escrita antes de saber contra qué identidad se comprueba es una
 -- política equivocada escrita con confianza.
-
--- ═══ 10_estados.sql ═══
--- Los cuatro estados de `CAL-01`, **separados**.
---
--- La tentación es un campo `estado` con todos los valores. Es el error que
--- `CAL-01` existe para impedir: pide *«mantener estados separados para
--- ubicación, clasificación, confirmación del relato y revisión institucional»*
--- y que *«cada indicador declare qué estados incluye»* — con un campo no se
--- puede declarar nada.
---
--- El de ubicación ya vive en `participacion.ubicacion`, porque un aporte puede
--- tener varias. Estos tres son del aporte.
-
-alter table participacion.aporte
-  add column estado_clasificacion text not null default 'por_clasificar'
-    check (estado_clasificacion in ('por_clasificar','clasificado')),
-  -- Confirmación del RELATO por la persona, no de los hechos. `backoffice-especificacion.md`:
-  -- *«validar una síntesis no equivale a verificar los hechos»*.
-  add column estado_confirmacion text not null default 'sin_confirmar'
-    check (estado_confirmacion in ('sin_confirmar','confirmado')),
-  add column estado_revision text not null default 'sin_revisar'
-    check (estado_revision in ('sin_revisar','en_revision','revisado'));
-
-comment on column participacion.aporte.estado_confirmacion is
-  'Que la persona confirmó su síntesis. NO que los hechos estén verificados: son cosas distintas.';
 

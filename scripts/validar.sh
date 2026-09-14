@@ -166,6 +166,15 @@ else
   saltó "la base local no está levantada (npm run db:arrancar)"
 fi
 
+# CHEQUEO: ninguna tabla nace abierta
+# Se ve fallar: `alter table participacion.aporte disable row level security`
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
+  python3 scripts/lib/acceso_cerrado.py >/tmp/ac.$$ 2>&1 \
+    && ok "$(cat /tmp/ac.$$)" \
+    || { mal "hay tablas sin acceso a nivel de fila"; sed 's/^/          /' /tmp/ac.$$; }
+  rm -f /tmp/ac.$$
+fi
+
 # CHEQUEO: las pruebas del producto contra la base local
 # Se ve fallar: dale `select` a anon sobre una tabla de participacion
 if [ -f producto/.env.local ] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
