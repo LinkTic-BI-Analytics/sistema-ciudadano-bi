@@ -21,6 +21,19 @@
 @import "../producto/tokens/marco.css";
 @import "../producto/tokens/estructura.css";
 
+/* El perfil interno, bajo `.pc-backoffice`. El `LEEME.md` del paquete lo dice
+ * así: «Equipo interno: cargar participacion.css y backoffice.css».
+ *
+ * **Faltaba, y la consola se renderizó sin estilos sin que nada lo dijera.**
+ * Las pruebas seguían verdes porque una pantalla sin CSS muestra *más*, no
+ * menos: los dos enlaces de cada fila —el de tarjeta y el de tabla, que el
+ * diseño alterna a 36rem— quedaban visibles a la vez. Lo que se veía como una
+ * prueba ambigua era una hoja ausente.
+ *
+ * `scripts/lib/hojas_importadas.py` comprueba que no vuelva a faltar ninguna.
+ */
+@import "../producto/tokens/backoffice.css";
+
 :root {
   /* Modo claro y nada más: el sistema de diseño no define modo oscuro, y es
    * una decisión, no un olvido. Declararlo aquí evita que el navegador pinte

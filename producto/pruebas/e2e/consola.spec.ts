@@ -1,0 +1,104 @@
+// La consola de revisión, en un navegador de verdad.
+//
+// Ejercita todo lo que estaba construido y no se podía ver: la bandeja de
+// T027, el expediente de T028 y la prioridad de T035.
+
+import { test, expect, type Page } from "@playwright/test";
+
+// Abre el aporte marcado, haciendo clic en **lo que una persona vería**.
+//
+// Cada fila se renderiza dos veces —tarjeta y tabla— porque el sistema de
+// diseño alterna las dos formas en 36rem. Exactamente una se ve, y afirmarlo
+// aquí es lo que delata que la hoja no cargó: sin CSS se ven las dos, y un
+// clic ambiguo se lee como una prueba mal escrita cuando es la pantalla la que
+// está sin estilos.
+async function abrirAporte(page: Page, marca: string) {
+  const visibles = page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true });
+  await expect(visibles).toHaveCount(1);
+  await visibles.click();
+}
+
+test("la bandeja muestra lo que llega y dice que no ordena por popularidad", async ({ page }) => {
+  await page.goto("/participar");
+  await page.fill("#relato", "no hay agua en la vereda desde hace dos semanas");
+  await page.fill("#lugar", "la vereda de arriba");
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto("/consola");
+  await expect(page.locator("h1")).toContainText(/por aclarar/i);
+  await expect(page.locator("body")).toContainText(/sin orden por popularidad/i);
+  await expect(page.locator(".bo-record-link").filter({ visible: true }).first()).toBeVisible();
+});
+
+test("la consola trae su hoja de estilos puesta", async ({ page }) => {
+  // `backoffice.css` se copia a `producto/src/producto/tokens/` y hay que
+  // importarla aparte. **No estaba importada**, y la consola se construyó
+  // entera sin estilos sin que ninguna prueba lo dijera: una pantalla sin CSS
+  // muestra de más, no de menos.
+  //
+  // `.bo-shell` es `display:grid` en la hoja y `block` sin ella. No depende de
+  // que haya datos, así que sirve igual con la bandeja vacía.
+  await page.goto("/consola");
+  await expect(page.locator(".bo-shell")).toHaveCSS("display", "grid");
+});
+
+test("la consola avisa que no tiene permisos", async ({ page }) => {
+  // Una pantalla interna sin autorización en un servidor de desarrollo es
+  // aceptable; que nadie se entere, no.
+  await page.goto("/consola");
+  await expect(page.locator(".bo-sidebar")).toContainText(/sin permisos/i);
+  await expect(page.locator(".bo-sidebar")).toContainText(/no desplegar/i);
+});
+
+test("abrir un aporte muestra el relato original y dice que no se edita", async ({ page }) => {
+  // Un relato único para poder encontrarlo: la bandeja muestra **el más antiguo
+  // primero** —que es lo que pide `backoffice-especificacion.md`, sin puntaje de
+  // prioridad— así que tomar «el primero» sería tomar el de otra prueba.
+  const marca = `puente-${Date.now()}`;
+  const relato = `${marca}: el puente peatonal está deteriorado`;
+  await page.goto("/participar");
+  await page.fill("#relato", relato);
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto("/consola");
+  await abrirAporte(page, marca);
+  await expect(page.locator("blockquote")).toContainText(relato);
+  await expect(page.locator(".bo-source")).toContainText(/no se edita/i);
+  // I2: la ubicación llega sin código, y la pantalla lo dice.
+  await expect(page.locator(".bo-history-section").first()).toContainText(/no se infiere/i);
+});
+
+test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
+  const marca = `escuela-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: la escuela se quedó sin agua y los niños no van`);
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto("/consola");
+  await abrirAporte(page, marca);
+
+  // Los selectores van acotados al panel: hay dos campos llamados `motivo` en la
+  // página —uno en la ubicación y otro en el expediente— y sin acotar, el `fill`
+  // va al de arriba. Lo descubrió esta prueba fallando.
+  const panel = page.locator(".bo-inspector");
+  await panel.locator("input[name='descripcion']").fill("sin agua en la escuela");
+  await panel.locator("input[name='motivo']").fill("es el relato que la origina");
+  await panel.getByRole("button", { name: /^abrir$/i }).click();
+  await expect(panel).toContainText(/sin agua en la escuela/, { timeout: 15_000 });
+
+  await panel.locator("input[name='motivo']").fill("afecta a menores y es una sola fuente");
+  await panel.locator("select[name='afectacion']").selectOption("alta");
+  await panel.getByRole("button", { name: /registrar prioridad/i }).click();
+  await expect(panel).toContainText(/afecta a menores/, { timeout: 15_000 });
+  // Los cinco factores salen por separado, que es el punto: juntarlos en un
+  // número sería la fórmula que nadie acordó.
+  await expect(panel).toContainText(/afectación: alta/i);
+  await expect(panel).toContainText(/urgencia: —/i);
+  await expect(panel).toContainText(/no hay puntaje ni ranking/i);
+  // Que NO exista una puntuación se prueba donde de verdad importa: contra el
+  // módulo y contra las columnas de la tabla, en pruebas/prioridad.test.ts.
+  // Buscar la palabra aquí fallaba contra la propia frase que lo explica.
+});

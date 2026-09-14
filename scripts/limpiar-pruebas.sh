@@ -21,6 +21,7 @@ create temporary table _p on commit drop as
   where nombre like 'ESCENARIO DE PRUEBA%'
     and nombre <> 'ESCENARIO DE PRUEBA — no es un proceso real';
 
+delete from participacion.prioridad_examen where proceso_id in (select id from _p);
 delete from participacion.alerta      where proceso_id in (select id from _p);
 delete from participacion.actuacion   where proceso_id in (select id from _p);
 delete from participacion.expediente_territorio

@@ -1,4 +1,6 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import type { FilaVinculo } from "../datos/filas.ts";
+import { invalidarPorReapertura } from "../priorizacion/prioridad.ts";
 
 export type Territorio = { codigo: string; version: string };
 
@@ -100,7 +102,7 @@ export async function aportesDe(expedienteId: string): Promise<Vinculo[]> {
     .select("aporte_id, motivo, autor, creado_en")
     .eq("expediente_id", expedienteId).is("desvinculado_en", null);
   if (error) throw new Error(`no se pudieron leer los aportes: ${error.message}`);
-  return (data ?? []).map((v: any) => ({
+  return ((data ?? []) as FilaVinculo[]).map((v) => ({
     aporteId: v.aporte_id, motivo: v.motivo, autor: v.autor, creadoEn: v.creado_en,
   }));
 }
@@ -111,7 +113,7 @@ export async function expedientesDe(aporteId: string): Promise<string[]> {
   const { data, error } = await p.from("vinculo_aporte_expediente")
     .select("expediente_id").eq("aporte_id", aporteId).is("desvinculado_en", null);
   if (error) throw new Error(`no se pudieron leer los expedientes: ${error.message}`);
-  return (data ?? []).map((v: any) => v.expediente_id);
+  return ((data ?? []) as Pick<FilaVinculo, "expediente_id">[]).map((v) => v.expediente_id);
 }
 
 /**
@@ -154,6 +156,11 @@ export async function desvincular(
     reabierto_motivo: `desagrupado: ${v.motivo}`,
   }).eq("id", v.expedienteId);
   if (eReabrir) throw new Error(`no se pudo reabrir el expediente: ${eReabrir.message}`);
+
+  // La prioridad deja de estar vigente. `NEC-01`: reabrir es *sin heredar
+  // aprobación* — si la prioridad se quedara, el sistema afirmaría algo que ya
+  // no sustenta.
+  await invalidarPorReapertura(v.expedienteId, v.motivo);
 
   await p.from("auditoria").insert({
     proceso_id: vinculo.proceso_id, actor: v.autor, accion: "desvincular",

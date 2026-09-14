@@ -1,4 +1,5 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import type { FilaActuacion, FilaEstadoAtencion } from "../datos/filas.ts";
 
 /** Los cinco de `RES-01`, y no hay un sexto. */
 export type TipoActuacion =
@@ -75,8 +76,8 @@ export async function historiaDe(expedienteId: string): Promise<Actuacion[]> {
     .select("id, tipo, autor, ocurrida_en, motivo, destino, aceptada_en, siguiente_paso")
     .eq("expediente_id", expedienteId).order("ocurrida_en", { ascending: true });
   if (error) throw new Error(`no se pudo leer la historia: ${error.message}`);
-  return (data ?? []).map((a: any) => ({
-    actuacionId: a.id, tipo: a.tipo, autor: a.autor, ocurridaEn: a.ocurrida_en,
+  return ((data ?? []) as FilaActuacion[]).map((a) => ({
+    actuacionId: a.id, tipo: a.tipo as TipoActuacion, autor: a.autor, ocurridaEn: a.ocurrida_en,
     motivo: a.motivo, destino: a.destino, aceptadaEn: a.aceptada_en,
     siguientePaso: a.siguiente_paso,
   }));
@@ -98,9 +99,9 @@ export async function estadoDeAtencion(expedienteId: string): Promise<EstadoAten
   const p = clienteServidor().schema("participacion");
   const { data, error } = await p.rpc("estado_de_atencion", { p_expediente: expedienteId });
   if (error) throw new Error(`no se pudo derivar el estado: ${error.message}`);
-  const f = (Array.isArray(data) ? data[0] : data) as any;
+  const f = (Array.isArray(data) ? data[0] : data) as FilaEstadoAtencion;
   return {
-    estado: f.estado,
+    estado: f.estado as EstadoAtencion["estado"],
     ultimaActuacion: f.ultima_actuacion,
     diasSinActuar: Number(f.dias_sin_actuar),
     remisionPendiente: f.remision_pendiente,

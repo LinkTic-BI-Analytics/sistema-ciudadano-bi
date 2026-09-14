@@ -8,6 +8,11 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./pruebas/e2e",
   fullyParallel: false,
+  // **Un trabajador.** Los dos proyectos escriben en la misma base, y con dos
+  // en paralelo una prueba veía los registros de la otra. Se descubrió porque
+  // dos corridas seguidas daban resultados distintos — que es peor que fallar.
+  workers: 1,
+  globalSetup: "./pruebas/e2e/limpiar.ts",
   reporter: process.env.CI ? "list" : [["list"]],
   use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure" },
   projects: [

@@ -1,4 +1,5 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import type { FilaSintesis } from "../datos/filas.ts";
 
 export type ClaseCorreccion = "mal_interpretado" | "cambio_de_posicion";
 
@@ -121,8 +122,8 @@ export async function sintesisDe(aporteId: string): Promise<Sintesis[]> {
     .select("version, texto, clase, autor, motivo, creada_en, confirmada_en")
     .eq("aporte_id", aporteId).order("version", { ascending: true });
   if (error) throw new Error(`no se pudo leer la síntesis: ${error.message}`);
-  return (data ?? []).map((s: any) => ({
-    version: s.version, texto: s.texto, clase: s.clase, autor: s.autor,
+  return ((data ?? []) as FilaSintesis[]).map((s) => ({
+    version: s.version, texto: s.texto, clase: s.clase as Sintesis["clase"], autor: s.autor,
     motivo: s.motivo, creadaEn: s.creada_en, confirmadaEn: s.confirmada_en,
   }));
 }

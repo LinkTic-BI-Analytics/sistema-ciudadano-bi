@@ -1,4 +1,5 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import type { FilaCorte } from "../datos/filas.ts";
 
 export type EntradaDiccionario = { definicion: string; advertencia: string };
 
@@ -79,9 +80,10 @@ export async function exportarCorte(corteId: string): Promise<Exportacion> {
 
   // Solo los indicadores que el diccionario documenta. Un número sin definición
   // ni advertencia es un número que alguien va a interpretar como quiera.
+  const fila = data as FilaCorte;
   const indicadores: Record<string, number | null> = {};
   for (const clave of Object.keys(DICCIONARIO)) {
-    indicadores[clave] = (data.indicadores as any)[clave] ?? null;
+    indicadores[clave] = fila.indicadores[clave] ?? null;
   }
 
   return {

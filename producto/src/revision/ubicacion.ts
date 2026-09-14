@@ -1,4 +1,5 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import type { FilaPendiente } from "../datos/filas.ts";
 
 export type PendienteUbicacion = {
   aporteId: string;
@@ -32,13 +33,13 @@ export async function porAclarar(procesoId: string, limite = 50): Promise<Pendie
     .limit(limite);
   if (error) throw new Error(`no se pudo leer la bandeja: ${error.message}`);
 
-  return (data ?? [])
-    .filter((u: any) => u.aporte && u.aporte.retirado_en === null)
-    .map((u: any) => ({
+  return ((data ?? []) as unknown as FilaPendiente[])
+    .filter((u) => u.aporte !== null && u.aporte.retirado_en === null)
+    .map((u) => ({
       aporteId: u.aporte_id,
-      relato: u.aporte.relato_original,
-      lugarDeclarado: u.aporte.lugar_declarado,
-      recibidoEn: u.aporte.recibido_en,
+      relato: u.aporte!.relato_original,
+      lugarDeclarado: u.aporte!.lugar_declarado,
+      recibidoEn: u.aporte!.recibido_en,
     }))
     .sort((a, b) => a.recibidoEn.localeCompare(b.recibidoEn));
 }

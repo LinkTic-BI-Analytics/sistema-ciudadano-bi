@@ -166,6 +166,13 @@ else
   saltó "la base local no está levantada (npm run db:arrancar)"
 fi
 
+# CHEQUEO: ninguna hoja del sistema de diseño se queda sin importar
+# Se ve fallar: quitar el `@import` de backoffice.css de producto/src/app/globals.css
+python3 scripts/lib/hojas_importadas.py . >/tmp/hi.$$ 2>&1 \
+  && ok "todas las hojas copiadas del sistema de diseño están importadas" \
+  || { mal "hay hojas copiadas que nadie importa"; sed 's/^/          /' /tmp/hi.$$; }
+rm -f /tmp/hi.$$
+
 # CHEQUEO: ninguna tabla nace abierta
 # Se ve fallar: `alter table participacion.aporte disable row level security`
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
