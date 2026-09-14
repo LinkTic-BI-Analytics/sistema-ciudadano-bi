@@ -124,3 +124,29 @@ test("si las llena, quedan guardadas con el aporte", async ({ page }) => {
   await page.getByRole("button", { name: /consultar/i }).click();
   await expect(page.locator("[data-prueba='relato']")).toBeVisible({ timeout: 15_000 });
 });
+
+test("si el relato trae un indicio de peligro, la orientación sale ANTES de terminar", async ({ page }) => {
+  // `V13`: la orientación se muestra «sin exigir que termine el formulario».
+  // Alguien que está reportando un derrumbe no debería tener que llenar campos
+  // para ver a dónde llamar.
+  await page.goto("/participar");
+  await expect(page.locator("[data-prueba='orientacion']")).toHaveCount(0);
+  await page.fill("#relato", "hubo un deslizamiento y hay personas atrapadas");
+  const aviso = page.locator("[data-prueba='orientacion']");
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toContainText("123");
+  await expect(aviso).toContainText(/no activa por sí mismo/i);
+  // Y no pide acercarse ni tomar fotos.
+  const texto = (await aviso.innerText()).toLowerCase();
+  for (const prohibido of ["foto", "evidencia", "acérca"]) {
+    expect(texto).not.toContain(prohibido);
+  }
+});
+
+test("la orientación no impide enviar", async ({ page }) => {
+  await page.goto("/participar");
+  await page.fill("#relato", "el muro de contención se va a caer sobre las casas");
+  await expect(page.locator("[data-prueba='orientacion']")).toBeVisible();
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+});

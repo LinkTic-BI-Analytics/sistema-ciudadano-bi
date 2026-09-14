@@ -3,6 +3,7 @@
 import { recibirAporte } from "../../captura/recibir.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis } from "../../captura/sintesis.ts";
+import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
 
 export type Resultado =
   | { ok: true; codigo: string; yaExistia: boolean }
@@ -49,6 +50,14 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
         aporteId: r.aporteId, autor: "ciudadano",
         problema, resultadoEsperado: resultado, solucionSugerida: solucion,
       });
+    }
+
+    // Si el relato trae un indicio, la alerta se levanta. **No bloquea el
+    // envío**: `N02` pide aceptar relato libre, y retener a alguien que está
+    // reportando un derrumbe es peor que inútil.
+    const indicio = hayIndicio(relato);
+    if (indicio && !r.yaExistia) {
+      await levantarAlerta({ aporteId: r.aporteId, origen: "senal", indicio });
     }
 
     return { ok: true, codigo: r.codigoComprobante, yaExistia: r.yaExistia };

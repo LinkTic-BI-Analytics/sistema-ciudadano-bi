@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { enviarAporte, type Resultado } from "./acciones.ts";
 import { claveEnvioVigente, olvidarClaveEnvio } from "../../captura/clave-envio.ts";
+import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
 
 export function Formulario() {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
@@ -15,6 +16,10 @@ export function Formulario() {
   const [relato, setRelato] = useState("");
   const [clave, setClave] = useState("");
   const resumen = useRef<HTMLDivElement>(null);
+  // **Se evalúa mientras escribe, no al enviar.** Alguien que está reportando un
+  // derrumbe no debería tener que terminar un formulario para ver a dónde
+  // llamar. `V13`: la orientación se muestra «sin exigir que termine».
+  const indicio = hayIndicio(relato);
 
   useEffect(() => setClave(claveEnvioVigente()), []);
 
@@ -62,6 +67,18 @@ export function Formulario() {
           <ul>
             {resultado.errores.map((e) => <li key={e}>{e}</li>)}
           </ul>
+        </div>
+      )}
+
+      {indicio && (
+        // Sale de más, nunca de menos: un falso positivo es un número de más en
+        // la pantalla; un falso negativo es alguien en peligro que no lo ve.
+        <div className="pc-callout" role="alert" data-prueba="orientacion">
+          <p><strong>{ORIENTACION}</strong></p>
+          <a className="pc-action" href="tel:123">Llamar al 123</a>
+          <p className="pc-help">
+            Lo que ya escribiste se conserva. Puedes llamar y volver.
+          </p>
         </div>
       )}
 
