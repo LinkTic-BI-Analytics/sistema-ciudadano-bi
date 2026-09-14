@@ -104,6 +104,34 @@ export function Formulario() {
         </p>
       </div>
 
+      {/* Plegado a propósito. `N02` pide captura mínima y gradual: lo obligatorio
+          es el relato, y esto es para quien quiera precisar. Abrirlo de entrada
+          convierte un formulario de dos campos en uno de cinco, y eso es lo que
+          hace que alguien lo cierre. */}
+      <details className="pc-field">
+        <summary>Si quieres, ayúdanos a precisarlo</summary>
+        <p className="pc-help">
+          Todo esto es opcional. Nos ayuda a entenderlo mejor, pero <strong>no hace falta</strong>
+          {" "}para que lo revisemos.
+        </p>
+        <div className="pc-field">
+          <label className="pc-label" htmlFor="problema">¿Cuál es el problema?</label>
+          <input id="problema" name="problema" className="pc-input" type="text" />
+        </div>
+        <div className="pc-field">
+          <label className="pc-label" htmlFor="resultado">¿Qué debería cambiar?</label>
+          <input id="resultado" name="resultado" className="pc-input" type="text" />
+        </div>
+        <div className="pc-field">
+          <label className="pc-label" htmlFor="solucion">¿Se te ocurre cómo resolverlo?</label>
+          <input id="solucion" name="solucion" className="pc-input" type="text"
+                 aria-describedby="solucion-ayuda" />
+          <p className="pc-help" id="solucion-ayuda">
+            No hace falta proponer una solución para que el problema se escuche.
+          </p>
+        </div>
+      </details>
+
       <button type="submit" className="pc-action" disabled={enviando}>
         {enviando ? "Enviando…" : "Enviar lo que conté"}
       </button>

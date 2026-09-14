@@ -2,6 +2,7 @@
 
 import { recibirAporte } from "../../captura/recibir.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
+import { proponerSintesis } from "../../captura/sintesis.ts";
 
 export type Resultado =
   | { ok: true; codigo: string; yaExistia: boolean }
@@ -37,6 +38,19 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
       canal: "web",
       lugarDeclarado: lugar || undefined,
     });
+    // Las tres partes de `N03`, **todas opcionales**. Si la persona no llenó
+    // ninguna, no hay síntesis — y eso está bien: contó lo suyo y con eso basta
+    // para que alguien lo revise.
+    const problema = String(datos.get("problema") ?? "").trim();
+    const resultado = String(datos.get("resultado") ?? "").trim();
+    const solucion = String(datos.get("solucion") ?? "").trim();
+    if (!r.yaExistia && (problema || resultado || solucion)) {
+      await proponerSintesis({
+        aporteId: r.aporteId, autor: "ciudadano",
+        problema, resultadoEsperado: resultado, solucionSugerida: solucion,
+      });
+    }
+
     return { ok: true, codigo: r.codigoComprobante, yaExistia: r.yaExistia };
   } catch (e) {
     // El mensaje técnico no se le muestra a nadie: no ayuda y a veces cuenta de

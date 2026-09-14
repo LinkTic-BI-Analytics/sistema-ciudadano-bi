@@ -99,3 +99,28 @@ test("el foco se ve en todo lo que se toca con el teclado", async ({ page }) => 
   // Nunca `outline: none` sin reemplazo: quien navega con teclado pierde el sitio.
   expect(contorno!.estilo).not.toBe("none");
 });
+
+test("las tres partes opcionales se pueden dejar en blanco", async ({ page }) => {
+  // `N02` · captura mínima y gradual. Lo obligatorio es el relato; lo demás es
+  // para quien quiera precisar, y va plegado para no convertir un formulario de
+  // dos campos en uno de cinco.
+  await page.goto("/participar");
+  await expect(page.locator("#problema")).toHaveCount(1);
+  await page.fill("#relato", "no hay alumbrado en la calle de la escuela");
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("si las llena, quedan guardadas con el aporte", async ({ page }) => {
+  await page.goto("/participar");
+  await page.fill("#relato", "el puente está agrietado");
+  await page.locator("details").first().click();
+  await page.fill("#problema", "el puente peatonal tiene una grieta que crece");
+  await page.fill("#resultado", "que lo revisen antes de que se caiga");
+  await page.getByRole("button", { name: /enviar/i }).click();
+  const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 15_000 });
+  await page.goto("/mis-aportes");
+  await page.fill("#codigo", codigo);
+  await page.getByRole("button", { name: /consultar/i }).click();
+  await expect(page.locator("[data-prueba='relato']")).toBeVisible({ timeout: 15_000 });
+});
