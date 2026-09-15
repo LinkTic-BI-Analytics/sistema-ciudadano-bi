@@ -144,7 +144,10 @@ export async function accionCambiarTema(datos: FormData) {
     .select("tema, proceso_id").eq("id", aporteId).single();
   if (!antes) return;
 
-  await p.from("aporte").update({ tema: tema || null }).eq("id", aporteId);
+  const { error } = await p.from("aporte").update({ tema: tema || null }).eq("id", aporteId);
+  // Si la base lo rechaza, no se sigue como si nada: el asiento de auditoría
+  // diría que alguien cambió el tema y el tema seguiría igual.
+  if (error) throw new Error(`no se pudo guardar el tema: ${error.message}`);
   await p.from("auditoria").insert({
     proceso_id: antes.proceso_id,
     actor: String(datos.get("autor") || "revisor sin identificar"),

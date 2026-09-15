@@ -250,9 +250,17 @@ create table participacion.aporte (
   -- equivoca la lectura, que es lo único que dirá si la lista sirve.
   tema                text,
   tema_propuesto      text,
+  -- **Esta lista y la de `src/captura/lectura.ts` son la misma, y hay un
+  -- chequeo que lo comprueba.** Se ampliaron los temas en el código y aquí no:
+  -- el `update` con «empleo» lo rechazaba la base, el error no se miraba, y el
+  -- aporte quedaba sin tema mientras la pantalla decía «la lectura propuso
+  -- Empleo e ingresos». Nadie se enteraba porque `tema_propuesto` no tiene esta
+  -- restricción y sí se guardaba.
   constraint tema_de_la_lista check (
     tema is null or tema in ('agua','vias','salud','educacion','energia','residuos',
-                             'conectividad','vivienda','ambiente','seguridad','otro')
+                             'conectividad','vivienda','ambiente','seguridad',
+                             'mujeres','campo','empleo','apoyo','justicia','cultura',
+                             'animales','otro')
   ),
 
   es_colectivo        boolean not null default false,

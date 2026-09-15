@@ -309,7 +309,9 @@ test("la ficha dice de qué, dónde y cuántos más, antes de leer el relato", a
   await expect(cabecera).toContainText(/cuántos más como este/i);
   // Sin tema y sin municipio se dice que no se puede contar, en vez de un cero
   // que parecería «no hay ninguno más».
-  await expect(cabecera).toContainText(/falta tema o municipio/i);
+  // Dice **cuáles** faltan, no «uno de los dos»: con uno de ellos dos filas
+  // más arriba, buscar cuál era costaba más que leerlo.
+  await expect(cabecera).toContainText(/falta el tema y el municipio/i);
 });
 
 test("la gestión llega medio llena con lo que la persona confirmó", async ({ page }) => {
@@ -598,4 +600,29 @@ test("lo que no se puede leer dice que no se sabe, no que sea cero", async ({ pa
   await expect(fila).toContainText(/no dijo desde cuándo/i, { timeout: 15_000 });
   // Y su frase sigue ahí: no se pudo agrupar, pero no se perdió.
   await expect(fila).toContainText(/empezaron las lluvias/i);
+});
+
+test("el municipio aceptado se ve en la cabecera aunque no haya tema", async ({ page }) => {
+  // **Dos afirmaciones contrarias sobre el mismo dato, en la misma pantalla.**
+  // La cabecera decía «sin municipio aceptado» justo encima de una sección que
+  // decía «confirmada · ANSERMA». La causa: el municipio de la cabecera salía
+  // de `recurrenciaDe()`, que devuelve `null` cuando el aporte no tiene tema
+  // —porque sin tema no hay nada que contar—. Un dato no se toma de un cálculo
+  // que existe para otra cosa.
+  const marca = `sintema-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: en nuestro pueblo no hay trabajo`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+
+  await abrirAporte(page, marca);
+  const cabecera = page.locator("[data-prueba='cabecera']");
+  await expect(cabecera).toContainText(/RIONEGRO/);
+  await expect(cabecera, "la cabecera niega el municipio que la ubicación confirma")
+    .not.toContainText(/sin municipio aceptado/i);
+  // Y el conteo dice cuál de los dos le falta, no «uno de los dos».
+  await expect(cabecera).toContainText(/falta el tema/i);
 });

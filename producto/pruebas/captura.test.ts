@@ -113,6 +113,7 @@ test("cada aporte recibido deja un asiento en la auditoría", async () => {
 });
 
 import { claveEnvioVigente, nuevaClaveEnvio } from "../src/captura/clave-envio.ts";
+import { TEMAS } from "../src/captura/lectura.ts";
 
 /** Un almacén de mentira, para no depender de que haya navegador. */
 function almacenFalso(inicial: Record<string, string> = {}): Storage {
@@ -148,4 +149,26 @@ test("si ya había una guardada, esa manda sobre la del servidor", () => {
 test("sin almacén se usa la del servidor antes que inventar una", () => {
   const reserva = nuevaClaveEnvio();
   assert.equal(claveEnvioVigente({ reserva }), reserva);
+});
+
+test("la base acepta TODOS los temas de la lista, no solo los viejos", async () => {
+  // **El fallo que esto vigila fue silencioso.** La lista pasó de once a
+  // dieciocho en el código y la restricción del esquema se quedó con once: la
+  // base rechazaba el `update` con «empleo», el error no se miraba, y el aporte
+  // quedaba sin tema mientras la ficha decía «la lectura propuso Empleo e
+  // ingresos».
+  //
+  // Se comprueba contra la base de verdad, uno por uno: una lista que cuadra en
+  // el papel puede no cuadrar en la base que está corriendo.
+  // `await`, no `return`: `node:test` espera `Promise<void>` y devolver el
+  // array de resultados no compila.
+  await Promise.all(TEMAS.map(async (tema) => {
+    const r = await recibirAporte({
+      procesoId, claveEnvio: `tema-${tema}-${Date.now()}`,
+      relato: `prueba del tema ${tema}`, canal: "web",
+    });
+    const { error } = await clienteServidor().schema("participacion")
+      .from("aporte").update({ tema }).eq("id", r.aporteId);
+    assert.equal(error, null, `la base rechaza el tema «${tema}»: ${error?.message}`);
+  }));
 });

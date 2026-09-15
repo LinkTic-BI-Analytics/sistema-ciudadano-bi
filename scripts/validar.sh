@@ -200,6 +200,18 @@ else
   saltó "no hay .env.local o la base no está levantada"
 fi
 
+# CHEQUEO: una lista cerrada del código que el esquema no conoce
+# Se ve fallar: quítale un tema a la restricción `tema_de_la_lista` de 03_aporte.sql
+#
+# Salió de un fallo silencioso: los temas pasaron de once a dieciocho en el
+# código y la restricción del esquema se quedó con once. La base rechazaba el
+# `update`, nadie miraba el error, y el aporte quedaba sin tema mientras la
+# ficha decía «la lectura propuso Empleo e ingresos».
+python3 scripts/lib/listas_que_no_cuadran.py >/tmp/lst.$$ 2>&1 \
+  && ok "$(grep -o 'los .* son los mismos' /tmp/lst.$$ | tail -1)" \
+  || { mal "una lista del código no cuadra con el esquema"; grep FALLA /tmp/lst.$$ | head -4 | sed 's/^/          /'; }
+rm -f /tmp/lst.$$
+
 # CHEQUEO: los recorridos en un navegador de verdad
 # Se ve fallar: quítale la etiqueta al campo de relato en participar/formulario.tsx
 #

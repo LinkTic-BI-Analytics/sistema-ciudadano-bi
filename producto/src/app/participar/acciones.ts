@@ -153,10 +153,21 @@ export async function confirmarLectura(_previo: PasoAfinado | null, datos: FormD
     // fallaría justo después de que ella hizo su parte.
     // El tema viaja con el mismo envío (`CLA-01`). Guardarlo en un `onClick`
     // aparte suspendía el manejador del botón y el formulario no se enviaba.
+    // **El error se mira.** No se miraba, y por eso un tema que la base
+    // rechazaba —porque la lista del código se amplió y la restricción del
+    // esquema no— dejaba el aporte sin tema **en silencio**: la pantalla decía
+    // «la lectura propuso Empleo e ingresos» y el campo estaba vacío. Nadie se
+    // enteró hasta que alguien miró una ficha.
+    //
+    // No se lanza: `N02` manda, y el aporte ya está guardado. Se anota, que es
+    // lo que faltaba.
     const temaDicho = String(datos.get("tema") ?? "").trim();
     if (temaDicho === "" || esTema(temaDicho)) {
-      await clienteServidor().schema("participacion").from("aporte")
+      const { error } = await clienteServidor().schema("participacion").from("aporte")
         .update({ tema: temaDicho || null }).eq("id", aporteId);
+      if (error) console.error("confirmarLectura · no se pudo guardar el tema", temaDicho, error);
+    } else {
+      console.error("confirmarLectura · llegó un tema que no es de la lista", temaDicho);
     }
 
     const mostrado = String(datos.get("mostrado") ?? "").trim();

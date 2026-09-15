@@ -102,20 +102,27 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
 
   // Cuántos más hay como este (`CLA-03`). Se calcula, nunca se declara.
   const recurrencia = await recurrenciaDe(aporteId);
-  // El departamento del municipio aceptado. Estaba en el `select` de arriba
-  // (`departamento:padre`) y no se usaba en ninguna parte.
-  const departamentoDelMunicipio = recurrencia.municipio
+  // **El municipio aceptado sale de la ubicación, no de la recurrencia.**
+  // Salía de `recurrenciaDe()`, que devuelve `municipio: null` cuando el aporte
+  // no tiene tema —porque sin tema no hay nada que contar—. Resultado: la
+  // cabecera decía «sin municipio aceptado» justo encima de una sección que
+  // decía «confirmada · ANSERMA». Dos afirmaciones contrarias sobre el mismo
+  // dato, en la misma pantalla.
+  //
+  // Un dato no se toma de un cálculo que existe para otra cosa.
+  const aceptada = ubi?.find((u) => u.estado === "confirmada" && u.territorio_codigo) ?? null;
+  const departamentoDelMunicipio = aceptada?.territorio_codigo
     ? (await (async () => {
         const { data: m } = await p.from("territorio").select("padre")
-          .eq("codigo", recurrencia.municipio!).eq("nivel", "municipio").limit(1).maybeSingle();
+          .eq("codigo", aceptada!.territorio_codigo!).eq("nivel", "municipio").limit(1).maybeSingle();
         if (!m?.padre) return null;
         const { data: d } = await p.from("territorio").select("nombre")
           .eq("codigo", m.padre).eq("nivel", "departamento").limit(1).maybeSingle();
         return d?.nombre ?? null;
       })())
     : null;
-  const nombreDelMunicipio = recurrencia.municipio
-    ? (await p.from("territorio").select("nombre").eq("codigo", recurrencia.municipio)
+  const nombreDelMunicipio = aceptada?.territorio_codigo
+    ? (await p.from("territorio").select("nombre").eq("codigo", aceptada.territorio_codigo)
         .eq("nivel", "municipio").limit(1).maybeSingle()).data?.nombre ?? null
     : null;
 
@@ -246,8 +253,14 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
 
                   <dt className="bo-small">Cuántos más como este</dt>
                   <dd>
-                    {!a.tema || !recurrencia.municipio ? (
-                      <span className="bo-muted">sin contar · falta tema o municipio</span>
+                    {/* Dice **cuál** de los dos falta. «Falta tema o
+                        municipio» obligaba a ir a buscar cuál era, y muchas
+                        veces uno de los dos estaba ahí mismo, dos filas arriba. */}
+                    {!a.tema || !aceptada ? (
+                      <span className="bo-muted">
+                        sin contar · falta {!a.tema && !aceptada ? "el tema y el municipio"
+                          : !a.tema ? "el tema" : "el municipio"}
+                      </span>
                     ) : recurrencia.otros === 0 ? (
                       <>Ninguno todavía. <span className="bo-muted">Ser el único no lo hace menos grave.</span></>
                     ) : (
