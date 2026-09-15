@@ -30,6 +30,17 @@ export type FilaBandeja = {
   recibidoEn: string;
   /** El municipio aceptado, o `null` si nadie lo ha resuelto todavía. */
   territorio: string | null;
+  /** Su código DIVIPOLA, para filtrar sin depender de cómo se escriba. */
+  territorioCodigo: string | null;
+  /**
+   * El departamento del municipio aceptado.
+   *
+   * **Se capturaba y no se veía en ninguna parte.** La ficha lo traía de la
+   * base y no lo usaba; la bandeja ni lo cargaba. Sin él no hay forma de mirar
+   * «lo de Boyacá» sin saberse los municipios de memoria.
+   */
+  departamento: string | null;
+  departamentoCodigo: string | null;
   lugarDeclarado: string | null;
   estadoUbicacion: string;
   estadoRevision: string;
@@ -47,14 +58,31 @@ export type FilaBandeja = {
    * forma de saberlo sin abrir el aporte.
    */
   escalado: "no" | "pendiente" | "recibido";
+  /**
+   * Si ya tiene un expediente abierto.
+   *
+   * Es distinto de estar escalado: abrir el expediente es reconocer la
+   * necesidad, remitirlo es mandarla a alguien. Lo primero pasa mucho antes.
+   */
+  conExpediente: boolean;
   señales: Señal[];
   /** Lo que la persona no dijo y el revisor va a echar en falta. */
   falta: string[];
 };
 
 export type Filtro = {
-  /** Busca en relato, lugar y territorio. Sin tildes ni mayúsculas. */
+  /** Busca en relato, lugar, territorio, departamento y tema. Sin tildes. */
   texto?: string;
+  /** Código DIVIPOLA del departamento. Filtrar por nombre rompe con las tildes. */
+  departamento?: string;
+  /** Código DIVIPOLA del municipio. */
+  municipio?: string;
+  /** Un tema de la lista, o `sin_tema` para los que nadie clasificó. */
+  tema?: string;
+  /** Solo los que traen una alerta de urgencia sin devolver. */
+  soloAlerta?: boolean;
+  /** Dónde va la gestión: sin expediente, con expediente, remitido, recibido. */
+  gestion?: "sin_expediente" | "con_expediente" | "pendiente" | "recibido";
   /** `por_aclarar` · `ubicados` · `todos`. */
   ubicacion?: "por_aclarar" | "ubicados" | "todos";
   /**
@@ -69,8 +97,25 @@ export type Filtro = {
   orden?: "antiguos" | "recientes";
 };
 
+/**
+ * Lo que se puede escoger en los filtros de territorio.
+ *
+ * **Salen de los aportes que hay, no del catálogo.** Un desplegable con los
+ * 1.122 municipios de Colombia no es un filtro: es otro problema. Aquí solo
+ * aparecen los sitios donde de verdad llegó algo.
+ *
+ * En orden alfabético y **sin el número de aportes al lado**. Ordenar por
+ * cuántos hay convertiría el filtro en un ranking, y `BI-02` prohíbe justo eso:
+ * el municipio con dieciocho no tiene por qué salir antes que el de uno.
+ */
+export type Opciones = {
+  departamentos: { codigo: string; nombre: string }[];
+  municipios: { codigo: string; nombre: string; departamento: string }[];
+};
+
 export type Pagina = {
   filas: FilaBandeja[];
+  opciones: Opciones;
   /** Cuántos hay en total con ese filtro. **Se dice siempre.** */
   total: number;
   /** Si quedan más sin mostrar. Un corte callado es un dato perdido. */
@@ -112,7 +157,8 @@ export async function bandeja(
     .limit(2000);
   if (error) throw new Error(`no se pudo leer la bandeja: ${error.message}`);
   const filasCrudas = (aportes ?? []) as unknown as FilaAporte[];
-  if (!filasCrudas.length) return { filas: [], total: 0, hayMas: false };
+  const vacia: Opciones = { departamentos: [], municipios: [] };
+  if (!filasCrudas.length) return { filas: [], opciones: vacia, total: 0, hayMas: false };
 
   const ids = filasCrudas.map((a) => a.id);
 
@@ -125,7 +171,12 @@ export async function bandeja(
     p.from("territorio").select("codigo, nombre, padre").eq("nivel", "municipio"),
   ]);
 
+  // Los 33 departamentos, para poder decir «Rionegro, Antioquia» y no «05615».
+  const { data: deptos } = await p.from("territorio")
+    .select("codigo, nombre").eq("nivel", "departamento");
+  const nombreDepto = new Map((deptos ?? []).map((d) => [d.codigo as string, d.nombre as string]));
   const nombreMunicipio = new Map((territorios ?? []).map((t) => [t.codigo as string, t.nombre as string]));
+  const padreDe = new Map((territorios ?? []).map((t) => [t.codigo as string, t.padre as string | null]));
   const porAporte = new Map<string, { estado: string; codigo: string | null; autor: string | null }>();
   for (const u of ubicaciones ?? []) {
     const actual = porAporte.get(u.aporte_id);
@@ -154,6 +205,7 @@ export async function bandeja(
     const ya = remisionDe.get(r.expediente_id as string);
     remisionDe.set(r.expediente_id as string, ya === true || r.aceptada_en !== null);
   }
+  const conExpediente = new Set((vinculos ?? []).map((v) => v.aporte_id as string));
   const escaladoDe = new Map<string, "no" | "pendiente" | "recibido">();
   for (const v of vinculos ?? []) {
     const estado = remisionDe.get(v.expediente_id as string);
@@ -177,30 +229,74 @@ export async function bandeja(
     if (!a.afectados) falta.push("a quiénes");
     if (!a.desde_cuando) falta.push("desde cuándo");
 
+    const padre = u?.codigo ? padreDe.get(u.codigo) ?? null : null;
+
     return {
       aporteId: a.id,
       relato: a.relato_original,
       recibidoEn: a.recibido_en,
       territorio: u?.codigo ? nombreMunicipio.get(u.codigo) ?? u.codigo : null,
+      territorioCodigo: u?.codigo ?? null,
+      departamento: padre ? nombreDepto.get(padre) ?? null : null,
+      departamentoCodigo: padre,
       lugarDeclarado: a.lugar_declarado,
       estadoUbicacion: u?.estado ?? "sin_ubicacion",
       estadoRevision: a.estado_revision,
       responsable: u?.autor ?? null,
       tema: a.tema,
       escalado: escaladoDe.get(a.id) ?? "no",
+      conExpediente: conExpediente.has(a.id),
       señales, falta,
     };
   });
+
+  // Las opciones salen de **todas** las filas, no de las filtradas: si se
+  // calcularan después, escoger Antioquia dejaría el desplegable con Antioquia
+  // como única opción y no habría forma de volver.
+  const porCodigo = new Map<string, { codigo: string; nombre: string }>();
+  const munPorCodigo = new Map<string, { codigo: string; nombre: string; departamento: string }>();
+  for (const f of filas) {
+    if (f.departamentoCodigo && f.departamento) {
+      porCodigo.set(f.departamentoCodigo, { codigo: f.departamentoCodigo, nombre: f.departamento });
+    }
+    if (f.territorioCodigo && f.territorio) {
+      munPorCodigo.set(f.territorioCodigo, {
+        codigo: f.territorioCodigo, nombre: f.territorio,
+        departamento: f.departamentoCodigo ?? "",
+      });
+    }
+  }
+  const alfabetico = (a: { nombre: string }, b: { nombre: string }) =>
+    a.nombre.localeCompare(b.nombre, "es");
+  const opciones: Opciones = {
+    departamentos: [...porCodigo.values()].sort(alfabetico),
+    municipios: [...munPorCodigo.values()].sort(alfabetico),
+  };
 
   const texto = filtro.texto?.trim() ? plano(filtro.texto.trim()) : null;
   const coinciden = filas
     .filter((f) => {
       if (filtro.ubicacion === "por_aclarar" && f.estadoUbicacion === "confirmada") return false;
       if (filtro.ubicacion === "ubicados" && f.estadoUbicacion !== "confirmada") return false;
+      // **Por código, no por nombre.** Filtrar por el nombre obliga a acertar
+      // las tildes de «BOYACÁ» o «CHOCÓ», y el que filtra está escogiendo de una
+      // lista: el código ya lo tiene.
+      if (filtro.departamento && f.departamentoCodigo !== filtro.departamento) return false;
+      if (filtro.municipio && f.territorioCodigo !== filtro.municipio) return false;
+      // `sin_tema` no es lo mismo que no filtrar: es una respuesta sobre el
+      // aporte —nadie lo pudo enrutar— y hay que poder pedirla.
+      if (filtro.tema === "sin_tema" && f.tema) return false;
+      if (filtro.tema && filtro.tema !== "sin_tema" && f.tema !== filtro.tema) return false;
+      if (filtro.soloAlerta && !f.señales.includes("urgencia")) return false;
+      if (filtro.gestion === "sin_expediente" && f.conExpediente) return false;
+      if (filtro.gestion === "con_expediente" && !f.conExpediente) return false;
+      if (filtro.gestion === "pendiente" && f.escalado !== "pendiente") return false;
+      if (filtro.gestion === "recibido" && f.escalado !== "recibido") return false;
       if (!texto) return true;
-      // Relato, lugar y territorio, sin tildes ni mayúsculas, como pide la
-      // especificación del backoffice.
-      return plano(`${f.relato} ${f.lugarDeclarado ?? ""} ${f.territorio ?? ""}`).includes(texto);
+      // Relato, lugar, territorio, departamento y tema, sin tildes ni
+      // mayúsculas, como pide la especificación del backoffice.
+      return plano(`${f.relato} ${f.lugarDeclarado ?? ""} ${f.territorio ?? ""} ` +
+                   `${f.departamento ?? ""} ${f.tema ?? ""}`).includes(texto);
     });
 
   // `antiguos` es como vienen de la base. Para `recientes` se da la vuelta.
@@ -213,6 +309,7 @@ export async function bandeja(
   // buscador.
   return {
     filas: ordenadas.slice(0, limite),
+    opciones,
     total: ordenadas.length,
     hayMas: ordenadas.length > limite,
   };

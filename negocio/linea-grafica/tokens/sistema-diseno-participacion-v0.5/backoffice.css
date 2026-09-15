@@ -63,6 +63,13 @@
 .pc-backoffice .bo-table th:nth-child(2) {width:15%;}
 .pc-backoffice .bo-table th:nth-child(3) {width:22%;}
 .pc-backoffice .bo-table th:last-child {width:20%;border-radius:0 var(--pc-primitive-radius-md) var(--pc-primitive-radius-md) 0;}
+/* Una tabla de TRES columnas no puede heredar los anchos de una de cuatro. Las
+   reglas de arriba reparten 43-15-22-20 contando desde los extremos, así que en
+   una de tres el `last-child` se llevaba el 20 % de una cuarta que no existe y
+   la tabla quedaba descuadrada. Se declara cuántas columnas tiene y ya. */
+.pc-backoffice .bo-table[data-columnas="3"] th:first-child {width:50%;}
+.pc-backoffice .bo-table[data-columnas="3"] th:nth-child(2) {width:25%;}
+.pc-backoffice .bo-table[data-columnas="3"] th:last-child {width:25%;}
 .pc-backoffice .bo-table td {padding:var(--pc-component-backoffice-table-paddingBlock) .625rem;border-bottom:1px solid var(--bo-line);vertical-align:top;font-size:.8125rem;}
 .pc-backoffice .bo-table tbody tr:hover {background:var(--pc-component-backoffice-table-hover);}
 .pc-backoffice .bo-table tr[data-selected=true] {background:var(--pc-component-backoffice-table-selected);}
@@ -76,6 +83,14 @@
 .pc-backoffice .bo-badge[data-state=referred] {background:var(--pc-component-backoffice-status-referred-background);color:var(--pc-component-backoffice-status-referred-foreground);}
 .pc-backoffice .bo-badge[data-state=draft] {background:var(--pc-component-backoffice-status-draft-background);color:var(--pc-component-backoffice-status-draft-foreground);}
 .pc-backoffice .bo-badge[data-state=validated] {background:var(--pc-component-backoffice-status-validated-background);color:var(--pc-component-backoffice-status-validated-foreground);}
+/* Lo que no se mira siempre: versiones anteriores, formularios, historia.
+   El muro de la ficha no era cuánta información hay, sino que TODA estaba
+   abierta a la vez — tres formularios de ubicación con 1.122 municipios cada
+   uno, más cinco selectores de prioridad, antes de llegar al relato. */
+.pc-backoffice .bo-plegable {border:1px solid var(--bo-line);border-radius:var(--pc-primitive-radius-md);margin:.75rem 0;background:var(--bo-paper);}
+.pc-backoffice .bo-plegable>summary {cursor:pointer;padding:.625rem .75rem;min-height:44px;display:flex;align-items:center;font-size:.8125rem;color:var(--bo-ink);}
+.pc-backoffice .bo-plegable[open]>summary {border-bottom:1px solid var(--bo-line);font-weight:500;}
+.pc-backoffice .bo-plegable>.bo-plegado {padding:.75rem;}
 .pc-backoffice .bo-bottom-note {margin:1.25rem 0 0;color:var(--bo-muted);font-size:.75rem;line-height:1.6;}
 .pc-backoffice .bo-card-list {display:none;list-style:none;padding:0;margin:0;}
 .pc-backoffice .bo-record-card {padding:1.25rem 0;border-bottom:1px solid var(--bo-line);}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { bandeja, type Filtro } from "../../revision/bandeja.ts";
-import { Filtros, Señales, DeQue, Escalado } from "./bandeja.tsx";
+import { Filtros, Señales, DeQue, Donde, Gestion } from "./bandeja.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 
@@ -23,13 +23,28 @@ export default async function Consola({
   // Por defecto, lo que hay que trabajar. El revisor entra a resolver, no a
   // mirar: `backoffice-especificacion.md` dice que «la pantalla inicial
   // prioriza el trabajo pendiente».
-  const ubicacion = (typeof q.ubicacion === "string" ? q.ubicacion : "por_aclarar") as Filtro["ubicacion"];
+  // **Por defecto, todos.** Estaba en «por aclarar», y eso escondía justo los
+  // que ya tienen municipio: 19 de 115 invisibles, que es la queja de que «el
+  // departamento y el municipio están capturados y no se ven». Con la columna
+  // «Qué falta» a la vista, el trabajo pendiente se sigue viendo sin esconder
+  // la mitad de la bandeja.
+  const ubicacion = (typeof q.ubicacion === "string" ? q.ubicacion : "todos") as Filtro["ubicacion"];
+  const uno = (k: string) => (typeof q[k] === "string" ? (q[k] as string) : "");
+  const departamento = uno("departamento");
+  const municipio = uno("municipio");
+  const tema = uno("tema");
+  const gestion = uno("gestion");
+  const soloAlerta = uno("alerta") === "1";
   // El orden de trabajo manda por defecto: el que lleva más esperando primero.
   const orden = (typeof q.orden === "string" ? q.orden : "antiguos") as Filtro["orden"];
   const limite = Math.min(Number(q.ver) || 50, 500);
 
   const procesoId = await procesoVigente();
-  const { filas, total, hayMas } = await bandeja(procesoId, { texto, ubicacion, orden }, limite);
+  const { filas, opciones, total, hayMas } = await bandeja(procesoId, {
+    texto, ubicacion, orden, departamento, municipio, tema,
+    gestion: (gestion || undefined) as Filtro["gestion"],
+    soloAlerta,
+  }, limite);
 
   const p = clienteServidor().schema("participacion");
   const { count: totalAportes } = await p.from("aporte")
@@ -79,8 +94,10 @@ export default async function Consola({
               </p>
             </section>
 
-            <Filtros texto={texto} ubicacion={ubicacion ?? "por_aclarar"}
-                     orden={orden ?? "antiguos"} siguiente={siguiente} />
+            <Filtros texto={texto} ubicacion={ubicacion ?? "todos"}
+                     orden={orden ?? "antiguos"} siguiente={siguiente}
+                     opciones={opciones} departamento={departamento} municipio={municipio}
+                     tema={tema} gestion={gestion} soloAlerta={soloAlerta} />
 
             {/* **Cuántos hay y cuántos se ven.** Cortar en 50 sin decirlo es
                 cómo diez aportes recién registrados se volvieron invisibles:
@@ -137,13 +154,11 @@ export default async function Consola({
                         lo pide literal: «no se ocultan datos esenciales» al
                         pasar a lista. Lo que falta y quién lo tiene son la
                         razón de mirar la bandeja. */}
+                    <p><DeQue tema={f.tema} /> · {fecha(f.recibidoEn)}</p>
+                    <p><Donde fila={f} /></p>
                     <p>
-                      <DeQue tema={f.tema} /> · {f.territorio ?? (f.lugarDeclarado ? `«${f.lugarDeclarado}»` : "sin lugar")}
-                      {" · "}{fecha(f.recibidoEn)}
-                    </p>
-                    <p>
-                      Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")} · Lo tiene:{" "}
-                      {f.responsable ?? "nadie"} · <Escalado estado={f.escalado} />
+                      Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")}
+                      {" · "}<Gestion fila={f} />
                     </p>
                   </li>
                 ))}
@@ -152,8 +167,16 @@ export default async function Consola({
               <table className="bo-table bo-table-desktop">
                 <thead>
                   <tr>
-                    <th>Aporte</th><th>De qué</th><th>Territorio</th><th>Qué falta</th>
-                    <th>Quién lo tiene</th><th>Escalado</th>
+                    {/* **Cuatro, que es para lo que el sistema de diseño tiene
+                        anchos** (43 · 15 · 22 · 20). Con seis columnas, las dos
+                        últimas se quedaban sin ancho asignado y se aplastaban:
+                        eso era «la primera tabla no se ve bien».
+
+                        Y son las cuatro que pide `GES-04`: de qué habla, dónde,
+                        qué le falta y si ya se escaló. «Quién lo tiene» se fue
+                        porque no tenía de dónde salir — mostraba «ciudadano»,
+                        que es quien confirmó el municipio, no un revisor. */}
+                    <th>Aporte</th><th>De qué</th><th>Dónde</th><th>Qué falta y gestión</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,22 +190,13 @@ export default async function Consola({
                         <Señales fila={f} />
                       </td>
                       <td className="bo-small"><DeQue tema={f.tema} /></td>
-                      <td>
-                        {f.territorio
-                          ? <strong>{f.territorio}</strong>
-                          : f.lugarDeclarado
-                            ? <em className="bo-muted">«{f.lugarDeclarado}»</em>
-                            : <span className="bo-muted">no lo dijo</span>}
-                      </td>
+                      <td className="bo-small"><Donde fila={f} /></td>
                       <td className="bo-small">
                         {f.falta.length === 0
-                          ? <span className="bo-muted">nada</span>
+                          ? <span className="bo-muted">no le falta nada</span>
                           : f.falta.join(", ")}
+                        <div><Gestion fila={f} /></div>
                       </td>
-                      <td className="bo-small">
-                        {f.responsable ?? <span className="bo-muted">nadie</span>}
-                      </td>
-                      <td className="bo-small"><Escalado estado={f.escalado} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -223,7 +237,11 @@ export default async function Consola({
                     ))}
                   </ul>
 
-                  <table className="bo-table bo-table-desktop">
+                  {/* Tres columnas, y hay que decirlo: sin esto heredaba los
+                      anchos de la tabla de cuatro —el `last-child` a 20 %— y la
+                      tercera quedaba con el ancho de una cuarta que no existe.
+                      Eso era «el último cuadro está descuadrado». */}
+                  <table className="bo-table bo-table-desktop" data-columnas="3">
                     <thead>
                       <tr>
                         <th>Expediente</th>

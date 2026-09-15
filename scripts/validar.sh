@@ -209,7 +209,13 @@ fi
 if [ -f producto/.env.local ] && [ -d "$HOME/Library/Caches/ms-playwright" ]; then
   (cd producto && npx playwright test --reporter=line) >/tmp/e2e.$$ 2>&1 \
     && ok "$(grep -oE '[0-9]+ passed.*' /tmp/e2e.$$ | tail -1) en navegador" \
-    || { mal "recorridos en rojo"; grep -E '✘|Error:' /tmp/e2e.$$ | head -5 | sed 's/^/          /'; }
+    || { mal "recorridos en rojo";
+         # **Los nombres de lo que falló, no los errores del servidor.** Con
+         # `Error:` salían cinco líneas de `ECONNRESET` del servidor de
+         # desarrollo —ruido de una petición abortada al navegar— y ni una sola
+         # pista de qué prueba se cayó. Un chequeo que no dice qué pasó obliga a
+         # volver a correr la suite entera para enterarse.
+         grep -E '[0-9]+ failed|^ {4}\[' /tmp/e2e.$$ | head -8 | sed 's/^/          /'; }
   rm -f /tmp/e2e.$$
 else
   saltó "Playwright no está listo"

@@ -5,6 +5,8 @@ import {
   resolverUbicacion, devolverAPorAclarar, corregirUbicacionDelCiudadano,
 } from "../../revision/ubicacion.ts";
 import { registrarActuacion, aceptarRemision } from "../../gestion/actuacion.ts";
+import { clienteServidor } from "../../datos/cliente.ts";
+import { esTema } from "../../captura/lectura.ts";
 import { crearExpediente } from "../../revision/expediente.ts";
 import { registrarPrioridad } from "../../priorizacion/prioridad.ts";
 
@@ -115,6 +117,40 @@ export async function accionAceptarRemision(datos: FormData) {
     actuacionId: String(datos.get("actuacionId")),
     autor: String(datos.get("autor") || "revisor sin identificar"),
     motivo: String(datos.get("motivo") ?? "") || "confirmó recepción",
+  });
+  revalidatePath("/consola");
+}
+
+/**
+ * Corregir el tema.
+ *
+ * `GES-02` la lista entre las correcciones permitidas y no existía: 114 de 115
+ * aportes están sin tema y no había ninguna forma de ponérselo. Sin esto, el
+ * filtro por tema nace vacío y nada se puede enrutar a una mesa.
+ *
+ * **Es una etiqueta de enrutamiento nuestra, no una afirmación de la persona.**
+ * Por eso se puede corregir aquí sin romper `V14`: cambiarla no cambia lo que
+ * ella contó ni lo que confirmó. Lo que propuso la lectura (`tema_propuesto`) no
+ * se toca, porque es lo único que permite medir cuánto se equivoca la máquina.
+ */
+export async function accionCambiarTema(datos: FormData) {
+  const aporteId = String(datos.get("aporteId"));
+  const tema = String(datos.get("tema") ?? "").trim();
+  const motivo = String(datos.get("motivo") ?? "").trim();
+  if (tema && !esTema(tema)) return;
+
+  const p = clienteServidor().schema("participacion");
+  const { data: antes } = await p.from("aporte")
+    .select("tema, proceso_id").eq("id", aporteId).single();
+  if (!antes) return;
+
+  await p.from("aporte").update({ tema: tema || null }).eq("id", aporteId);
+  await p.from("auditoria").insert({
+    proceso_id: antes.proceso_id,
+    actor: String(datos.get("autor") || "revisor sin identificar"),
+    accion: "corregir_tema", entidad: "aporte", entidad_id: aporteId,
+    motivo: motivo || "corregido en la consola",
+    antes: { tema: antes.tema }, despues: { tema: tema || null },
   });
   revalidatePath("/consola");
 }

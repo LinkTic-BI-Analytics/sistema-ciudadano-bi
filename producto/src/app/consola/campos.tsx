@@ -58,13 +58,18 @@ export function Campo({ id, name, etiqueta, opcional, ayuda, ejemplo, defaultVal
   );
 }
 
-export function Opciones({ id, name, etiqueta, opcional, ayuda, children }: {
+export function Opciones({ id, name, etiqueta, opcional, ayuda, defaultValue, children }: {
   id: string; name: string; etiqueta: string;
-  opcional?: boolean; ayuda?: string; children: ReactNode;
+  opcional?: boolean; ayuda?: string;
+  /** Lo que ya está puesto. Corregir algo empieza por ver qué hay. */
+  defaultValue?: string;
+  children: ReactNode;
 }) {
   return (
     <Envoltura id={id} etiqueta={etiqueta} opcional={opcional} ayuda={ayuda}>
-      <select id={id} name={name} required={!opcional} defaultValue="">{children}</select>
+      <select id={id} name={name} required={!opcional} defaultValue={defaultValue ?? ""}>
+        {children}
+      </select>
     </Envoltura>
   );
 }

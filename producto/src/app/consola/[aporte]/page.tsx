@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { recurrenciaDe } from "../../../revision/recurrencia.ts";
-import { COMO_SE_LLAMA, type Tema } from "../../../captura/lectura.ts";
+import { COMO_SE_LLAMA, TEMAS, type Tema } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
+import { enPartes } from "../../../revision/sintesis-en-partes.ts";
 import { clienteServidor } from "../../../datos/cliente.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { expedientesDe } from "../../../revision/expediente.ts";
@@ -9,7 +11,7 @@ import { prioridadVigente, historiaDePrioridad } from "../../../priorizacion/pri
 import { historiaDe, estadoDeAtencion } from "../../../gestion/actuacion.ts";
 import {
   accionResolver, accionDevolver, accionCrearExpediente, accionPriorizar,
-  accionCorregirMunicipio, accionRemitir, accionAceptarRemision,
+  accionCorregirMunicipio, accionRemitir, accionAceptarRemision, accionCambiarTema,
 } from "../acciones.ts";
 
 export const dynamic = "force-dynamic";
@@ -80,8 +82,22 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
     };
   })();
 
+  const vigente = sint?.[sint.length - 1] ?? null;
+
   // Cuántos más hay como este (`CLA-03`). Se calcula, nunca se declara.
   const recurrencia = await recurrenciaDe(aporteId);
+  // El departamento del municipio aceptado. Estaba en el `select` de arriba
+  // (`departamento:padre`) y no se usaba en ninguna parte.
+  const departamentoDelMunicipio = recurrencia.municipio
+    ? (await (async () => {
+        const { data: m } = await p.from("territorio").select("padre")
+          .eq("codigo", recurrencia.municipio!).eq("nivel", "municipio").limit(1).maybeSingle();
+        if (!m?.padre) return null;
+        const { data: d } = await p.from("territorio").select("nombre")
+          .eq("codigo", m.padre).eq("nivel", "departamento").limit(1).maybeSingle();
+        return d?.nombre ?? null;
+      })())
+    : null;
   const nombreDelMunicipio = recurrencia.municipio
     ? (await p.from("territorio").select("nombre").eq("codigo", recurrencia.municipio)
         .eq("nivel", "municipio").limit(1).maybeSingle()).data?.nombre ?? null
@@ -166,13 +182,36 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   <dd>
                     {/* El municipio **aceptado**, no el texto declarado: mostrar
                         el declarado como si fuera el aceptado es la inferencia
-                        que `I2` prohíbe. */}
+                        que `I2` prohíbe.
+
+                        Y con su departamento: se capturaba y esta ficha lo
+                        traía de la base sin llegar a enseñarlo nunca. */}
                     {nombreDelMunicipio
-                      ? <strong>{nombreDelMunicipio}</strong>
+                      ? <strong>{nombreDelMunicipio}{departamentoDelMunicipio && `, ${departamentoDelMunicipio}`}</strong>
                       : <span className="bo-muted">sin municipio aceptado</span>}
                     {a.lugar_declarado && (
                       <span className="bo-small"> · con sus palabras: «{a.lugar_declarado}»</span>
                     )}
+                  </dd>
+
+                  {/* **Suben aquí desde debajo del relato.** `CLA-02` los pide
+                      de un vistazo, antes de leer: enterrados entre párrafos,
+                      había que leerse el aporte entero para saber a cuánta
+                      gente le pasa. */}
+                  <dt className="bo-small">A quiénes</dt>
+                  <dd>
+                    {a.afectados
+                      ? <>«{a.afectados}»</>
+                      : <span className="bo-muted">no lo dijo · nadie se lo preguntó o no lo sabía</span>}
+                  </dd>
+
+                  <dt className="bo-small">Desde cuándo</dt>
+                  <dd>
+                    {/* Tal cual. «Hace tres meses» no es una fecha, y volverlo
+                        una sería la inferencia que `I2` prohíbe. */}
+                    {a.desde_cuando
+                      ? <>«{a.desde_cuando}»</>
+                      : <span className="bo-muted">no lo dijo</span>}
                   </dd>
 
                   <dt className="bo-small">Cuántos más como este</dt>
@@ -192,6 +231,34 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     )}
                   </dd>
                 </dl>
+
+                {/* **Corregir el tema.** `GES-02` la lista entre lo que se
+                    puede corregir, y no existía: 114 de 115 aportes estaban sin
+                    tema y no había ninguna forma de ponérselo. Un aporte sin
+                    tema no se puede enrutar a ninguna mesa. */}
+                <details className="bo-plegable" data-prueba="corregir-tema">
+                  <summary>{a.tema ? "Corregir el tema" : "Poner un tema"}</summary>
+                  <div className="bo-plegado">
+                    <form action={accionCambiarTema}>
+                      <input type="hidden" name="aporteId" value={aporteId} />
+                      <Opciones id="tema-codigo" name="tema" etiqueta="De qué habla"
+                                defaultValue={a.tema ?? ""}>
+                        <option value="">Sin tema</option>
+                        {TEMAS.map((x) => (
+                          <option key={x} value={x}>{COMO_SE_LLAMA[x]}</option>
+                        ))}
+                      </Opciones>
+                      <Campo id="tema-motivo" name="motivo" etiqueta="Por qué"
+                             ejemplo="habla del acueducto, no de la vía" />
+                      <Campo id="tema-autor" name="autor" etiqueta="Tu nombre" opcional />
+                      <button className="bo-button">Guardar el tema</button>
+                      <p className="bo-small">
+                        Es <strong>nuestra etiqueta para enrutarlo</strong>, no algo que la persona
+                        afirmara. Lo que propuso la lectura se conserva aparte.
+                      </p>
+                    </form>
+                  </div>
+                </details>
 
                 <section className="bo-source">
                   <h2>Lo que la persona contó</h2>
@@ -232,15 +299,9 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       </span>
                     </p>
                   )}
-                  {([["Dónde dijo que ocurre", a.lugar_declarado],
-                     ["A quiénes les pasa", a.afectados],
-                     ["Desde cuándo", a.desde_cuando]] as const)
-                    .filter(([, v]) => v)
-                    .map(([etiqueta, v]) => (
-                      <p className="bo-observation" key={etiqueta}>
-                        {etiqueta}, con sus palabras: <em>«{v}»</em>
-                      </p>
-                    ))}
+                  {/* Lo que precisó —dónde, a quiénes, desde cuándo— está
+                      arriba, en la cabecera. Repetirlo aquí era la mitad del
+                      muro de texto. */}
                 </section>
 
                 {a.canal === "voz_transcrita" && (
@@ -322,30 +383,50 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                 )}
 
                 {(sint?.length ?? 0) > 0 && (
-                  <section className="bo-synthesis">
+                  <section className="bo-synthesis" data-prueba="sintesis">
                     <h2>Lo que entendimos</h2>
-                    {sint!.map((s) => (
-                      <div key={s.version} className="bo-check">
-                        <span className="bo-badge" data-state={s.confirmada_en ? "validated" : "draft"}>
-                          {/* **Solo una está vigente.** Las tres salían
-                              diciendo «confirmada por la persona» porque cada
-                              vuelta confirma la suya, y así el revisor no sabía
-                              cuál manda. La última es la que manda; las
-                              anteriores se conservan para poder mostrar qué
-                              cambió, no para leerlas como el dato. */}
-                          v{s.version} · {s.clase}
-                          {s.confirmada_en && " · la confirmó la persona"}
-                          {s.version === sint![sint!.length - 1]!.version
-                            ? <strong> · vigente</strong>
-                            : <span className="bo-muted"> · sustituida por la v{sint![sint!.length - 1]!.version}</span>}
-                        </span>
-                        <p style={{ whiteSpace: "pre-wrap" }}>{s.texto}</p>
-                      </div>
-                    ))}
+                    {/* **Solo la vigente, y en sus partes.** Se imprimían las
+                        dos, tres o cuatro versiones enteras, una detrás de
+                        otra, y como cada vuelta confirma la suya, todas decían
+                        «la confirmó la persona»: el revisor no sabía cuál
+                        manda. Eso —más el texto corrido de un campo que en
+                        realidad son dos— es lo que hacía que la ficha se leyera
+                        como una transcripción.
+
+                        Las anteriores no se borran: se pliegan. Sirven para ver
+                        qué cambió, no para leerlas como el dato. */}
+                    <span className="bo-badge" data-state={vigente!.confirmada_en ? "validated" : "draft"}>
+                      v{vigente!.version} · {vigente!.clase}
+                      {vigente!.confirmada_en ? " · la confirmó la persona" : " · sin confirmar"}
+                    </span>
+                    <dl className="bo-context-grid">
+                      {enPartes(vigente!.texto).map(([etiqueta, valor]) => (
+                        <Fragment key={etiqueta}>
+                          <dt className="bo-small">{etiqueta}</dt>
+                          <dd>{valor}</dd>
+                        </Fragment>
+                      ))}
+                    </dl>
                     <p className="bo-small">
                       Que la persona confirme <strong>no significa que los hechos estén
                       verificados</strong>.
                     </p>
+
+                    {sint!.length > 1 && (
+                      <details className="bo-plegable" data-prueba="versiones-anteriores">
+                        <summary>Ver las {sint!.length - 1} versiones anteriores</summary>
+                        <div className="bo-plegado">
+                          {sint!.slice(0, -1).map((s) => (
+                            <div key={s.version} className="bo-check">
+                              <span className="bo-badge" data-state="draft">
+                                v{s.version} · {s.clase} · sustituida por la v{vigente!.version}
+                              </span>
+                              <p style={{ whiteSpace: "pre-wrap" }}>{s.texto}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                   </section>
                 )}
 
@@ -377,7 +458,15 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       Corregir **reemplaza**, no agrega: dos territorios
                       significan que el problema cruza dos municipios (`GEO-01`),
                       y un error de dedo no es eso. */}
+                  {/* **Plegados.** Los tres iban abiertos a la vez, y cada
+                      uno lleva dentro un desplegable con los 1.122 municipios
+                      del país: al abrir un aporte, lo primero que aparecía era
+                      un muro de listas antes de llegar al relato. Cerrados,
+                      esto vuelve a ser una ficha. */}
                   {ubi?.some((u) => u.estado === "confirmada") && (
+                    <details className="bo-plegable">
+                    <summary>Corregir el municipio</summary>
+                    <div className="bo-plegado">
                     <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
                       <input type="hidden" name="aporteId" value={aporteId} />
                       <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
@@ -396,9 +485,14 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         con el anterior, el nuevo, quién y por qué.
                       </p>
                     </form>
+                    </div>
+                    </details>
                   )}
 
                   {ubi?.some((u) => u.estado === "confirmada") && (
+                    <details className="bo-plegable">
+                    <summary>Devolver a «por aclarar»</summary>
+                    <div className="bo-plegado">
                     <form action={accionDevolver}>
                       <input type="hidden" name="aporteId" value={aporteId} />
                       <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
@@ -410,8 +504,12 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         es el cuarto estado implícito que <strong>I2</strong> prohíbe.
                       </p>
                     </form>
+                    </div>
+                    </details>
                   )}
 
+                  {/* Este NO se pliega: es el trabajo pendiente del aporte, lo
+                      que la persona que abre la ficha vino a hacer. */}
                   {ubi?.some((u) => u.estado === "por_aclarar") && (
                     <form action={accionResolver}>
                       <input type="hidden" name="aporteId" value={aporteId} />
@@ -490,6 +588,9 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <p className="bo-muted">Sin priorizar.</p>
                     )}
 
+                    <details className="bo-plegable">
+                    <summary>{prio ? "Cambiar la prioridad de examen" : "Registrar prioridad de examen"}</summary>
+                    <div className="bo-plegado">
                     <form action={accionPriorizar}>
                       <input type="hidden" name="expedienteId" value={exp.id} />
                       <Campo id="pri-motivo" name="motivo" etiqueta="Por qué examinar esto primero"
@@ -509,6 +610,8 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         quién se atiende primero con una cuenta que nadie autorizó.
                       </p>
                     </form>
+                    </div>
+                    </details>
 
                     {/* **Escalar: a dónde va esto y quién puede desagregarlo.**
                         Faltaba entero: la ficha sabía abrir el expediente y
@@ -553,6 +656,9 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         </div>
                       ))}
 
+                      <details className="bo-plegable" data-prueba="remitir">
+                      <summary>{remisiones.length ? "Remitir a otra mesa" : "Remitir a una mesa o un equipo"}</summary>
+                      <div className="bo-plegado">
                       <form action={accionRemitir}>
                         <input type="hidden" name="expedienteId" value={exp.id} />
                         <Campo id="rem-destino" name="destino" etiqueta="A qué mesa o equipo"
@@ -568,17 +674,21 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                           se escribe como se llame.
                         </p>
                       </form>
+                      </div>
+                      </details>
                     </section>
 
                     {historia.length > 1 && (
-                      <section className="bo-history">
-                        <h3>Historia de la prioridad</h3>
-                        {historia.map((h) => (
-                          <p key={h.id} className="bo-small">
-                            {h.vigenteHasta ? "· " : "▸ "}{h.motivo} — {h.autor}
-                          </p>
-                        ))}
-                      </section>
+                      <details className="bo-plegable">
+                        <summary>Historia de la prioridad ({historia.length})</summary>
+                        <div className="bo-plegado">
+                          {historia.map((h) => (
+                            <p key={h.id} className="bo-small">
+                              {h.vigenteHasta ? "· " : "▸ "}{h.motivo} — {h.autor}
+                            </p>
+                          ))}
+                        </div>
+                      </details>
                     )}
                   </>
                 )}

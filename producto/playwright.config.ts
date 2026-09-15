@@ -13,6 +13,10 @@ export default defineConfig({
   // dos corridas seguidas daban resultados distintos — que es peor que fallar.
   workers: 1,
   globalSetup: "./pruebas/e2e/limpiar.ts",
+  // **Y al terminar.** Limpiar solo al arrancar dejaba la consola llena de
+  // fixtures hasta la siguiente corrida: quien la abría veía 115 aportes de
+  // mentira y un solo aporte de una persona perdido entre ellos.
+  globalTeardown: "./pruebas/e2e/recoger.ts",
   reporter: process.env.CI ? "list" : [["list"]],
   use: { baseURL: "http://127.0.0.1:3101", trace: "retain-on-failure" },
   projects: [

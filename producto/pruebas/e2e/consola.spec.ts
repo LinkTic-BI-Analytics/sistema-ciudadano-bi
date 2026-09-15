@@ -4,6 +4,7 @@
 // T027, el expediente de T028 y la prioridad de T035.
 
 import { test, expect, type Page } from "@playwright/test";
+import { escogerMunicipio } from "./ayudas.ts";
 
 // Abre el aporte marcado, haciendo clic en **lo que una persona vería**.
 //
@@ -103,6 +104,11 @@ test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
   await panel.getByRole("button", { name: /^abrir$/i }).click();
   await expect(panel).toContainText(/sin agua en la escuela/, { timeout: 15_000 });
 
+  // **Se abre primero.** Los formularios de gestión van plegados: iban todos
+  // abiertos a la vez y la ficha empezaba con un muro de listas —tres
+  // desplegables de 1.122 municipios— antes del relato. Quien revisa también
+  // tiene que abrirlos.
+  await panel.locator("summary", { hasText: /registrar prioridad/i }).click();
   // Por su id: en el panel hay tres campos `motivo` —abrir, priorizar y
   // remitir— y sin acotar el `fill` va al primero que encuentre.
   await panel.locator("#pri-motivo").fill("afecta a menores y es una sola fuente");
@@ -167,8 +173,12 @@ test("la bandeja dice qué le falta a cada aporte", async ({ page }) => {
   await expect(fila).toContainText(/municipio/);
   await expect(fila).toContainText(/a quiénes/);
   await expect(fila).toContainText(/desde cuándo/);
-  // Y quién lo tiene, que hoy no lo tiene nadie.
-  await expect(fila).toContainText(/nadie/);
+  // Y dónde va la gestión. **No «quién lo tiene»**: esa columna mostraba
+  // `ubicacion.autor`, que es quien confirmó el municipio —«ciudadano»— y no un
+  // revisor. Enseñarlo como responsable era inventarse uno; la asignación de
+  // verdad está bloqueada por permisos (`T032`).
+  await expect(fila).toContainText(/sin expediente/);
+  await expect(fila).not.toContainText(/quién lo tiene/i);
 });
 
 test("se puede buscar, y el orden no cambia al filtrar", async ({ page }) => {
@@ -336,6 +346,8 @@ test("escalar a una mesa: queda pendiente hasta que alguien confirme", async ({ 
 
   const escalar = page.locator("[data-prueba='escalar']");
   await expect(escalar).toBeVisible({ timeout: 15_000 });
+  // El formulario de remitir va plegado, como los demás.
+  await escalar.locator("[data-prueba='remitir'] summary").click();
   await escalar.locator("#rem-destino").fill("mesa técnica de agua del Huila");
   await escalar.locator("#rem-motivo").fill("necesita desagregarse: son tres necesidades");
   await escalar.getByRole("button", { name: /^remitir$/i }).click();
@@ -378,4 +390,92 @@ test("la ficha dice qué se puede corregir y qué no se toca", async ({ page }) 
 
   // Y el relato sigue sin ser editable en ninguna parte.
   await expect(page.locator("textarea[name='relato'], textarea[name='relato_original']")).toHaveCount(0);
+});
+
+test("el departamento se ve y se puede filtrar por territorio", async ({ page }) => {
+  // El dato estaba capturado y **no se veía en ninguna parte**: la ficha lo
+  // traía de la base y no lo usaba; la bandeja ni lo cargaba. Para saber si un
+  // aporte era de Antioquia había que saberse los municipios de memoria.
+  //
+  // Y peor: la bandeja arrancaba filtrada por «por aclarar», que esconde
+  // exactamente los que ya tienen municipio.
+  const marca = `territorio-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua llega turbia`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  // Se espera a la pantalla siguiente: confirmar el municipio escribe en el
+  // servidor, y salir de la página antes deja la carrera abierta.
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+
+  // Sin tocar ningún filtro: el que ya tiene municipio **se ve**.
+  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
+  const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
+    .filter({ hasText: marca }).filter({ visible: true }).first();
+  await expect(fila).toBeVisible({ timeout: 15_000 });
+  await expect(fila).toContainText(/RIONEGRO/);
+  await expect(fila, "el departamento se captura y no se enseña").toContainText(/ANTIOQUIA/);
+
+  // Y se puede filtrar por departamento, con lo que de verdad hay.
+  const filtros = page.locator(".bo-filters");
+  await expect(filtros.locator("#departamento")).toBeVisible();
+  await filtros.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
+  await filtros.getByRole("button", { name: /filtrar/i }).click();
+  await expect(page).toHaveURL(/departamento=05/);
+  // Visible de verdad: cada fila se dibuja dos veces —tarjeta y tabla— y el
+  // sistema de diseño enseña exactamente una según el ancho.
+  await expect(page.locator(".bo-record-link", { hasText: marca })
+    .filter({ visible: true })).toHaveCount(1, { timeout: 15_000 });
+
+  // Un departamento sin aportes no está en la lista: el desplegable sale de lo
+  // que hay, no del catálogo de 33.
+  const opciones = await filtros.locator("#departamento option").allTextContents();
+  expect(opciones.length, "el filtro trae departamentos donde no ha llegado nada")
+    .toBeLessThan(10);
+});
+
+test("la tabla de expedientes no hereda los anchos de la de aportes", async ({ page }) => {
+  // «El último cuadro está descuadrado»: la tabla de expedientes tiene tres
+  // columnas y heredaba las reglas de una de cuatro —el `last-child` a 20 %—,
+  // así que su tercera columna se quedaba con el ancho de una cuarta que no
+  // existe. Se comprueba la causa, no el aspecto.
+  await page.goto("/consola");
+  const tablas = page.locator(".bo-table-desktop");
+  const cuantas = await tablas.count();
+  for (let i = 0; i < cuantas; i++) {
+    const tabla = tablas.nth(i);
+    const columnas = await tabla.locator("thead th").count();
+    const declaradas = await tabla.getAttribute("data-columnas");
+    if (columnas !== 4) {
+      expect(declaradas, `una tabla de ${columnas} columnas sin declararlo hereda anchos ajenos`)
+        .toBe(String(columnas));
+    }
+  }
+});
+
+test("se puede poner el tema desde la consola, y queda quién y por qué", async ({ page }) => {
+  // `GES-02` la lista entre las correcciones permitidas y **no existía**: 114 de
+  // 115 aportes estaban sin tema y no había forma de ponérselo. Sin tema no se
+  // puede enrutar nada a una mesa, y el filtro por tema nacía vacío.
+  const marca = `tema-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el acueducto lleva semanas dañado`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await abrirAporte(page, marca);
+  const bloque = page.locator("[data-prueba='corregir-tema']");
+  await bloque.locator("summary").click();
+  await bloque.locator("#tema-codigo").selectOption("agua");
+  await bloque.locator("#tema-motivo").fill("habla del acueducto, no de la vía");
+  await bloque.getByRole("button", { name: /guardar el tema/i }).click();
+
+  // La cabecera lo dice, y la bandeja permite filtrar por él.
+  await expect(page.locator("[data-prueba='cabecera']"))
+    .toContainText(/Agua y saneamiento/i, { timeout: 15_000 });
+  await page.goto(`/consola?tema=agua&q=${encodeURIComponent(marca)}`);
+  await expect(page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true }))
+    .toHaveCount(1, { timeout: 15_000 });
 });

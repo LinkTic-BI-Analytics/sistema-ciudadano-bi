@@ -162,7 +162,10 @@ test("si nombra un municipio, se lo ofrecemos para que lo confirme", async ({ pa
   await page.getByRole("button", { name: /consultar/i }).click();
   await expect(page.locator("[data-prueba='relato']")).toContainText(marca, { timeout: 15_000 });
 
-  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
+  // **Pidiendo «por aclarar» explícitamente.** La bandeja ya no arranca
+  // filtrada por eso: arrancaba así y escondía justo los que ya tienen
+  // municipio, que es lo que había que poder ver.
+  await page.goto(`/consola?ubicacion=por_aclarar&q=${encodeURIComponent(marca)}`);
   await expect(page.locator(".bo-record-link", { hasText: marca })).toHaveCount(0);
 });
 

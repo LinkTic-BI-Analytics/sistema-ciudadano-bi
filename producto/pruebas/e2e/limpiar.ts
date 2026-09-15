@@ -63,3 +63,28 @@ async function calentar() {
     ),
   );
 }
+
+/**
+ * Y deja la base como la encontró.
+ *
+ * **No basta con limpiar al empezar.** La suite deja 115 aportes de mentira —33
+ * de ellos repetidos, «la vereda El Salado» seis veces— y quien abre la consola
+ * después no está mirando su producto: está mirando los fixtures. El único
+ * aporte de una persona quedaba sepultado entre ellos.
+ *
+ * Lo encontró un agente contando la base, no una prueba: ninguna prueba puede
+ * ver lo que pasa **después** de que terminan todas.
+ *
+ * Esto no protege lo que alguien haya capturado a mano —eso se lo lleva la
+ * limpieza del arranque— y por eso falta lo de verdad: que los recorridos
+ * escriban en su propio proceso. Mientras tanto, al menos lo que queda es una
+ * base vacía y no un vertedero.
+ */
+export async function recoger() {
+  try {
+    execFileSync("../scripts/limpiar-desarrollo.sh", { stdio: "pipe" });
+  } catch {
+    // Si la base ya no está, no hay nada que recoger.
+  }
+  sembrarAgenda();
+}
