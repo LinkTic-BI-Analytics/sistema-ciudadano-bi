@@ -80,9 +80,13 @@ test("abrir un aporte muestra el relato original y dice que no se edita", async 
   await page.goto("/consola");
   await abrirAporte(page, marca);
   await expect(page.locator("blockquote")).toContainText(relato);
-  await expect(page.locator(".bo-source")).toContainText(/no se edita/i);
-  // I2: la ubicación llega sin código, y la pantalla lo dice.
-  await expect(page.locator(".bo-history-section").first()).toContainText(/no se infiere/i);
+  // **Lo que impide reescribirlo no es un aviso: es que no hay campo.** Había
+  // aquí un párrafo de cinco líneas citando `N03` y `V14`; quien revisa lo leía
+  // cuarenta veces al día sin que le cambiara ninguna decisión. Lo que protege
+  // de verdad es esto, y se comprueba abajo.
+  await expect(page.locator("textarea[name='relato'], [contenteditable='true']")).toHaveCount(0);
+  // I2: la ubicación llega sin municipio, y la pantalla lo dice.
+  await expect(page.locator("[data-prueba='ubicacion']")).toContainText(/sin municipio/i);
 });
 
 test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
@@ -119,7 +123,12 @@ test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
   // número sería la fórmula que nadie acordó.
   await expect(panel).toContainText(/afectación: alta/i);
   await expect(panel).toContainText(/urgencia: —/i);
-  await expect(panel).toContainText(/no hay puntaje ni ranking/i);
+  // **Que no hay puntaje se prueba donde importa, no en un párrafo.** El
+  // párrafo que lo decía salió de la pantalla: quien revisa ve cuatro
+  // selectores sueltos y no hay número que sumar. Lo que se vigila es que no
+  // aparezca ninguna cifra de prioridad en el panel.
+  await expect(panel, "salió un puntaje de prioridad en pantalla")
+    .not.toContainText(/puntaje|puntuaci[oó]n|score|\bpri(oridad)? ?[:=] ?\d/i);
   // Que NO exista una puntuación se prueba donde de verdad importa: contra el
   // módulo y contra las columnas de la tabla, en pruebas/prioridad.test.ts.
   // Buscar la palabra aquí fallaba contra la propia frase que lo explica.
@@ -300,7 +309,7 @@ test("la ficha dice de qué, dónde y cuántos más, antes de leer el relato", a
   await expect(cabecera).toContainText(/cuántos más como este/i);
   // Sin tema y sin municipio se dice que no se puede contar, en vez de un cero
   // que parecería «no hay ninguno más».
-  await expect(cabecera).toContainText(/no se puede contar sin tema/i);
+  await expect(cabecera).toContainText(/falta tema o municipio/i);
 });
 
 test("la gestión llega medio llena con lo que la persona confirmó", async ({ page }) => {
@@ -371,11 +380,13 @@ test("escalar a una mesa: queda pendiente hasta que alguien confirme", async ({ 
   await expect(page.locator("[data-prueba='escalar']")).toContainText(/recibida/i, { timeout: 15_000 });
 });
 
-test("la ficha dice qué se puede corregir y qué no se toca", async ({ page }) => {
-  // El techo de esta pantalla, dicho en la pantalla. Sin decirlo, «corregir» y
-  // «reescribir» se parecen demasiado — y si la consola puede cambiar el
-  // sentido de lo que alguien contó, lo que sube al sistema de planeación ya no
-  // es lo que la gente dijo.
+test("la ficha no deja reescribir lo que la persona dijo", async ({ page }) => {
+  // El techo de esta pantalla. Estaba **escrito** en un párrafo largo, y un
+  // párrafo no impide nada: lo que impide reescribir el relato es que no exista
+  // ningún campo para hacerlo. Eso es lo que se vigila aquí.
+  //
+  // Lo que sí se puede corregir —municipio y tema— tiene su propio formulario,
+  // con motivo y firma, y sus propias pruebas.
   const marca = `techo-${Date.now()}`;
   await page.goto("/participar");
   await page.fill("#relato", `${marca}: el agua llega turbia desde hace meses`);
@@ -383,13 +394,18 @@ test("la ficha dice qué se puede corregir y qué no se toca", async ({ page }) 
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 20_000 });
 
   await abrirAporte(page, marca);
-  const techo = page.locator("[data-prueba='lo-que-no-se-toca']");
-  await expect(techo).toContainText(/no se reescribe nada/i);
-  await expect(techo).toContainText(/N03/);
-  await expect(techo).toContainText(/V14/);
-
-  // Y el relato sigue sin ser editable en ninguna parte.
+  // El relato está, entero y en cita.
+  await expect(page.locator("blockquote")).toContainText(marca);
+  // Y no hay forma de editarlo: ni caja, ni campo, ni texto editable.
   await expect(page.locator("textarea[name='relato'], textarea[name='relato_original']")).toHaveCount(0);
+  await expect(page.locator("[contenteditable='true']")).toHaveCount(0);
+  await expect(page.locator("input[name='relato'], input[name='sintesis']")).toHaveCount(0);
+
+  // **Y ningún código en pantalla.** `N03`, `V14`, `I2` no le dicen nada a
+  // quien revisa; su sitio es el comentario del código y el requisito.
+  const cuerpo = await page.locator(".bo-main").innerText();
+  expect(cuerpo, "hay códigos de la especificación en pantalla")
+    .not.toMatch(/\b(N03|V14|V19|I2|BI-02|CAL-01|GEO-01|PRI-01|T032|P4|Q18)\b/);
 });
 
 test("el departamento se ve y se puede filtrar por territorio", async ({ page }) => {

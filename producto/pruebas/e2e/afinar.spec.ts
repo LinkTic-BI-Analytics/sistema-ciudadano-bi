@@ -271,7 +271,7 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
   await expect(page.locator("body")).toContainText(/junta de acción comunal/);
   // Y el revisor ve el límite, no solo el dato.
-  await expect(page.locator("body")).toContainText(/nadie verificó la representación/i);
+  await expect(page.locator("body")).toContainText(/nadie verificó/i);
 });
 
 test("hablar por uno mismo no deja grupo puesto", async ({ page }) => {

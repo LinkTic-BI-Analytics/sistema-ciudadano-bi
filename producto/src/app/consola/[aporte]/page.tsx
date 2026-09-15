@@ -19,12 +19,25 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Los factores de prioridad, **sueltos y sin sumar** (`PRI-01`).
+ *
+ * No hay puntaje ni ranking: los pesos no existen, y una fórmula inventada
+ * decidiría a quién se atiende primero con una cuenta que nadie autorizó. Eso
+ * estaba escrito en la pantalla y ahí sobraba — quien revisa ve cuatro
+ * selectores sueltos y no hay ningún número que sumar.
+ */
 const FACTORES: [string, string, string[]][] = [
   ["afectacion", "Afectación", ["alta", "media", "baja", "sin_establecer"]],
   ["urgencia", "Urgencia reportada", ["alta", "media", "baja", "sin_declarar"]],
   ["recurrencia", "Recurrencia", ["alta", "media", "baja", "unica"]],
   ["competencia", "Competencia", ["clara", "en_disputa", "sin_establecer"]],
 ];
+
+/** «por_clasificar» es como se guarda; no es como se lee. */
+function enPalabras(valor: string | null | undefined): string {
+  return (valor ?? "").replace(/_/g, " ");
+}
 
 export default async function Ficha({ params }: { params: Promise<{ aporte: string }> }) {
   const { aporte: aporteId } = await params;
@@ -173,10 +186,10 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   <dd>
                     {a.tema
                       ? <strong>{COMO_SE_LLAMA[a.tema as Tema]}</strong>
-                      : <span className="bo-muted">sin tema · nadie lo puede enrutar así</span>}
+                      : <span className="bo-muted">sin tema · no se puede enrutar</span>}
                     {a.tema_propuesto && a.tema !== a.tema_propuesto && (
                       <span className="bo-small">
-                        {" "}· la lectura había propuesto «{COMO_SE_LLAMA[a.tema_propuesto as Tema]}»
+                        {" "}· la lectura propuso «{COMO_SE_LLAMA[a.tema_propuesto as Tema]}»
                       </span>
                     )}
                   </dd>
@@ -193,7 +206,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       ? <strong>{nombreDelMunicipio}{departamentoDelMunicipio && `, ${departamentoDelMunicipio}`}</strong>
                       : <span className="bo-muted">sin municipio aceptado</span>}
                     {a.lugar_declarado && (
-                      <span className="bo-small"> · con sus palabras: «{a.lugar_declarado}»</span>
+                      <span className="bo-small"> · dijo: «{a.lugar_declarado}»</span>
                     )}
                   </dd>
 
@@ -213,7 +226,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         <span className="bo-small"> · «{a.afectados}»</span>
                       </>
                     ) : (
-                      <span className="bo-muted">no lo dijo · nadie se lo preguntó o no lo sabía</span>
+                      <span className="bo-muted">no lo dijo</span>
                     )}
                   </dd>
 
@@ -234,16 +247,13 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   <dt className="bo-small">Cuántos más como este</dt>
                   <dd>
                     {!a.tema || !recurrencia.municipio ? (
-                      <span className="bo-muted">no se puede contar sin tema y sin municipio</span>
+                      <span className="bo-muted">sin contar · falta tema o municipio</span>
                     ) : recurrencia.otros === 0 ? (
                       <>Ninguno todavía. <span className="bo-muted">Ser el único no lo hace menos grave.</span></>
                     ) : (
                       <>
-                        <strong>{recurrencia.otros} aportes más</strong> del mismo tema en este municipio.{" "}
-                        <span className="bo-muted">
-                          Son aportes, no personas: dos pueden ser de la misma, y veinte vecinos
-                          pueden no haber contado ninguno.
-                        </span>
+                        <strong>{recurrencia.otros} aportes más</strong> del mismo tema en este
+                        municipio · <span className="bo-muted">son aportes, no personas</span>
                       </>
                     )}
                   </dd>
@@ -269,13 +279,130 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                              ejemplo="habla del acueducto, no de la vía" />
                       <Campo id="tema-autor" name="autor" etiqueta="Tu nombre" opcional />
                       <button className="bo-button">Guardar el tema</button>
-                      <p className="bo-small">
-                        Es <strong>nuestra etiqueta para enrutarlo</strong>, no algo que la persona
-                        afirmara. Lo que propuso la lectura se conserva aparte.
-                      </p>
+                      {/* Que es una etiqueta nuestra y no algo que la persona
+                          afirmó ya lo dice el formulario: pide motivo y firma. Y
+                          la cabecera enseña «la lectura propuso …» cuando
+                          difiere. Decirlo además en un párrafo era repetírselo a
+                          quien abre cuarenta fichas al día. */}
                     </form>
                   </div>
                 </details>
+
+                {/* **El orden es el de decidir, no el de escribir.**
+
+                    Iba: relato → grabación → de dónde llegó → lo que entendimos
+                    → ubicación. La ubicación quedaba de penúltima, después del
+                    contexto del QR y de las versiones viejas de la síntesis —y
+                    es lo primero que hay que resolver para que el aporte sirva
+                    de algo.
+
+                    Ahora: **ubicación** (que es trabajo pendiente) → el relato →
+                    lo que la persona confirmó → y al final lo que solo se mira
+                    para profundizar: el audio y de dónde llegó el enlace. */}
+                <section className="bo-history-section" data-prueba="ubicacion">
+                  <h2>Ubicación</h2>
+                  {ubi?.map((u, i) => (
+                    <p key={i} data-prueba="territorio">
+                      {/* En palabras, no como está en la base: salía
+                          «por_aclarar», con guion bajo. */}
+                      <span className="bo-badge" data-state={u.estado === "confirmada" ? "validated" : "clarify"}>
+                        {u.estado === "por_aclarar" ? "por aclarar" : u.estado}
+                      </span>{" "}
+                      {/* **El nombre, y el código al lado.** Decía «15001» y
+                          nada más: quien revisa no trabaja con códigos DANE de
+                          memoria, y un dato que hay que ir a buscar a otra
+                          parte es un dato que no está. */}
+                      {u.territorio_codigo
+                        ? <><strong>{nombreDe.get(u.territorio_codigo) ?? "un municipio que no está en el catálogo"}</strong>
+                            {" "}<span className="bo-small">({u.territorio_codigo})</span></>
+                        : <span className="bo-muted">sin municipio</span>}
+                      {u.motivo && <span className="bo-small"> · {u.motivo}</span>}
+                    </p>
+                  ))}
+
+                  {/* **Corregir en un paso.** Cambiar un municipio mal aceptado
+                      obligaba a devolverlo a «por aclarar» y aceptarlo otra vez:
+                      dos formularios y dos motivos para arreglar una letra. Y
+                      entre los dos pasos el aporte pasaba por un estado que no
+                      era cierto.
+
+                      Corregir **reemplaza**, no agrega: dos territorios
+                      significan que el problema cruza dos municipios (`GEO-01`),
+                      y un error de dedo no es eso. */}
+                  {/* **Plegados.** Los tres iban abiertos a la vez, y cada
+                      uno lleva dentro un desplegable con los 1.122 municipios
+                      del país: al abrir un aporte, lo primero que aparecía era
+                      un muro de listas antes de llegar al relato. Cerrados,
+                      esto vuelve a ser una ficha. */}
+                  {ubi?.some((u) => u.estado === "confirmada") && (
+                    <details className="bo-plegable">
+                    <summary>Corregir el municipio</summary>
+                    <div className="bo-plegado">
+                    <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
+                      <input type="hidden" name="aporteId" value={aporteId} />
+                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
+                      <Opciones id="cor-codigo" name="codigo" etiqueta="Municipio correcto">
+                        <option value="">Escoge uno…</option>
+                        {mun?.map((m) => (
+                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                        ))}
+                      </Opciones>
+                      <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
+                             ejemplo="dice El Salado de Rionegro, no el de Bello" />
+                      <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
+                      <button className="bo-button">Corregir</button>
+                      <p className="bo-small">
+                        <strong>Reemplaza el municipio, no agrega un segundo.</strong> El cambio
+                        queda registrado con tu nombre y el motivo.
+                      </p>
+                    </form>
+                    </div>
+                    </details>
+                  )}
+
+                  {ubi?.some((u) => u.estado === "confirmada") && (
+                    <details className="bo-plegable">
+                    <summary>Devolver a «por aclarar»</summary>
+                    <div className="bo-plegado">
+                    <form action={accionDevolver}>
+                      <input type="hidden" name="aporteId" value={aporteId} />
+                      <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
+                             ejemplo="la persona dijo otra cosa al llamarla" />
+                      <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
+                      <button className="bo-button">Devolver a por aclarar</button>
+                      {/* Por qué el código se borra en vez de quedarse de
+                          adorno —sería el cuarto estado implícito que `I2`
+                          prohíbe— está en `src/revision/ubicacion.ts`. Aquí solo
+                          hace falta la consecuencia. */}
+                      <p className="bo-small">El municipio se quita hasta que se aclare.</p>
+                    </form>
+                    </div>
+                    </details>
+                  )}
+
+                  {/* Este NO se pliega: es el trabajo pendiente del aporte, lo
+                      que la persona que abre la ficha vino a hacer. */}
+                  {ubi?.some((u) => u.estado === "por_aclarar") && (
+                    <form action={accionResolver}>
+                      <input type="hidden" name="aporteId" value={aporteId} />
+                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
+                      <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
+                        <option value="">Escoge uno…</option>
+                        {mun?.map((m) => (
+                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                        ))}
+                      </Opciones>
+                      <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
+                             ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
+                      <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
+                      <button className="bo-button" data-variant="primary">Aceptar el municipio</button>
+                      <p className="bo-small">
+                        Acepta <strong>el lugar del problema</strong>, no la dirección de quien
+                        escribió.
+                      </p>
+                    </form>
+                  )}
+                </section>
 
                 <section className="bo-source">
                   <h2>Lo que la persona contó</h2>
@@ -285,13 +412,12 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       demasiado — y la diferencia entre las dos es todo el valor
                       de esto: si la consola puede cambiar el sentido de lo que
                       alguien contó, lo que sube ya no es lo que la gente dijo. */}
-                  <p className="bo-small" data-prueba="lo-que-no-se-toca">
-                    <strong>El relato original no se edita</strong>, y la síntesis nunca lo
-                    sustituye (N03). Aquí no se reescribe nada: ni lo que la persona confirmó
-                    —la última palabra sobre lo que quiso decir es suya (V14)— ni lo que declaró
-                    con sus palabras. Lo que sí se corrige es el municipio y el tema, con motivo
-                    y firma.
-                  </p>
+                  {/* **Aquí iba un párrafo de cinco líneas y ya no está.**
+                      Explicaba `N03` y `V14` citando los códigos, y quien revisa
+                      lo leía cuarenta veces al día sin que le cambiara ninguna
+                      decisión. Lo que impide reescribir el relato no es un
+                      aviso: es que no existe ningún campo para hacerlo — y de
+                      eso se encarga una prueba, no una frase. */}
                   {/* Lo que la persona precisó al contar, **con sus palabras**
                       (ADR 0012). Lo que no dijo no aparece: un campo vacío es
                       información —nadie se lo preguntó o no lo sabía— y
@@ -309,95 +435,14 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   {a.es_colectivo && (
                     <p className="bo-observation">
                       <strong>Dice hablar por un grupo:</strong>{" "}
-                      <em>«{a.colectivo_declarado ?? "sin nombrarlo"}»</em>.{" "}
-                      <span className="bo-muted">
-                        Lo dice quien escribió; nadie verificó la representación.
-                        El aporte es del grupo, no de quien lo mandó (V19).
-                      </span>
+                      <em>«{a.colectivo_declarado ?? "sin nombrarlo"}»</em>{" "}
+                      <span className="bo-muted">· nadie verificó que lo represente</span>
                     </p>
                   )}
                   {/* Lo que precisó —dónde, a quiénes, desde cuándo— está
                       arriba, en la cabecera. Repetirlo aquí era la mitad del
                       muro de texto. */}
                 </section>
-
-                {a.canal === "voz_transcrita" && (
-                  <section className="bo-history-section" data-prueba="grabacion">
-                    <h2>Lo contó hablando</h2>
-                    {/* **El audio es el original** (ADR 0013). El texto de
-                        arriba es la lectura de una máquina, y las máquinas se
-                        equivocan con los nombres de veredas: en la primera
-                        prueba «La Martinita» volvió como «La Martinica». */}
-                    <p className="bo-small">
-                      <strong>El original es la grabación</strong>, no el texto. Escúchala antes de
-                      dar por buena una vereda, una cantidad o un «no».
-                    </p>
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <audio controls preload="none" src={`/consola/audio/${aporteId}`} style={{ width: "100%" }} />
-
-                    {transcripciones.length > 0 ? (
-                      <dl className="bo-context-grid">
-                        {transcripciones.map((v) => (
-                          <div key={v.version}>
-                            <dt className="bo-small">
-                              v{v.version} · {v.autor.startsWith("modelo:")
-                                ? <>la transcribió <code>{v.autor.replace("modelo:", "")}</code></>
-                                : "la corrigió la persona"}
-                            </dt>
-                            <dd>{v.texto}{v.motivo && <span className="bo-small"> · {v.motivo}</span>}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    ) : (
-                      <p className="bo-observation">
-                        No se entendió la grabación. <strong>El audio está ahí</strong> y se puede
-                        transcribir otra vez cuando haya con qué.
-                      </p>
-                    )}
-                  </section>
-                )}
-
-                {(enlace || a.evento_confirmado_id) && (
-                  <section className="bo-history-section" data-prueba="contexto">
-                    <h2>De dónde llegó</h2>
-                    {/* `QR-03` obliga a distinguir tres cosas que la gente
-                        mezcla. Juntarlas haría creer que quien escaneó el
-                        afiche de A asistió a A. */}
-                    <dl className="bo-context-grid">
-                      {enlace && (
-                        <div>
-                          <dt className="bo-small">Enlace por el que entró</dt>
-                          <dd>
-                            <code>{enlace.id}</code> · pieza «{enlace.pieza}»
-                            {tituloDe(enlace.encuentro_id) && <> · apuntaba a «{tituloDe(enlace.encuentro_id)}»</>}
-                          </dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="bo-small">Evento en el que dice participar</dt>
-                        <dd>
-                          {a.evento_confirmado_id
-                            ? tituloDe(a.evento_confirmado_id) ?? "un encuentro que ya no está"
-                            : <span className="bo-muted">ninguno</span>}
-                          {" · "}<span className="bo-muted">{a.estado_contexto}</span>
-                        </dd>
-                      </div>
-                      {a.utms_recibidas && (
-                        <div>
-                          <dt className="bo-small">Difusión declarada en la dirección</dt>
-                          <dd>
-                            <code>{JSON.stringify(a.utms_recibidas)}</code>{" "}
-                            <span className="bo-muted">— pudo venir alterada; no da permisos</span>
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                    <p className="bo-small">
-                      <strong>Nada de esto es asistencia.</strong> Abrir un enlace no prueba que
-                      alguien estuviera en ningún sitio: pudo reenviárselo otra persona.
-                    </p>
-                  </section>
-                )}
 
                 {(sint?.length ?? 0) > 0 && (
                   <section className="bo-synthesis" data-prueba="sintesis">
@@ -447,116 +492,93 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   </section>
                 )}
 
-                <section className="bo-history-section" data-prueba="ubicacion">
-                  <h2>Ubicación</h2>
-                  {ubi?.map((u, i) => (
-                    <p key={i} data-prueba="territorio">
-                      <span className="bo-badge" data-state={u.estado === "confirmada" ? "validated" : "clarify"}>
-                        {u.estado}
-                      </span>{" "}
-                      {/* **El nombre, y el código al lado.** Decía «15001» y
-                          nada más: quien revisa no trabaja con códigos DANE de
-                          memoria, y un dato que hay que ir a buscar a otra
-                          parte es un dato que no está. */}
-                      {u.territorio_codigo
-                        ? <><strong>{nombreDe.get(u.territorio_codigo) ?? "un municipio que no está en el catálogo"}</strong>
-                            {" "}<span className="bo-small">({u.territorio_codigo})</span></>
-                        : <span className="bo-muted">sin código — no se infiere</span>}
-                      {u.motivo && <span className="bo-small"> · {u.motivo}</span>}
+                {a.canal === "voz_transcrita" && (
+                  <section className="bo-history-section" data-prueba="grabacion">
+                    <h2>Lo contó hablando</h2>
+                    {/* **El audio es el original** (ADR 0013). El texto de
+                        arriba es la lectura de una máquina, y las máquinas se
+                        equivocan con los nombres de veredas: en la primera
+                        prueba «La Martinita» volvió como «La Martinica». */}
+                    <p className="bo-small">
+                      <strong>El original es la grabación</strong>, no el texto. Escúchala antes de
+                      dar por buena una vereda, una cantidad o un «no».
                     </p>
-                  ))}
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <audio controls preload="none" src={`/consola/audio/${aporteId}`} style={{ width: "100%" }} />
 
-                  {/* **Corregir en un paso.** Cambiar un municipio mal aceptado
-                      obligaba a devolverlo a «por aclarar» y aceptarlo otra vez:
-                      dos formularios y dos motivos para arreglar una letra. Y
-                      entre los dos pasos el aporte pasaba por un estado que no
-                      era cierto.
-
-                      Corregir **reemplaza**, no agrega: dos territorios
-                      significan que el problema cruza dos municipios (`GEO-01`),
-                      y un error de dedo no es eso. */}
-                  {/* **Plegados.** Los tres iban abiertos a la vez, y cada
-                      uno lleva dentro un desplegable con los 1.122 municipios
-                      del país: al abrir un aporte, lo primero que aparecía era
-                      un muro de listas antes de llegar al relato. Cerrados,
-                      esto vuelve a ser una ficha. */}
-                  {ubi?.some((u) => u.estado === "confirmada") && (
-                    <details className="bo-plegable">
-                    <summary>Corregir el municipio</summary>
-                    <div className="bo-plegado">
-                    <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
-                      <Opciones id="cor-codigo" name="codigo" etiqueta="Corregir el municipio">
-                        <option value="">Escoge uno…</option>
-                        {mun?.map((m) => (
-                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                    {transcripciones.length > 0 ? (
+                      <dl className="bo-context-grid">
+                        {transcripciones.map((v) => (
+                          <div key={v.version}>
+                            <dt className="bo-small">
+                              v{v.version} · {v.autor.startsWith("modelo:")
+                                ? <>la transcribió <code>{v.autor.replace("modelo:", "")}</code></>
+                                : "la corrigió la persona"}
+                            </dt>
+                            <dd>{v.texto}{v.motivo && <span className="bo-small"> · {v.motivo}</span>}</dd>
+                          </div>
                         ))}
-                      </Opciones>
-                      <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
-                             ejemplo="dice El Salado de Rionegro, no el de Bello" />
-                      <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Corregir</button>
-                      <p className="bo-small">
-                        Reemplaza el que había, <strong>no agrega otro</strong>. Queda en auditoría
-                        con el anterior, el nuevo, quién y por qué.
+                      </dl>
+                    ) : (
+                      <p className="bo-observation">
+                        No se pudo transcribir. <strong>El audio queda guardado.</strong>
                       </p>
-                    </form>
-                    </div>
-                    </details>
-                  )}
+                    )}
+                  </section>
+                )}
 
-                  {ubi?.some((u) => u.estado === "confirmada") && (
-                    <details className="bo-plegable">
-                    <summary>Devolver a «por aclarar»</summary>
-                    <div className="bo-plegado">
-                    <form action={accionDevolver}>
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
-                             ejemplo="la persona dijo otra cosa al llamarla" />
-                      <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Devolver a por aclarar</button>
-                      <p className="bo-small">
-                        El código se borra, no se queda de adorno: un código bajo «por aclarar»
-                        es el cuarto estado implícito que <strong>I2</strong> prohíbe.
-                      </p>
-                    </form>
-                    </div>
-                    </details>
-                  )}
-
-                  {/* Este NO se pliega: es el trabajo pendiente del aporte, lo
-                      que la persona que abre la ficha vino a hacer. */}
-                  {ubi?.some((u) => u.estado === "por_aclarar") && (
-                    <form action={accionResolver}>
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
-                      <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
-                        <option value="">Escoge uno…</option>
-                        {mun?.map((m) => (
-                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
-                        ))}
-                      </Opciones>
-                      <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
-                             ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
-                      <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button" data-variant="primary">Aceptar el municipio</button>
-                      <p className="bo-small">
-                        Una dirección residencial <strong>no es</strong> el lugar del problema sin
-                        confirmación (GEO-01).
-                      </p>
-                    </form>
-                  )}
-                </section>
+                {(enlace || a.evento_confirmado_id) && (
+                  <section className="bo-history-section" data-prueba="contexto">
+                    <h2>De dónde llegó</h2>
+                    {/* `QR-03` obliga a distinguir tres cosas que la gente
+                        mezcla. Juntarlas haría creer que quien escaneó el
+                        afiche de A asistió a A. */}
+                    <dl className="bo-context-grid">
+                      {enlace && (
+                        <div>
+                          <dt className="bo-small">Enlace por el que entró</dt>
+                          <dd>
+                            <code>{enlace.id}</code> · pieza «{enlace.pieza}»
+                            {tituloDe(enlace.encuentro_id) && <> · apuntaba a «{tituloDe(enlace.encuentro_id)}»</>}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="bo-small">Evento en el que dice participar</dt>
+                        <dd>
+                          {a.evento_confirmado_id
+                            ? tituloDe(a.evento_confirmado_id) ?? "un encuentro que ya no está"
+                            : <span className="bo-muted">ninguno</span>}
+                          {" · "}<span className="bo-muted">{a.estado_contexto}</span>
+                        </dd>
+                      </div>
+                      {a.utms_recibidas && (
+                        <div>
+                          <dt className="bo-small">Campaña que traía el enlace</dt>
+                          <dd>
+                            <code>{JSON.stringify(a.utms_recibidas)}</code>{" "}
+                            <span className="bo-muted">· sin verificar</span>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                    <p className="bo-small">
+                      <strong>Abrir el enlace no prueba que estuvo en el evento.</strong>
+                    </p>
+                  </section>
+                )}
               </div>
 
               <aside className="bo-inspector">
                 <h2>Gestión</h2>
+                {/* Que los cuatro estados se muevan por separado (`CAL-01`) es
+                    una decisión nuestra, no algo que quien revisa tenga que
+                    hacer. Y se veía raro: aquí solo salen tres, porque el de la
+                    ubicación vive arriba. */}
                 <p className="bo-small">
-                  Clasificación: {a.estado_clasificacion} · Confirmación: {a.estado_confirmacion} ·
-                  Revisión: {a.estado_revision}
+                  {enPalabras(a.estado_clasificacion)} · {enPalabras(a.estado_confirmacion)} ·
+                  {" "}{enPalabras(a.estado_revision)}
                 </p>
-                <p className="bo-small"><strong>Los cuatro estados se mueven por separado</strong> (CAL-01).</p>
 
                 {!exp ? (
                   <form action={accionCrearExpediente}>
@@ -571,13 +593,12 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                            defaultValue={propuestaDeExpediente.descripcion} />
                     <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional
                            defaultValue={propuestaDeExpediente.cambio} />
-                    <Campo id="exp-motivo" name="motivo" etiqueta="Por qué este aporte lo origina" />
+                    <Campo id="exp-motivo" name="motivo" etiqueta="Por qué se abre" />
                     <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
                     <button className="bo-button" data-variant="primary">Abrir</button>
                     <p className="bo-small">
-                      <strong>La separación es el estado por defecto.</strong> Compartir tema o
-                      municipio no basta: ¿podrías dar por atendida una mientras la otra sigue
-                      pendiente?
+                      <strong>Un expediente por afectación</strong>, aunque compartan tema o
+                      municipio.
                     </p>
                   </form>
                 ) : (
@@ -615,17 +636,16 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       {FACTORES.map(([n, etiqueta, ops]) => (
                         <Opciones key={n} id={`pri-${n}`} name={n} etiqueta={etiqueta} opcional>
                           <option value="">sin registrar</option>
-                          {ops.map((o) => <option key={o} value={o}>{o}</option>)}
+                          {ops.map((o) => <option key={o} value={o}>{enPalabras(o)}</option>)}
                         </Opciones>
                       ))}
                       <Campo id="pri-incertidumbre" name="incertidumbre" etiqueta="Qué no sabemos" opcional />
                       <Campo id="pri-autor" name="autor" etiqueta="Tu nombre" opcional />
                       <button className="bo-button">Registrar prioridad</button>
-                      <p className="bo-small">
-                        <strong>No hay puntaje ni ranking.</strong> Los cinco factores van por
-                        separado porque los pesos no existen, y una fórmula inventada decidiría a
-                        quién se atiende primero con una cuenta que nadie autorizó.
-                      </p>
+                      {/* Por qué los factores van por separado y no hay
+                          puntaje está junto a `FACTORES`, arriba. En pantalla
+                          sobraba: quien revisa ve cuatro selectores sueltos y no
+                          hay ningún número que sumar. Además decía «cinco». */}
                     </form>
                     </div>
                     </details>
@@ -685,10 +705,8 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         <Campo id="rem-autor" name="autor" etiqueta="Tu nombre" opcional />
                         <button className="bo-button" data-variant="primary">Remitir</button>
                         <p className="bo-small">
-                          <strong>Remitir no es haber atendido.</strong> Queda pendiente hasta que
-                          la destinataria confirme, y <strong>el silencio no cierra nada</strong>.
-                          El directorio real de entidades sigue pendiente: por eso el destinatario
-                          se escribe como se llame.
+                          <strong>Remitir no es haber atendido:</strong> queda pendiente hasta que
+                          la mesa confirme que lo recibió.
                         </p>
                       </form>
                       </div>

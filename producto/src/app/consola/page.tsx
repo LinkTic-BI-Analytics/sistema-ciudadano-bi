@@ -288,8 +288,7 @@ export default async function Consola({
 
           <footer className="bo-footer">
             <p className="bo-bottom-note">
-              Abrir un expediente inicia una revisión. <strong>No aprueba nada, no asigna
-              recursos y no declara resuelto nada.</strong>
+              <strong>Abrir un expediente no aprueba, no asigna recursos ni resuelve nada.</strong>
             </p>
           </footer>
         </div>
