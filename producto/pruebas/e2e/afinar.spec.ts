@@ -460,3 +460,39 @@ test("la pantalla final no mezcla el comprobante con lo que queda por contar", a
   // Y los dos botones no compiten: el de contar otra cosa es secundario.
   await expect(pendientes.locator(".pc-action[data-variant='secondary']").first()).toBeVisible();
 });
+
+
+test("después de corregir, los pasos siguientes dicen de qué va el aporte", async ({ page }) => {
+  // Al corregir, el texto desaparecía de la vista y lo siguiente eran tres
+  // cajas vacías: ni se sabía si la corrección se había guardado, ni de qué se
+  // estaba hablando ya.
+  await contar(page, "el internet no sirve ni para comunicarnos");
+  const v1 = page.locator("[data-prueba='vuelta-1']");
+  await v1.getByRole("button", { name: /no es eso/i }).click({ timeout: 20_000 });
+  await v1.locator("textarea").first().fill("el internet no llega a la vereda");
+  await v1.getByRole("button", { name: /guardar y seguir/i }).click();
+
+  const sobre = page.locator("[data-prueba='sobre-que']");
+  await expect(sobre).toBeVisible({ timeout: 15_000 });
+  await expect(sobre).toContainText("el internet no llega a la vereda");
+
+  // Y sigue diciéndolo en el paso del municipio, no solo en el primero.
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
+  await expect(sobre).toContainText("el internet no llega a la vereda");
+});
+
+test("cuando contó varias cosas, los pasos dicen de cuál se habla", async ({ page }) => {
+  // Importa el doble: las preguntas que vienen —dónde, a quiénes, desde
+  // cuándo— son de UNO de los problemas, y sin decir cuál se contestan de
+  // memoria, mezclando los tres otra vez.
+  await contar(page, "no hay agua en la vereda, la vía está muy mala");
+  await page.locator("[data-prueba='escoger']")
+    .getByRole("button", { name: /la vía está muy mala/i }).click({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+
+  const sobre = page.locator("[data-prueba='sobre-que']");
+  await expect(sobre).toContainText(/la vía está muy mala/);
+  await expect(sobre).not.toContainText(/no hay agua/);
+});

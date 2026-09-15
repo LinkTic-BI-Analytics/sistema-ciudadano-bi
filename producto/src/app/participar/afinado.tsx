@@ -32,6 +32,25 @@ function Error_({ paso }: { paso: PasoAfinado | null }) {
   return <p className="pc-error" role="alert">{paso.error}</p>;
 }
 
+/**
+ * De qué va este aporte, en todos los pasos que vienen después.
+ *
+ * Sin esto, quien corrige lo que entendimos ve desaparecer su texto y lo
+ * siguiente que le sale son tres cajas vacías: no hay forma de saber si la
+ * corrección se guardó ni de qué se está hablando ya.
+ *
+ * Y cuando contó varias cosas importa el doble: las preguntas que vienen —dónde,
+ * a quiénes, desde cuándo— son de **uno** de los problemas, y sin decir cuál se
+ * contestan de memoria.
+ */
+function SobreQue({ problema }: { problema: string }) {
+  return (
+    <p className="pc-note" data-prueba="sobre-que">
+      Estamos hablando de: <strong>{problema}</strong>
+    </p>
+  );
+}
+
 /** El código, discreto mientras se afina. No es un «ya terminaste». */
 function Guardado({ codigo }: { codigo: string }) {
   return (
@@ -327,6 +346,7 @@ export function Afinado({ codigo }: { codigo: string }) {
           esto no se acaba nunca. */}
       <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
       <Guardado codigo={codigo} />
+      {paso !== "entendimos" && paso !== "escoger" && <SobreQue problema={problema} />}
 
       {paso === "escoger" && lect && (
         <div data-prueba="escoger">
