@@ -192,3 +192,37 @@ test("un pronombre suelto no es una respuesta", async () => {
   assert.equal(l.fuente, "ia");
   assert.equal(l.desdeCuando, "tres meses");
 });
+
+test("tres problemas distintos se separan, y el primero manda", async () => {
+  // Mucha gente llega con todo junto. Son tres necesidades: cada una va a otra
+  // entidad, a otro expediente y se compara con otras distintas. Mezcladas en
+  // un aporte, ninguna se puede atender.
+  const relato = "no hay agua, la via esta mala y el puesto de salud abre dos dias";
+  const l = await conRespuesta({
+    problemas: ["no hay agua", "la via esta mala", "el puesto de salud abre dos dias"],
+    lugar: null, afectados: null, desdeCuando: null,
+  }, () => leerConIA(relato));
+  assert.equal(l.fuente, "ia");
+  assert.equal(l.problema, "no hay agua");
+  assert.deepEqual(l.otrosProblemas, ["la via esta mala", "el puesto de salud abre dos dias"]);
+});
+
+test("una sola cosa contada dos veces no se parte en dos", async () => {
+  // «No hay agua y cuando llega sale turbia» es un problema descrito dos veces.
+  // Partirlo crearía dos expedientes para lo mismo, y `R1` existe justamente
+  // para que eso no pase.
+  const relato = "no hay agua y cuando llega sale turbia";
+  const l = await conRespuesta({ problemas: ["no hay agua y cuando llega sale turbia"] },
+                               () => leerConIA(relato));
+  assert.deepEqual(l.otrosProblemas, []);
+});
+
+test("si uno de los problemas está inventado, se descarta la respuesta entera", async () => {
+  // El guardián vale para la lista igual que para lo demás: un problema con una
+  // palabra que nadie dijo contaminaría un expediente propio.
+  const l = await conRespuesta({
+    problemas: ["no hay agua", "el acueducto municipal está contaminado"],
+  }, () => leerConIA("no hay agua, la via esta mala"));
+  assert.equal(l.fuente, "segmentacion");
+  assert.deepEqual(l.otrosProblemas, []);
+});

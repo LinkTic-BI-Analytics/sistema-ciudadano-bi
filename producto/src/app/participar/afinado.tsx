@@ -46,8 +46,11 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [lect, setLect] = useState<Lectura | null>(null);
   const [leyendo, setLeyendo] = useState(true);
   const [paso, setPaso] = useState<
-    "entendimos" | "falta" | "municipio" | "confirmar-residencia" | "voceria" | "listo"
+    "escoger" | "entendimos" | "falta" | "municipio" | "confirmar-residencia" | "voceria" | "listo"
   >("entendimos");
+  // Lo que contó y no es de lo que hablamos en este aporte. No se pierde: sigue
+  // entero en su relato, y al final se le ofrece contarlo aparte.
+  const [otros, setOtros] = useState<string[]>([]);
   const [grupo, setGrupo] = useState("");
   const [porGrupo, setPorGrupo] = useState(false);
   const [guardandoVoz, setGuardandoVoz] = useState(false);
@@ -80,6 +83,13 @@ export function Afinado({ codigo }: { codigo: string }) {
         setLect(r.lectura);
         setProblema(r.lectura.problema);
         setCandidatos(r.municipios);
+        // Si contó varias cosas, lo primero es escoger de cuál hablamos: todo lo
+        // que viene después —el lugar, a quiénes, la prioridad— es de **un**
+        // problema, y mezclarlos hace que ninguno se pueda atender.
+        if (r.lectura.otrosProblemas.length > 0) {
+          setOtros(r.lectura.otrosProblemas);
+          setPaso("escoger");
+        }
       })
       .finally(() => { if (vigente) setLeyendo(false); });
     return () => { vigente = false; };
@@ -101,7 +111,14 @@ export function Afinado({ codigo }: { codigo: string }) {
 
   useEffect(() => {
     if (!r1?.ok) return;
-    if (candidatos.length) { setVueltaAlVolver(0); setPaso("municipio"); return; }
+    // **Si ya dijo dónde, el paso del municipio va aquí**, haya candidatos o no.
+    // Que la IA encontrara un lugar no significa que sea ubicable: «la vereda
+    // está intransitable» es un lugar en la frase y no lleva a ningún
+    // municipio. Dábamos la ubicación por contestada y no volvíamos a
+    // preguntar — el mismo agujero que «en mi casa», por otro camino.
+    //
+    // Si no dijo dónde, la pregunta va en su vuelta y el municipio viene detrás.
+    if (lect?.lugar) { setVueltaAlVolver(0); setPaso("municipio"); return; }
     setPaso(vueltas.length ? "falta" : "voceria");
   }, [r1]);
   useEffect(() => {
@@ -266,13 +283,36 @@ export function Afinado({ codigo }: { codigo: string }) {
           Significa que quedó registrado y que alguien lo va a revisar.
         </p>
         <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
+
+        {otros.length > 0 && (
+          <div data-prueba="pendientes">
+            <h3>También nos contaste esto</h3>
+            <p className="pc-help">
+              Queda guardado en tu relato, pero <strong>como aporte aparte se puede atender
+              aparte</strong>: va a otra entidad y sigue su propio camino.
+            </p>
+            <div className="pc-actions">
+              {otros.map((x) => (
+                <button key={x} type="button" className="pc-action"
+                        onClick={() => {
+                          // Va por el navegador y no por la dirección: un relato
+                          // en la URL acaba en los registros del servidor.
+                          try { sessionStorage.setItem("pc:otro-relato", x); } catch { /* se escribe a mano */ }
+                          location.href = "/participar";
+                        }}>
+                  Contar: {x}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     );
   }
 
   // Se cuenta el del municipio solo cuando existe: prometer un paso que no va a
   // aparecer es peor que no decir cuántos hay.
-  const total = 3 + vueltas.length + (candidatos.length ? 1 : 0);
+  const total = 3 + vueltas.length + (candidatos.length ? 1 : 0) + (paso === "escoger" ? 1 : 0);
   const actual = paso === "entendimos" ? 2 : paso === "municipio" ? 2 + vuelta + 2 : 2 + vuelta + 1;
 
   return (
@@ -281,6 +321,39 @@ export function Afinado({ codigo }: { codigo: string }) {
           esto no se acaba nunca. */}
       <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
       <Guardado codigo={codigo} />
+
+      {paso === "escoger" && lect && (
+        <div data-prueba="escoger">
+          <h2>Nos contaste {otros.length + 1} cosas</h2>
+          <p className="pc-help">
+            Cada una va a una entidad distinta y se atiende por separado, así que{" "}
+            <strong>vamos de a una</strong>. ¿Por cuál empezamos?
+          </p>
+          <div className="pc-actions">
+            {[problema, ...otros].map((x) => (
+              <button key={x} type="button" className="pc-action"
+                      onClick={() => {
+                        const todas = [problema, ...otros];
+                        setProblema(x);
+                        setOtros(todas.filter((y) => y !== x));
+                        setPaso("entendimos");
+                      }}>
+                {x}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="pc-text-action"
+                  onClick={() => { setOtros([]); setPaso("entendimos"); }}>
+            En realidad es una sola cosa
+          </button>
+          {/* Que no se pierde nada es lo primero que hay que decir: si no,
+              escoger se siente como que le estamos borrando lo demás. */}
+          <p className="pc-help">
+            <strong>No se pierde nada.</strong> Todo lo que escribiste queda guardado tal cual, y
+            al final te ofrecemos contar las otras.
+          </p>
+        </div>
+      )}
 
       {paso === "entendimos" && (
         <div data-prueba="vuelta-1">

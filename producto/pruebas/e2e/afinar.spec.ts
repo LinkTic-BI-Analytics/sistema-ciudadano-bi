@@ -251,7 +251,7 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   // tabla desde el primer día y nadie lo escribía ni lo leía, aunque el
   // requerimiento hablara de voceros desde el principio.
   const marca = `voceria-${Date.now()}`;
-  await contar(page, `${marca}: la vía de la vereda está intransitable`);
+  await contar(page, `${marca}: la vía principal está intransitable`);
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
   const v2 = page.locator("[data-prueba='vuelta-2']");
@@ -374,4 +374,48 @@ test("lo entendido no queda pegado: los términos son hijos directos", async ({ 
   expect(sueltos.directos, "hay dt envueltos: el sistema de diseño no los va a espaciar")
     .toBe(sueltos.todos);
   expect(sueltos.envoltorios, "un div dentro del dl rompe dt:first-child").toBe(0);
+});
+
+
+test("un lugar que no lleva a ningún municipio no cuenta como contestado", async ({ page }) => {
+  // «La vereda está intransitable» es un lugar dentro de la frase y no lleva a
+  // ningún municipio. Como la lectura traía algo en «dónde», se daba la
+  // pregunta por contestada y no se volvía a preguntar: el aporte llegaba a la
+  // bandeja sin territorio al que sumarlo.
+  //
+  // Es el mismo agujero que «en mi casa», por otro camino. Lo destapó el
+  // proveedor falso de los recorridos, no una revisión de código.
+  await contar(page, "la vía de la vereda está intransitable");
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("contar tres cosas a la vez: se escoge una y las otras no se pierden", async ({ page }) => {
+  // Mucha gente llega con todo junto. Son tres necesidades: cada una va a otra
+  // entidad, a otro expediente y se compara con otras distintas. Mezcladas en
+  // un aporte, ninguna se puede atender.
+  await contar(page, "no hay agua en la vereda, la vía está muy mala, y el puesto de salud abre dos días");
+
+  const escoger = page.locator("[data-prueba='escoger']");
+  await expect(escoger).toBeVisible({ timeout: 20_000 });
+  await expect(escoger).toContainText(/contaste 3 cosas/i);
+  // Lo primero que hay que decirle: escoger no le borra lo demás.
+  await expect(escoger).toContainText(/no se pierde nada/i);
+
+  await escoger.getByRole("button", { name: /puesto de salud/i }).click();
+  const v1 = page.locator("[data-prueba='vuelta-1']");
+  await expect(v1).toBeVisible();
+  await expect(v1).toContainText(/puesto de salud/);
+  // Y lo que hablamos ahora es solo eso.
+  await expect(v1).not.toContainText(/la vía está muy mala/);
+});
+
+test("si en realidad era una sola cosa, se puede decir", async ({ page }) => {
+  await contar(page, "no hay agua en la vereda, la vía está muy mala");
+  const escoger = page.locator("[data-prueba='escoger']");
+  await expect(escoger).toBeVisible({ timeout: 20_000 });
+  await escoger.getByRole("button", { name: /una sola cosa/i }).click();
+  await expect(page.locator("[data-prueba='vuelta-1']")).toBeVisible();
+  await expect(page.locator("[data-prueba='escoger']")).toHaveCount(0);
 });

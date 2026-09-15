@@ -34,11 +34,27 @@ export default defineConfig({
   //
   // Puerto propio para no pisar el `npm run dev` de quien esté mirando la
   // pantalla, que sí tiene la llave.
-  webServer: {
-    command: "npm run dev -- --port 3101",
-    url: "http://127.0.0.1:3101",
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: { SIN_IA: "1", OPENROUTER_API_KEY: "", MISTRAL_API_KEY: "" },
-  },
+  webServer: [
+    // El proveedor falso, que contesta siempre lo mismo. Sin él, todo lo que
+    // depende de la IA —cuántas vueltas ve la persona, si contó una cosa o
+    // tres— o no se prueba nunca (con la IA apagada) o depende de lo que el
+    // modelo conteste esa vez (con la IA de verdad).
+    {
+      command: "node --experimental-strip-types pruebas/e2e/ia-falsa.ts",
+      url: "http://127.0.0.1:3199",
+      reuseExistingServer: false,
+      timeout: 30_000,
+    },
+    {
+      command: "npm run dev -- --port 3101",
+      url: "http://127.0.0.1:3101",
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        OPENROUTER_API_KEY: "llave-de-los-recorridos",
+        IA_URL: "http://127.0.0.1:3199/chat/completions",
+        MISTRAL_API_KEY: "",
+      },
+    },
+  ],
 });

@@ -15,6 +15,20 @@
 export type Lectura = {
   /** El problema, en una frase. Sale del relato, sin agregar nada. */
   problema: string;
+  /**
+   * Las **otras** cosas distintas que contó, si contó más de una.
+   *
+   * Mucha gente llega con todo junto: «no hay agua, la vía está mala y el
+   * puesto de salud abre dos días». Son tres necesidades, y el modelo entero
+   * —expediente, prioridad, territorio, quién responde— asume **una**.
+   * Mezclarlas en un aporte hace que ninguna se pueda atender: no hay a quién
+   * remitirla ni con qué compararla.
+   *
+   * Aquí no se descarta ninguna. Se le enseñan y **ella escoge de cuál habla**;
+   * las demás siguen enteras en su relato original, y se le ofrece contarlas
+   * aparte.
+   */
+  otrosProblemas: string[];
   /** Tal como lo dijo. `I2`: no se normaliza ni se le pone código. */
   lugar: string | null;
   /** A quién afecta. `PRI-01` lo usa como factor, y hoy el revisor lo infiere. */
@@ -156,6 +170,10 @@ export function leer(relato: string, lugar?: string | null): Lectura {
 
   return {
     problema: recortar(primera),
+    // Separar problemas con reglas de texto sería adivinar dónde termina uno:
+    // «no hay agua y cuando llega sale turbia» es una sola cosa, y un punto en
+    // medio no lo dice. Sin IA no se intenta.
+    otrosProblemas: [],
     lugar: lugar?.trim() || null,
     // Sin IA no se separan las otras partes: sacarlas con reglas de texto sería
     // adivinar cuál frase era el deseo y cuál la propuesta, y equivocarse ahí le

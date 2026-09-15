@@ -39,7 +39,12 @@ function proveedor(): { url: string; llave: string; modelo: string; cabeceras: R
   const or = process.env.OPENROUTER_API_KEY?.trim();
   if (or) {
     return {
-      url: "https://openrouter.ai/api/v1/chat/completions",
+      // Se puede apuntar a otro sitio: una pasarela de la entidad, o el
+      // proveedor falso con el que corren los recorridos. Sin esto, todo lo que
+      // la IA decide —cuántas vueltas ve la persona, si contó una cosa o tres—
+      // era imposible de probar sin salir a la red y sin depender de lo que el
+      // modelo contestara esa vez.
+      url: process.env.IA_URL?.trim() || "https://openrouter.ai/api/v1/chat/completions",
       llave: or,
       modelo: process.env.OPENROUTER_MODELO?.trim() || "mistralai/mistral-small-3.2-24b-instruct",
       // OpenRouter las usa para atribuir el tráfico. No llevan datos de nadie.
@@ -73,12 +78,14 @@ Reglas absolutas:
 6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
 7. "afectados" son PERSONAS: quiénes o cuántos. Un sitio NUNCA va en "afectados". "en mi casa", "en el barrio", "en la vereda" son "lugar", no "afectados".
 8. "lugar" incluye el municipio y el departamento si aparecen, aunque estén sueltos al final ("... y rionegro antioquia").
+10. "problemas" separa cosas que necesitan respuestas DISTINTAS. "no hay agua, la vía está mala y el puesto de salud abre dos días" son TRES. Pero "no hay agua y cuando llega sale turbia" es UNA sola (el mismo problema descrito dos veces), y "se inunda la vía y por eso los niños no van al colegio" también es UNA (causa y consecuencia). Ante la duda, UNA. "problema" es siempre el primero de "problemas".
 9a. Extrae el fragmento MÍNIMO que conteste. Quita del principio los verbos y muletillas que no aportan: de "tenemos niños afectados" el valor es "niños afectados"; de "es que no hay agua" es "no hay agua"; de "somos como veinte familias" es "veinte familias". Quita también las muletillas del final ("así", "pues", "ya", "y eso"): de "como un mes asi" el valor es "como un mes". Sigue siendo literal: solo se recorta, nunca se cambia una palabra.
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {
+  "problemas": ["un fragmento por cada problema DISTINTO que cuente; casi siempre uno"],
   "problema": "el fragmento que dice qué está pasando",
   "lugar": "el fragmento que dice dónde ocurre, o null",
   "afectados": "el fragmento que dice a quiénes les pasa o cuántos son, o null",
@@ -87,7 +94,7 @@ Devuelve SOLO un objeto JSON con estas claves:
   "solucionSugerida": "el fragmento que propone cómo resolverlo, o null"
 }`;
 
-type Clave = "problema" | (typeof PREGUNTABLES)[number];
+type Clave = "problema" | "problemas" | (typeof PREGUNTABLES)[number];
 type Cruda = Partial<Record<Clave, unknown>>;
 
 // Palabras que, solas, no contestan nada. Un modelo que recorta a veces devuelve
@@ -152,8 +159,13 @@ export async function leerConIA(relato: string, lugar?: string | null): Promise<
     const cruda = await preguntar(relato);
     if (!cruda) return suelo;
 
-    const problema = texto(cruda.problema);
+    // La lista manda sobre el campo suelto: si el modelo separó dos cosas y
+    // luego puso otra en `problema`, la que vale es la primera de la lista.
+    const lista = (Array.isArray(cruda.problemas) ? cruda.problemas : [])
+      .map(texto).filter((x): x is string => x !== null);
+    const problema = lista[0] ?? texto(cruda.problema);
     if (!problema) return suelo;
+    const otros = lista.slice(1);
 
     const partes = Object.fromEntries(
       PREGUNTABLES.map((k) => [k, texto(cruda[k])]),
@@ -166,7 +178,8 @@ export async function leerConIA(relato: string, lugar?: string | null): Promise<
     // **El guardián.** Basta con que una parte traiga una palabra que no estaba
     // para descartar la respuesta entera: si el modelo inventó en un campo, no
     // hay motivo para confiar en los otros cinco.
-    const aVerificar = [problema, ...PREGUNTABLES.map((k) => (k === "lugar" && declarado ? null : partes[k]))];
+    const aVerificar = [problema, ...otros,
+      ...PREGUNTABLES.map((k) => (k === "lugar" && declarado ? null : partes[k]))];
     if (!anclado(relato, ...aVerificar)) {
       console.warn("lectura-ia: respuesta descartada por no estar anclada en el relato");
       return suelo;
@@ -174,6 +187,7 @@ export async function leerConIA(relato: string, lugar?: string | null): Promise<
 
     return {
       problema: recortar(problema),
+      otrosProblemas: otros.map(recortar),
       lugar: declarado ?? (partes.lugar && recortar(partes.lugar)),
       afectados: partes.afectados && recortar(partes.afectados),
       desdeCuando: partes.desdeCuando && recortar(partes.desdeCuando),

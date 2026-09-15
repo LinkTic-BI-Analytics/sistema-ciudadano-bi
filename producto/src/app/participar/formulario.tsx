@@ -24,6 +24,16 @@ export function Formulario() {
 
   useEffect(() => setClave(claveEnvioVigente()), []);
 
+  // Si viene de terminar otro aporte donde contó varias cosas, la caja llega con
+  // la que quedó pendiente. Va por `sessionStorage` y no por la dirección: un
+  // relato en la URL acaba en los registros del servidor.
+  useEffect(() => {
+    try {
+      const otro = sessionStorage.getItem("pc:otro-relato");
+      if (otro) { setRelato(otro); sessionStorage.removeItem("pc:otro-relato"); }
+    } catch { /* sin storage, la caja empieza vacía y no pasa nada */ }
+  }, []);
+
   useEffect(() => {
     // El foco va al resumen de errores. Sin esto, quien usa lector de pantalla o
     // teclado no se entera de que algo falló: el mensaje aparece arriba y él
