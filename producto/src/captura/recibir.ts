@@ -11,6 +11,11 @@ export type EntradaAporte = {
   canal: Canal;
   /** El lugar **tal como la persona lo dijo**. Se guarda aunque no se pueda normalizar. */
   lugarDeclarado?: string;
+  /**
+   * La grabación, si habló. **Se guarda antes que el aporte**: es el original
+   * (ADR 0013), y la base rechaza un aporte por voz sin ella.
+   */
+  grabacionId?: string;
 };
 
 export type ResultadoAporte = {
@@ -58,6 +63,7 @@ export async function recibirAporte(entrada: EntradaAporte): Promise<ResultadoAp
         relato_original: entrada.relato,
         canal: entrada.canal,
         lugar_declarado: entrada.lugarDeclarado ?? null,
+        grabacion_id: entrada.grabacionId ?? null,
       },
       { onConflict: "proceso_id,clave_envio", ignoreDuplicates: true },
     )

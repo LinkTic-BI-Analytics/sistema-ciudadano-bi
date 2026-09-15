@@ -5,6 +5,7 @@ import { enviarAporte, type Resultado } from "./acciones.ts";
 import { claveEnvioVigente, olvidarClaveEnvio } from "../../captura/clave-envio.ts";
 import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
 import { Afinado } from "./afinado.tsx";
+import { Microfono } from "./microfono.tsx";
 import { LLAVE_RELATO } from "../../captura/contexto.ts";
 
 export function Formulario() {
@@ -17,6 +18,9 @@ export function Formulario() {
   // botón es la forma más rápida de que alguien abandone.
   const [relato, setRelato] = useState("");
   const [clave, setClave] = useState("");
+  // La grabación, si habló. Va con el envío: el aporte apunta a ella porque
+  // **es el original** (ADR 0013).
+  const [grabacion, setGrabacion] = useState("");
   const resumen = useRef<HTMLDivElement>(null);
   // **Se evalúa mientras escribe, no al enviar.** Alguien que está reportando un
   // derrumbe no debería tener que terminar un formulario para ver a dónde
@@ -55,6 +59,7 @@ export function Formulario() {
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="clave" value={clave} readOnly />
+      <input type="hidden" name="grabacion" value={grabacion} readOnly />
 
       {resultado && !resultado.ok && (
         <div className="pc-error-summary" role="alert" tabIndex={-1} ref={resumen}>
@@ -84,12 +89,16 @@ export function Formulario() {
                 onClick={() => setModo("hablar")}>Hablar</button>
       </div>
       {modo === "hablar" && (
-        // Decirlo es mejor que un botón que no hace nada. `IA-01` deja la voz
-        // como ampliación, y prometerla aquí sería prometer lo que no hay.
-        <p className="pc-mode-hint">
-          Contar hablando todavía no está disponible. Lo que escribas se conserva si vuelves a
-          «Escribir».
-        </p>
+        <Microfono
+          onTranscripcion={(texto, id) => {
+            // **Se añade, no se reemplaza.** Si ya había escrito algo, borrarlo
+            // castiga a quien empezó a teclear y se cansó — que es justo quien
+            // más necesita hablar.
+            setRelato((antes) => (antes.trim() ? `${antes.trim()}\n${texto}` : texto));
+            setGrabacion(id);
+            setModo("escribir");
+          }}
+        />
       )}
 
       <div className="pc-field">

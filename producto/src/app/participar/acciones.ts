@@ -5,6 +5,7 @@ import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
 import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 import { precisarAporte } from "../../captura/precisar.ts";
+import { guardarGrabacion } from "../../captura/voz.ts";
 import {
   buscarMunicipios, buscarPorNombre, departamentos, municipiosDe,
   type Candidato, type Departamento,
@@ -69,6 +70,8 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
   const relato = String(datos.get("relato") ?? "").trim();
   const lugar = String(datos.get("lugar") ?? "").trim();
   const clave = String(datos.get("clave") ?? "").trim();
+  // Si habló, el aporte apunta a la grabación: **es el original** (ADR 0013).
+  const grabacionId = String(datos.get("grabacion") ?? "").trim() || undefined;
 
   const errores: string[] = [];
   if (!relato) errores.push("Cuéntanos qué está pasando. Es lo único que necesitamos para empezar.");
@@ -80,7 +83,8 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
       procesoId: await procesoVigente(),
       claveEnvio: clave,
       relato,
-      canal: "web",
+      canal: grabacionId ? "voz_transcrita" : "web",
+      grabacionId,
       lugarDeclarado: lugar || undefined,
     });
     // **Aquí no se llama a la IA.** `IA-01` dice que la recepción no depende de
@@ -354,5 +358,38 @@ export async function aplicarContexto(codigo: string, c: ContextoHeredado): Prom
   } catch (e) {
     console.error("aplicarContexto", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado." };
+  }
+}
+
+
+/**
+ * Recibe la grabación y devuelve lo que se oyó, para que la persona lo revise.
+ *
+ * **El audio queda guardado aquí, antes de cualquier otra cosa.** Es el
+ * original: si la transcripción sale mal —y sale mal: «La Martinita» volvió
+ * como «La Martinica»— hay con qué volver atrás y transcribirlo otra vez.
+ *
+ * El aporte todavía no existe. Se crea cuando la persona continúe.
+ */
+export async function subirGrabacion(
+  _previo: unknown, datos: FormData,
+): Promise<{ ok: true; grabacionId: string; texto: string | null } | { ok: false; error: string }> {
+  const archivo = datos.get("audio");
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { ok: false, error: "No llegó la grabación. Inténtalo otra vez." };
+  }
+  const segundos = Number(datos.get("segundos") ?? 0) || undefined;
+
+  try {
+    const g = await guardarGrabacion({
+      procesoId: await procesoVigente(),
+      audio: new Uint8Array(await archivo.arrayBuffer()),
+      tipoMime: archivo.type || "audio/webm",
+      segundos,
+    });
+    return { ok: true, grabacionId: g.grabacionId, texto: g.transcripcion };
+  } catch (e) {
+    console.error("subirGrabacion", e);
+    return { ok: false, error: "No pudimos guardar la grabación. Puedes escribirlo mientras tanto." };
   }
 }

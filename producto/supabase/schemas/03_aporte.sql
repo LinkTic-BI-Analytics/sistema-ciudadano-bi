@@ -47,6 +47,16 @@ create table participacion.aporte (
   afectados         text,
   desde_cuando      text,
 
+  -- La grabación, cuando la persona habló. **Es el original** (ADR 0013), y por
+  -- eso el aporte apunta a ella y no al revés.
+  --
+  -- La comprobación es la regla entera: un aporte por voz **sin** grabación
+  -- sería un aporte cuyo original se perdió, y uno escrito **con** grabación
+  -- sería un archivo que nadie sabe de dónde salió.
+  grabacion_id        uuid unique references participacion.grabacion (id),
+  constraint la_voz_exige_grabacion
+    check ((canal = 'voz_transcrita') = (grabacion_id is not null)),
+
   es_colectivo        boolean not null default false,
   colectivo_declarado text,
   constraint colectivo_con_nombre

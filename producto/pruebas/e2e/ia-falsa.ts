@@ -45,14 +45,28 @@ createServer((pedido, respuesta) => {
   pedido.on("data", (t) => { cuerpo += t; });
   pedido.on("end", () => {
     let relato = "";
+    let esAudio = false;
     try {
       const j = JSON.parse(cuerpo);
-      relato = j?.messages?.find((m: { role: string }) => m.role === "user")?.content ?? "";
+      const contenido = j?.messages?.find((m: { role: string }) => m.role === "user")?.content;
+      if (typeof contenido === "string") relato = contenido;
+      // Transcribir llega con el audio dentro del mensaje, no como texto.
+      else if (Array.isArray(contenido)) esAudio = contenido.some((c) => c?.type === "input_audio");
     } catch { /* un cuerpo roto se contesta con una lectura vacía */ }
 
     respuesta.writeHead(200, { "content-type": "application/json" });
     respuesta.end(JSON.stringify({
-      choices: [{ message: { content: JSON.stringify(leer(relato)) } }],
+      choices: [{
+        message: {
+          // La transcripción falsa trae **un error a propósito**: «La Martinica»
+          // en vez de «La Martinita». Es el caso de la especificación —«una
+          // transcripción cambia acueducto por alcantarillado»— y sin un error
+          // no se puede probar que la persona lo pueda corregir.
+          content: esAudio
+            ? "el agua llega turbia en la vereda La Martinica de Rionegro Antioquia"
+            : JSON.stringify(leer(relato)),
+        },
+      }],
     }));
   });
 }).listen(PUERTO, () => console.log(`ia falsa en ${PUERTO}`));
