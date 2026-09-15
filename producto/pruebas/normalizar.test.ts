@@ -63,11 +63,29 @@ test("el rango no se mueve con el tiempo", () => {
 });
 
 test("lo colectivo manda sobre el número", () => {
-  // «Unas veinte familias de la vereda» es una comunidad, no veinte casas
-  // sueltas: quien atiende no va a veinte puertas, va a una vereda.
-  assert.equal(alcanceDe("unas veinte familias de la vereda El Salado"), "una_comunidad");
-  assert.equal(alcanceDe("todo el barrio"), "una_comunidad");
-  assert.equal(alcanceDe("los niños de la escuela"), "una_comunidad");
+  // «Unas veinte familias de la vereda» es una vereda, no veinte casas sueltas:
+  // quien atiende no va a veinte puertas, va a una vereda.
+  assert.equal(alcanceDe("unas veinte familias de la vereda El Salado"), "vereda_o_barrio");
+  assert.equal(alcanceDe("todo el barrio"), "vereda_o_barrio");
+  assert.equal(alcanceDe("los niños de la escuela"), "vereda_o_barrio");
+});
+
+test("cuando deja de ser local, se nota", () => {
+  // La escala se detenía en «una vereda o un barrio», así que «el acueducto de
+  // todo el municipio» y «la llave de mi casa» quedaban a dos escalones cuando
+  // son problemas distintos: uno lo resuelve la junta de acción comunal y el
+  // otro no lo resuelve ni la alcaldía sola. Eso cambia a quién compete.
+  assert.equal(alcanceDe("todo el municipio se queda sin agua"), "todo_el_municipio");
+  assert.equal(alcanceDe("todas las veredas del municipio"), "todo_el_municipio");
+  assert.equal(alcanceDe("varios municipios del sur"), "varios_municipios");
+  assert.equal(alcanceDe("todo el departamento"), "varios_municipios");
+});
+
+test("«el municipio» a secas no es una medida de alcance", () => {
+  // Aparece en «la alcaldía del municipio no responde», que no dice a cuántos
+  // afecta. Leerlo como «todo el municipio» multiplicaría por mil el alcance de
+  // un problema de una casa.
+  assert.equal(alcanceDe("la alcaldía del municipio no responde"), "sin_decir");
 });
 
 test("una casa es una familia, y un puñado son varias", () => {
@@ -88,5 +106,5 @@ test("las tildes y las mayúsculas no cambian nada", () => {
   // Nadie escribe «años» con tilde cuando está contando algo deprisa.
   assert.equal(antiguedadDe("HACE CINCO ANOS"), "mas_de_cuatro");
   assert.equal(antiguedadDe("Hace Cinco Años"), "mas_de_cuatro");
-  assert.equal(alcanceDe("LA VEREDA ENTERA"), "una_comunidad");
+  assert.equal(alcanceDe("LA VEREDA ENTERA"), "vereda_o_barrio");
 });

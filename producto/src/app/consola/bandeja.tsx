@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { FilaBandeja, Opciones } from "../../revision/bandeja.ts";
 import { COMO_SE_LLAMA, esTema, TEMAS } from "../../captura/lectura.ts";
 import {
-  COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE,
+  COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE, ALCANCES,
 } from "../../revision/normalizar.ts";
 
 // Las señales que cambian cómo se revisa un aporte.
@@ -254,12 +254,13 @@ export function Filtros({
       </div>
       <div className="bo-field">
         <label className="bo-label-tag" htmlFor="alcance">A cuántos</label>
+        {/* De más a menos, que es como se lee «a cuántos afecta». La lista
+            sale de un sitio para que no se desincronice de los rangos. */}
         <select id="alcance" name="alcance" defaultValue={alcance}>
           <option value="">Cualquiera</option>
-          <option value="una_comunidad">Una vereda o un barrio</option>
-          <option value="varias_familias">Varias familias</option>
-          <option value="una_familia">Una familia</option>
-          <option value="sin_decir">No lo dijo</option>
+          {ALCANCES.map((x) => (
+            <option key={x} value={x}>{COMO_SE_LEE_ALCANCE[x]}</option>
+          ))}
         </select>
       </div>
       <div className="bo-field">

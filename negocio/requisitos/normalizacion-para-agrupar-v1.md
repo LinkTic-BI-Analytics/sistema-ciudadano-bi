@@ -67,10 +67,24 @@ lo dice: *no se puede saber*, no *cero*.
 
 | Rango | Qué lo dispara |
 |---|---|
-| `una_familia` | «mi familia», «nosotros», «en mi casa», «una familia» |
+| `varios_municipios` | «el departamento», «varios municipios», «toda la región» |
+| `todo_el_municipio` | «todo el municipio», «todas las veredas», «el pueblo entero» |
+| `vereda_o_barrio` | «la vereda», «el barrio», «la escuela», números mayores |
 | `varias_familias` | un número hasta 20, «unas cuantas familias», «la cuadra» |
-| `una_comunidad` | «la vereda», «el barrio», «la escuela», números mayores |
+| `una_familia` | «mi familia», «nosotros», «en mi casa», «una familia» |
 | `sin_decir` | no lo dijo, o no sabemos leerlo |
+
+**Los dos de arriba se agregaron después**, a petición del negocio: *«acá puede
+ser a un municipio o a un departamento; ese pedazo está bien organizarlo porque
+nos podría dar información importante»*. La escala se detenía en «una vereda o
+un barrio», así que «el acueducto de todo el municipio» y «la llave de mi casa»
+quedaban a dos escalones de distancia cuando son problemas distintos: uno lo
+resuelve la junta de acción comunal y el otro no lo resuelve ni la alcaldía
+sola. **Que algo deje de ser local cambia a quién compete**, y esa es
+precisamente la información que se perdía.
+
+«El municipio» a secas **no** cuenta: aparece en «la alcaldía del municipio no
+responde», que no habla de alcance. Hace falta que la frase diga que es todo.
 
 **Qué NO hace:** publicar el número declarado como si fuera un censo. `Q11` está abierto
 precisamente ahí: *«doce familias de la vereda X»* identifica, y choca con `C2`. El rango es

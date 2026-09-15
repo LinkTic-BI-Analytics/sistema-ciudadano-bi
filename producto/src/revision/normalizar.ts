@@ -15,8 +15,20 @@
 export type Antiguedad =
   | "menos_de_un_ano" | "entre_uno_y_cuatro" | "mas_de_cuatro" | "sin_decir";
 
+/**
+ * A cuántos, de menos a más.
+ *
+ * **Llegaba hasta «una vereda o un barrio» y ahí se detenía**, así que «el
+ * acueducto de todo el municipio» y «la llave de mi casa» acababan a dos
+ * escalones de distancia cuando son problemas distintos: uno lo resuelve la
+ * junta de acción comunal y el otro no lo resuelve ni la alcaldía sola.
+ *
+ * Los dos escalones de arriba son los que dicen que algo dejó de ser local, y
+ * eso cambia a quién compete.
+ */
 export type Alcance =
-  | "una_familia" | "varias_familias" | "una_comunidad" | "sin_decir";
+  | "una_familia" | "varias_familias" | "vereda_o_barrio"
+  | "todo_el_municipio" | "varios_municipios" | "sin_decir";
 
 const plano = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -45,11 +57,19 @@ export const COMO_SE_LEE_ANTIGUEDAD: Record<Antiguedad, string> = {
 };
 
 export const COMO_SE_LEE_ALCANCE: Record<Alcance, string> = {
-  una_familia: "una familia",
+  varios_municipios: "varios municipios o el departamento",
+  todo_el_municipio: "todo el municipio",
+  vereda_o_barrio: "una vereda o un barrio",
   varias_familias: "varias familias",
-  una_comunidad: "una vereda o un barrio",
+  una_familia: "una familia",
   sin_decir: "no dijo a cuántos",
 };
+
+/** De más a menos, que es como se lee la pregunta «a cuántos afecta». */
+export const ALCANCES: Alcance[] = [
+  "varios_municipios", "todo_el_municipio", "vereda_o_barrio",
+  "varias_familias", "una_familia", "sin_decir",
+];
 
 /**
  * Hace cuánto, según lo que ella escribió.
@@ -112,10 +132,20 @@ export function alcanceDe(texto: string | null | undefined): Alcance {
   if (!texto?.trim()) return "sin_decir";
   const t = plano(texto);
 
+  // **De lo grande a lo pequeño, y con la totalidad dicha.** «El municipio» a
+  // secas aparece en «la alcaldía del municipio no responde», que no habla de
+  // alcance: hace falta que diga que es todo.
+  if (/\b(departamento|varios municipios|municipios vecinos|toda la region|la region entera|la subregion|todo el pais)\b/.test(t)) {
+    return "varios_municipios";
+  }
+  if (/\b(todo el municipio|el municipio entero|todas las veredas|todos los barrios|todo el pueblo|el pueblo entero|el casco urbano)\b/.test(t)) {
+    return "todo_el_municipio";
+  }
+
   // Lo colectivo manda sobre el número: «unas veinte familias de la vereda» es
-  // una comunidad, no veinte casas sueltas.
-  if (/\b(vereda|barrio|corregimiento|comunidad|resguardo|municipio|pueblo|escuela|colegio|todos|todo el)\b/.test(t)) {
-    return "una_comunidad";
+  // una vereda, no veinte casas sueltas. Quien atiende no va a veinte puertas.
+  if (/\b(vereda|barrio|corregimiento|comunidad|resguardo|pueblo|escuela|colegio|todos|todo el)\b/.test(t)) {
+    return "vereda_o_barrio";
   }
   if (/\b(mi casa|mi familia|nosotros|nosotras|mi hogar|una familia|solo yo|yo solo|yo sola)\b/.test(t)) {
     return "una_familia";
@@ -125,7 +155,7 @@ export function alcanceDe(texto: string | null | undefined): Alcance {
   if (n !== null) {
     if (n <= 1) return "una_familia";
     if (n <= 20) return "varias_familias";
-    return "una_comunidad";
+    return "vereda_o_barrio";
   }
 
   if (/\b(varias|varios|unas cuantas|algunas|la cuadra|vecinos|familias)\b/.test(t)) {
