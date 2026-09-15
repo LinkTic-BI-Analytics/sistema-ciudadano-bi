@@ -83,6 +83,23 @@ create table participacion.aporte (
   -- venir alteradas, y una alterada no cambia el evento registrado.
   utms_recibidas      jsonb,
 
+  -- El tema (`CLA-01`). Es el eje que faltaba: sin él no se puede agrupar lo
+  -- que se repite, ni saber a qué entidad compete, ni ver que veinte personas
+  -- de un municipio están contando lo mismo.
+  --
+  -- **La lista es provisional** y así se dice en pantalla: la especificación
+  -- dejó las taxonomías sin cerrar (`T018`, `Q32`).
+  --
+  -- Dos columnas y no una: `tema_propuesto` es lo que leyó la máquina y `tema`
+  -- lo que confirmó la persona. Juntarlas haría imposible saber cuánto se
+  -- equivoca la lectura, que es lo único que dirá si la lista sirve.
+  tema                text,
+  tema_propuesto      text,
+  constraint tema_de_la_lista check (
+    tema is null or tema in ('agua','vias','salud','educacion','energia','residuos',
+                             'conectividad','vivienda','ambiente','seguridad','otro')
+  ),
+
   es_colectivo        boolean not null default false,
   colectivo_declarado text,
   constraint colectivo_con_nombre

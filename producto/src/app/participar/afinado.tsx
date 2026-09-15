@@ -7,7 +7,7 @@ import {
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
-import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
+import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, TEMAS, COMO_SE_LLAMA, type Lectura, type Preguntable, type Tema } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -75,6 +75,8 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Lo que se lleva al siguiente, si decide contar otra cosa.
   const [municipioPuesto, setMunicipioPuesto] = useState<Candidato | null>(null);
   const [grupoPuesto, setGrupoPuesto] = useState<string | null>(null);
+  // El tema que la persona confirma. Lo propuesto vive en `lect.tema`.
+  const [tema, setTema] = useState<Tema | null>(null);
   // Decidir el paso siguiente **después** de que el estado esté puesto. Hacerlo
   // dentro del clic leía la lectura vieja y volvía a preguntar lo que se acababa
   // de aplicar.
@@ -501,6 +503,28 @@ export function Afinado({ codigo }: { codigo: string }) {
                     <dd key={`d-${k}`}>{lect[k]}</dd>,
                   ])}
               </dl>
+              {/* **El tema, confirmado por ella.** Va aquí y no en una
+                  pantalla propia: es una pregunta más en una pantalla que ya
+                  está, y sin él no se puede agrupar lo que se repite ni saber a
+                  qué entidad compete.
+
+                  La lista es provisional (`Q32`) y por eso hay «otra cosa»: un
+                  tema que se repite ahí es la señal de que a la lista le falta
+                  algo, no un cajón para esconderlo. */}
+              <div className="pc-field">
+                <label className="pc-label" htmlFor="tema">¿De qué se trata?</label>
+                <select id="tema" className="pc-input" value={tema ?? lect.tema ?? ""}
+                        onChange={(e) => setTema((e.target.value || null) as Tema | null)}>
+                  <option value="">Prefiero no decirlo</option>
+                  {TEMAS.map((x) => <option key={x} value={x}>{COMO_SE_LLAMA[x]}</option>)}
+                </select>
+                <p className="pc-help">
+                  {lect.tema
+                    ? "Lo escogimos por lo que contaste. Cámbialo si no es eso."
+                    : "Nos ayuda a llevarlo a quien responde por ese asunto."}
+                </p>
+              </div>
+
               <p className="pc-help">Si no es eso, corrígelo — mandas tú.</p>
               <Error_ paso={r1} />
               {/* Los dos en el mismo grupo. Estaban en cajas distintas —uno
@@ -510,6 +534,7 @@ export function Afinado({ codigo }: { codigo: string }) {
               <form action={accion1} className="pc-actions">
                 <input type="hidden" name="codigo" value={codigo} readOnly />
                 <input type="hidden" name="corrigio" value="no" readOnly />
+                <input type="hidden" name="tema" value={tema ?? lect.tema ?? ""} readOnly />
                 <input type="hidden" name="mostrado" value={problema} readOnly />
                 <button type="submit" className="pc-action" disabled={guardando1}>
                   {guardando1 ? "Guardando…" : "Sí, es eso"}
@@ -523,6 +548,7 @@ export function Afinado({ codigo }: { codigo: string }) {
             <form action={accion1}>
               <input type="hidden" name="codigo" value={codigo} readOnly />
               <input type="hidden" name="corrigio" value="si" readOnly />
+                <input type="hidden" name="tema" value={tema ?? lect.tema ?? ""} readOnly />
               <input type="hidden" name="mostrado" value={lect.problema} readOnly />
               <div className="pc-field">
                 <label className="pc-label" htmlFor="problema-correccion">

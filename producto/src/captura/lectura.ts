@@ -39,6 +39,11 @@ export type Lectura = {
   resultadoEsperado: string | null;
   /** `N03` la deja opcional y la visión insiste en que no sea requisito. */
   solucionSugerida: string | null;
+  /**
+   * El tema que propone la lectura. **Lo confirma la persona** (`CLA-01`), y
+   * hasta entonces no es el tema del aporte: es lo que leyó una máquina.
+   */
+  tema: Tema | null;
   /** De dónde salió esta lectura. La pantalla no lo muestra; el registro sí. */
   fuente: "segmentacion" | "ia";
 };
@@ -113,6 +118,39 @@ export function loQueFalta(l: Lectura): Preguntable[] {
   return PREGUNTABLES.filter((k) => !l[k]);
 }
 
+/**
+ * Los temas (`CLA-01`). **Provisional**: la especificación dejó las taxonomías
+ * sin cerrar (`T018`, `Q32`), así que esto es un punto de partida y no una
+ * clasificación acordada.
+ *
+ * `otro` no es un cajón que se ignora: es la señal de que a la lista le falta
+ * algo, y por eso sale marcado en la bandeja en vez de esconderse.
+ */
+export const TEMAS = [
+  "agua", "vias", "salud", "educacion", "energia", "residuos",
+  "conectividad", "vivienda", "ambiente", "seguridad", "otro",
+] as const;
+
+export type Tema = (typeof TEMAS)[number];
+
+export const COMO_SE_LLAMA: Record<Tema, string> = {
+  agua: "Agua y saneamiento",
+  vias: "Vías y transporte",
+  salud: "Salud",
+  educacion: "Educación",
+  energia: "Energía y alumbrado",
+  residuos: "Basuras y residuos",
+  conectividad: "Internet y telefonía",
+  vivienda: "Vivienda y espacio público",
+  ambiente: "Ambiente y riesgo",
+  seguridad: "Seguridad y convivencia",
+  otro: "Otra cosa",
+};
+
+export function esTema(v: unknown): v is Tema {
+  return typeof v === "string" && (TEMAS as readonly string[]).includes(v);
+}
+
 /** Hasta dónde llega «una frase». Más largo que esto ya no se lee de un vistazo. */
 export const LARGO = 180;
 
@@ -170,6 +208,9 @@ export function leer(relato: string, lugar?: string | null): Lectura {
 
   return {
     problema: recortar(primera),
+    // Sin IA no se propone tema: adivinarlo con palabras sueltas enrutaría un
+    // aporte a la entidad equivocada, y eso cuesta más que no proponer nada.
+    tema: null,
     // Separar problemas con reglas de texto sería adivinar dónde termina uno:
     // «no hay agua y cuando llega sale turbia» es una sola cosa, y un punto en
     // medio no lo dice. Sin IA no se intenta.

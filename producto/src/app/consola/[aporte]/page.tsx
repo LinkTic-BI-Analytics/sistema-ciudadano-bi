@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { recurrenciaDe } from "../../../revision/recurrencia.ts";
+import { COMO_SE_LLAMA, type Tema } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
 import { clienteServidor } from "../../../datos/cliente.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
@@ -21,7 +23,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const p = clienteServidor().schema("participacion");
 
   const { data: a } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas")
+    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas, tema, tema_propuesto")
     .eq("id", aporteId).single();
   if (!a) return <div className="pc-backoffice"><p className="bo-empty">No existe ese aporte.</p></div>;
 
@@ -54,6 +56,32 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
     : [];
   const tituloDe = (id: string | null | undefined) =>
     encuentros.find((e) => e.id === id)?.titulo ?? null;
+
+  /**
+   * Lo que el formulario de expediente propone (`CLA-04`).
+   *
+   * Sale de lo que **la persona confirmó**, no de lo que leyó la máquina: la
+   * versión vigente de la síntesis. Si ella corrigió «Martinica» por
+   * «Martinita», el expediente nace con lo suyo.
+   */
+  const propuestaDeExpediente = (() => {
+    const vigente = sint?.[sint.length - 1]?.texto ?? "";
+    const parte = (etiqueta: string) =>
+      vigente.split("\n").find((l: string) => l.startsWith(etiqueta))?.slice(etiqueta.length).trim() ?? "";
+    const descripcion = [parte("Problema:"), a?.lugar_declarado, a?.desde_cuando]
+      .filter(Boolean).join(" · ");
+    return {
+      descripcion: descripcion || (a?.relato_original ?? "").slice(0, 120),
+      cambio: parte("Lo que se espera:"),
+    };
+  })();
+
+  // Cuántos más hay como este (`CLA-03`). Se calcula, nunca se declara.
+  const recurrencia = await recurrenciaDe(aporteId);
+  const nombreDelMunicipio = recurrencia.municipio
+    ? (await p.from("territorio").select("nombre").eq("codigo", recurrencia.municipio)
+        .eq("nivel", "municipio").limit(1).maybeSingle()).data?.nombre ?? null
+    : null;
 
   const { data: mun } = await p.from("territorio")
     .select("codigo, version, nombre, departamento:padre")
@@ -105,6 +133,54 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
 
             <div className="bo-review-layout">
               <div>
+                {/* **Lo que hay que ver antes de leer el relato** (`CLA-02`).
+                    Sin esto el revisor tenía que leerse cada aporte entero para
+                    saber siquiera si hablaba de agua o de una vía, y no había
+                    con qué clasificar ni priorizar. */}
+                <dl className="bo-context-grid" data-prueba="cabecera">
+                  <dt className="bo-small">De qué</dt>
+                  <dd>
+                    {a.tema
+                      ? <strong>{COMO_SE_LLAMA[a.tema as Tema]}</strong>
+                      : <span className="bo-muted">sin tema · nadie lo puede enrutar así</span>}
+                    {a.tema_propuesto && a.tema !== a.tema_propuesto && (
+                      <span className="bo-small">
+                        {" "}· la lectura había propuesto «{COMO_SE_LLAMA[a.tema_propuesto as Tema]}»
+                      </span>
+                    )}
+                  </dd>
+
+                  <dt className="bo-small">Dónde</dt>
+                  <dd>
+                    {/* El municipio **aceptado**, no el texto declarado: mostrar
+                        el declarado como si fuera el aceptado es la inferencia
+                        que `I2` prohíbe. */}
+                    {nombreDelMunicipio
+                      ? <strong>{nombreDelMunicipio}</strong>
+                      : <span className="bo-muted">sin municipio aceptado</span>}
+                    {a.lugar_declarado && (
+                      <span className="bo-small"> · con sus palabras: «{a.lugar_declarado}»</span>
+                    )}
+                  </dd>
+
+                  <dt className="bo-small">Cuántos más como este</dt>
+                  <dd>
+                    {!a.tema || !recurrencia.municipio ? (
+                      <span className="bo-muted">no se puede contar sin tema y sin municipio</span>
+                    ) : recurrencia.otros === 0 ? (
+                      <>Ninguno todavía. <span className="bo-muted">Ser el único no lo hace menos grave.</span></>
+                    ) : (
+                      <>
+                        <strong>{recurrencia.otros} aportes más</strong> del mismo tema en este municipio.{" "}
+                        <span className="bo-muted">
+                          Son aportes, no personas: dos pueden ser de la misma, y veinte vecinos
+                          pueden no haber contado ninguno.
+                        </span>
+                      </>
+                    )}
+                  </dd>
+                </dl>
+
                 <section className="bo-source">
                   <h2>Lo que la persona contó</h2>
                   <blockquote>{a.relato_original}</blockquote>
@@ -315,9 +391,14 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     <input type="hidden" name="aporteId" value={aporteId} />
                     <input type="hidden" name="procesoId" value={procesoId} />
                     <h3>Abrir expediente</h3>
+                    {/* **Llega medio lleno con lo que la persona confirmó**
+                        (`CLA-04`). Rellenar no es decidir: el expediente se abre
+                        por un acto del revisor y queda a su nombre, con su
+                        motivo. Lo propuesto se puede cambiar entero. */}
                     <Campo id="exp-descripcion" name="descripcion" etiqueta="La afectación, en una frase"
-                           ejemplo="sin agua en la parte alta desde hace tres meses" />
-                    <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional />
+                           defaultValue={propuestaDeExpediente.descripcion} />
+                    <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional
+                           defaultValue={propuestaDeExpediente.cambio} />
                     <Campo id="exp-motivo" name="motivo" etiqueta="Por qué este aporte lo origina" />
                     <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
                     <button className="bo-button" data-variant="primary">Abrir</button>

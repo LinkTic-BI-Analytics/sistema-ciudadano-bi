@@ -59,7 +59,7 @@ test("solo se pregunta por lo que la persona NO dijo", () => {
   // castiga por haberlo contado bien, y es exactamente lo que hace que alguien
   // abandone a mitad de camino.
   const completa = {
-    problema: "el agua llega turbia", otrosProblemas: [], lugar: "la parte alta",
+    problema: "el agua llega turbia", otrosProblemas: [], tema: "agua" as const, lugar: "la parte alta",
     afectados: "unas veinte familias", desdeCuando: "hace tres meses",
     resultadoEsperado: "que llegue limpia", solucionSugerida: null,
     fuente: "ia" as const,

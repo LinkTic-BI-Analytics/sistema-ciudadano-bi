@@ -1,4 +1,4 @@
-import { anclado, leer, recortar, PREGUNTABLES, type Lectura } from "./lectura.ts";
+import { anclado, leer, recortar, PREGUNTABLES, TEMAS, esTema, type Lectura } from "./lectura.ts";
 
 /**
  * La lectura apoyada por un modelo.
@@ -83,10 +83,13 @@ Reglas absolutas:
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
+11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Escoge la que más se acerque; si ninguna encaja, "otro".
+
 Devuelve SOLO un objeto JSON con estas claves:
 {
   "problemas": ["un fragmento por cada problema DISTINTO que cuente; casi siempre uno"],
   "problema": "el fragmento que dice qué está pasando",
+  "tema": "uno de: ${TEMAS.join(', ')}",
   "lugar": "el fragmento que dice dónde ocurre, o null",
   "afectados": "el fragmento que dice a quiénes les pasa o cuántos son, o null",
   "desdeCuando": "el fragmento que dice hace cuánto pasa, o null",
@@ -94,7 +97,7 @@ Devuelve SOLO un objeto JSON con estas claves:
   "solucionSugerida": "el fragmento que propone cómo resolverlo, o null"
 }`;
 
-type Clave = "problema" | "problemas" | (typeof PREGUNTABLES)[number];
+type Clave = "problema" | "problemas" | "tema" | (typeof PREGUNTABLES)[number];
 type Cruda = Partial<Record<Clave, unknown>>;
 
 // Palabras que, solas, no contestan nada. Un modelo que recorta a veces devuelve
@@ -185,8 +188,15 @@ export async function leerConIA(relato: string, lugar?: string | null): Promise<
       return suelo;
     }
 
+    // **El tema no pasa por el guardián de anclaje**, y no es una excepción
+    // al descuido: no es un fragmento del relato sino una etiqueta de una lista
+    // cerrada. Lo que lo controla es la lista: si devuelve algo que no está en
+    // ella, se descarta.
+    const tema = esTema(cruda.tema) ? cruda.tema : null;
+
     return {
       problema: recortar(problema),
+      tema,
       otrosProblemas: otros.map(recortar),
       lugar: declarado ?? (partes.lugar && recortar(partes.lugar)),
       afectados: partes.afectados && recortar(partes.afectados),

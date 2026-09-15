@@ -226,3 +226,30 @@ test("si uno de los problemas está inventado, se descarta la respuesta entera",
   assert.equal(l.fuente, "segmentacion");
   assert.deepEqual(l.otrosProblemas, []);
 });
+
+test("el tema sale de la lista, no del relato", async () => {
+  // El tema **no pasa por el guardián de anclaje**, y no es un descuido: no es
+  // un fragmento del relato sino una etiqueta de una lista cerrada. Lo que lo
+  // controla es la lista.
+  const l = await conRespuesta({
+    problema: "el agua llega turbia", tema: "agua",
+  }, () => leerConIA("el agua llega turbia"));
+  assert.equal(l.tema, "agua");
+});
+
+test("un tema que no está en la lista se descarta, no se inventa uno", async () => {
+  // Un tema inventado enruta un aporte a una entidad que no existe.
+  const l = await conRespuesta({
+    problema: "el agua llega turbia", tema: "acueducto-veredal",
+  }, () => leerConIA("el agua llega turbia"));
+  assert.equal(l.tema, null);
+  // Y el resto de la lectura se conserva: el tema malo no tira lo demás.
+  assert.equal(l.fuente, "ia");
+});
+
+test("sin IA no se propone tema", async () => {
+  // Adivinarlo con palabras sueltas enrutaría un aporte a la entidad
+  // equivocada, y eso cuesta más que no proponer nada.
+  const l = await sinLlave(() => leerConIA("el agua llega turbia"));
+  assert.equal(l.tema, null);
+});

@@ -1,9 +1,10 @@
 "use server";
 
 import { recibirAporte } from "../../captura/recibir.ts";
+import { clienteServidor } from "../../datos/cliente.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
-import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
+import { leer, PREGUNTABLES, esTema, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 import { precisarAporte } from "../../captura/precisar.ts";
 import { guardarGrabacion } from "../../captura/voz.ts";
 import {
@@ -148,6 +149,14 @@ export async function confirmarLectura(_previo: PasoAfinado | null, datos: FormD
     // la base tardó— no se pierde lo que la persona acaba de decidir: se guarda
     // aquí lo que tenía en pantalla. Confirmar algo que no existe fallaría, y
     // fallaría justo después de que ella hizo su parte.
+    // El tema viaja con el mismo envío (`CLA-01`). Guardarlo en un `onClick`
+    // aparte suspendía el manejador del botón y el formulario no se enviaba.
+    const temaDicho = String(datos.get("tema") ?? "").trim();
+    if (temaDicho === "" || esTema(temaDicho)) {
+      await clienteServidor().schema("participacion").from("aporte")
+        .update({ tema: temaDicho || null }).eq("id", aporteId);
+    }
+
     const mostrado = String(datos.get("mostrado") ?? "").trim();
     if (mostrado && (await sintesisDe(aporteId)).length === 0) {
       await proponerSintesis({ aporteId, autor: "sistema", problema: mostrado });
@@ -244,6 +253,15 @@ export async function prepararLectura(codigo: string): Promise<LecturaPreparada 
     if (!c) return null;
 
     const lectura = await leerConIA(c.relato, c.lugarDeclarado);
+
+    // Lo que propuso la lectura queda escrito desde ya, aunque la persona lo
+    // cambie después: sin el propuesto no se puede medir cuánto se equivoca la
+    // máquina, y eso es lo único que dirá si la lista de temas sirve (`Q32`).
+    if (lectura.tema) {
+      await clienteServidor().schema("participacion").from("aporte")
+        .update({ tema_propuesto: lectura.tema }).eq("id", c.aporteId);
+    }
+
     await proponerSintesis({
       aporteId: c.aporteId, autor: "sistema",
       problema: lectura.problema,
@@ -409,3 +427,5 @@ export async function subirGrabacion(
     return { ok: false, error: "No pudimos guardar la grabación. Puedes escribirlo mientras tanto." };
   }
 }
+
+

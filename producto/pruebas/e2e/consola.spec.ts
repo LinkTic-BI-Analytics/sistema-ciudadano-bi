@@ -269,3 +269,42 @@ test("con la base en blanco, la bandeja lo dice sin mandar a revisar un filtro",
   expect(texto.includes("no ha llegado") !== texto.includes("coincide"),
     "el mensaje de vacío no distingue «no hay nada» de «no coincide»").toBe(true);
 });
+
+test("la ficha dice de qué, dónde y cuántos más, antes de leer el relato", async ({ page }) => {
+  // `CLA-02`. Sin esto el revisor tenía que leerse cada aporte entero para
+  // saber siquiera si hablaba de agua o de una vía, y no había con qué
+  // clasificar ni priorizar nada.
+  const marca = `cabecera-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua llega turbia en la vereda`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await abrirAporte(page, marca);
+  const cabecera = page.locator("[data-prueba='cabecera']");
+  await expect(cabecera).toBeVisible({ timeout: 15_000 });
+  await expect(cabecera).toContainText(/de qué/i);
+  await expect(cabecera).toContainText(/dónde/i);
+  await expect(cabecera).toContainText(/cuántos más como este/i);
+  // Sin tema y sin municipio se dice que no se puede contar, en vez de un cero
+  // que parecería «no hay ninguno más».
+  await expect(cabecera).toContainText(/no se puede contar sin tema/i);
+});
+
+test("la gestión llega medio llena con lo que la persona confirmó", async ({ page }) => {
+  // `CLA-04`. Rellenar no es decidir: el expediente se abre por un acto del
+  // revisor, con su motivo, y lo propuesto se puede cambiar entero.
+  const marca = `gestion-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: se cayó el puente de la vereda`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+
+  await abrirAporte(page, marca);
+  // Llega con algo escrito, no en blanco.
+  await expect(page.locator("#exp-descripcion")).not.toHaveValue("", { timeout: 15_000 });
+  await expect(page.locator("#exp-descripcion")).toHaveValue(new RegExp(marca));
+  // Y el motivo sigue siendo obligatorio: el acto es del revisor.
+  await expect(page.locator("#exp-motivo")).toHaveAttribute("required", "");
+});
