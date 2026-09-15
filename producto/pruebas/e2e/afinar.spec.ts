@@ -496,3 +496,87 @@ test("cuando contó varias cosas, los pasos dicen de cuál se habla", async ({ p
   await expect(sobre).toContainText(/la vía está muy mala/);
   await expect(sobre).not.toContainText(/no hay agua/);
 });
+
+
+test("al contar el segundo problema no se vuelve a preguntar lo que ya dijo", async ({ page }) => {
+  // Quien cuenta dos cosas vive en el mismo sitio y le pasan a la misma gente.
+  // Volver a preguntárselo todo desde cero es lo que hace que abandone en el
+  // segundo — y entonces la segunda necesidad se pierde, que es justo lo que
+  // partir en dos venía a evitar.
+  await contar(page, "no hay agua en la vereda, y además están acabando con la fauna del mar");
+
+  await page.locator("[data-prueba='escoger']")
+    .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+
+  // Se contesta el contexto del primero.
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+  await v2.locator("#lugar").fill("la vereda El Salado");
+  await v2.locator("#afectados").fill("unas veinte familias");
+  await v2.locator("#desdeCuando").fill("desde hace dos meses");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await hablarPorMi(page);
+
+  // Y se pasa al segundo.
+  await page.locator("[data-prueba='pendientes']")
+    .getByRole("button", { name: /fauna del mar/i }).click({ timeout: 15_000 });
+  await expect(page.locator("#relato")).toHaveValue(/fauna del mar/, { timeout: 15_000 });
+  await page.getByRole("button", { name: /continuar/i }).click();
+
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  // Aquí está lo que se arregla: se le ofrece lo de antes en vez de volver a
+  // preguntárselo.
+  const heredado = page.locator("[data-prueba='heredado']");
+  await expect(heredado).toBeVisible({ timeout: 15_000 });
+  await expect(heredado).toContainText(/RIONEGRO/);
+  await expect(heredado).toContainText(/veinte familias/);
+  await expect(heredado).toContainText(/dos meses/);
+  await heredado.getByRole("button", { name: /sí, es igual/i }).click();
+
+  // Y ya no se le pregunta ni el lugar, ni a quiénes, ni desde cuándo: solo lo
+  // que es propio de **este** problema.
+  const resto = page.locator("[data-prueba='vuelta-2']");
+  await expect(resto).toBeVisible({ timeout: 15_000 });
+  await expect(resto.locator("#lugar")).toHaveCount(0);
+  await expect(resto.locator("#afectados")).toHaveCount(0);
+  await expect(resto.locator("#desdeCuando")).toHaveCount(0);
+  await expect(resto.locator("#resultadoEsperado")).toBeVisible();
+
+  await resto.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await expect(page.locator("[data-prueba='voceria']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("si el segundo problema es en otra parte, se pregunta de nuevo", async ({ page }) => {
+  // **No se hereda: se propone.** Alguien puede contar lo del agua de su casa y
+  // lo de la vía del colegio de sus hijos, que está en otro municipio. Darlo
+  // por hecho sería la inferencia que `I2` prohíbe.
+  await contar(page, "no hay agua en la vereda, y además la vía del colegio está mala");
+  await page.locator("[data-prueba='escoger']")
+    .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("la vereda El Salado");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await hablarPorMi(page);
+
+  await page.locator("[data-prueba='pendientes']")
+    .getByRole("button", { name: /vía del colegio/i }).click({ timeout: 15_000 });
+  await page.getByRole("button", { name: /continuar/i }).click({ timeout: 15_000 });
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  await page.locator("[data-prueba='heredado']")
+    .getByRole("button", { name: /esto es distinto/i }).click({ timeout: 15_000 });
+  // Se le pregunta como si fuera la primera vez.
+  await expect(page.locator("[data-prueba='vuelta-2']").locator("#lugar"))
+    .toBeVisible({ timeout: 15_000 });
+});

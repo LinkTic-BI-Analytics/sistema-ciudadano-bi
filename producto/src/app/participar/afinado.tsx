@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio,
-  listarDepartamentos, listarMunicipios, declararGrupo, type PasoAfinado,
+  listarDepartamentos, listarMunicipios, declararGrupo, aplicarContexto, type PasoAfinado,
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
+import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
@@ -65,8 +66,19 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [lect, setLect] = useState<Lectura | null>(null);
   const [leyendo, setLeyendo] = useState(true);
   const [paso, setPaso] = useState<
-    "escoger" | "entendimos" | "falta" | "municipio" | "confirmar-residencia" | "voceria" | "listo"
+    "escoger" | "entendimos" | "heredado" | "falta" | "municipio"
+    | "confirmar-residencia" | "voceria" | "listo"
   >("entendimos");
+  // Lo que contó en el aporte anterior y puede valer también para este. Se le
+  // enseña y ella dice si vale: heredarlo en silencio sería inferir.
+  const [heredado, setHeredado] = useState<ContextoHeredado | null>(null);
+  // Lo que se lleva al siguiente, si decide contar otra cosa.
+  const [municipioPuesto, setMunicipioPuesto] = useState<Candidato | null>(null);
+  const [grupoPuesto, setGrupoPuesto] = useState<string | null>(null);
+  // Decidir el paso siguiente **después** de que el estado esté puesto. Hacerlo
+  // dentro del clic leía la lectura vieja y volvía a preguntar lo que se acababa
+  // de aplicar.
+  const [rutear, setRutear] = useState(false);
   // Lo que contó y no es de lo que hablamos en este aporte. No se pierde: sigue
   // entero en su relato, y al final se le ofrece contarlo aparte.
   const [otros, setOtros] = useState<string[]>([]);
@@ -94,6 +106,25 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [r1, accion1, guardando1] = useActionState<PasoAfinado | null, FormData>(confirmarLectura, null);
   const [r2, accion2, guardando2] = useActionState<PasoAfinado | null, FormData>(guardarPrecisiones, null);
 
+  // **Una sola vez.** `tomarContexto()` borra la llave al leerla, y React monta
+  // dos veces en desarrollo: la segunda lectura devolvía vacío y pisaba la
+  // primera. El contexto desaparecía sin que nada fallara.
+  const contextoLeido = useRef(false);
+  useEffect(() => {
+    if (contextoLeido.current) return;
+    contextoLeido.current = true;
+    setHeredado(tomarContexto());
+  }, []);
+
+  useEffect(() => {
+    if (!rutear) return;
+    setRutear(false);
+    if (lect?.lugar && !municipioPuesto) { setVueltaAlVolver(0); setPaso("municipio"); return; }
+    setPaso(vueltas.length ? "falta" : "voceria");
+    // `vueltas` sale de `lect`, y se quiere el valor recién puesto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rutear, lect, municipioPuesto]);
+
   useEffect(() => {
     let vigente = true;
     prepararLectura(codigo)
@@ -102,6 +133,7 @@ export function Afinado({ codigo }: { codigo: string }) {
         setLect(r.lectura);
         setProblema(r.lectura.problema);
         setCandidatos(r.municipios);
+        repartir(r.lectura, r.municipios.length > 0);
         // Si contó varias cosas, lo primero es escoger de cuál hablamos: todo lo
         // que viene después —el lugar, a quiénes, la prioridad— es de **un**
         // problema, y mezclarlos hace que ninguno se pueda atender.
@@ -117,10 +149,21 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Lo que falta, repartido en vueltas de tres. Si no falta nada, no hay vueltas
   // y la persona pasa directo al final: preguntarle por lo que ya dijo sería
   // castigarla por haberlo contado bien.
-  const faltan = (lect ? loQueFalta(lect) : [])
-    .filter((k) => !(k === "lugar" && candidatos.length > 0));
-  const vueltas: Preguntable[][] = [];
-  for (let i = 0; i < faltan.length; i += POR_VUELTA) vueltas.push(faltan.slice(i, i + POR_VUELTA));
+  //
+  // **Se fijan una vez y no se recalculan a mitad.** Al guardar lo que escribe,
+  // esas partes dejan de faltar; si las vueltas se recalcularan, el reparto
+  // cambiaría bajo sus pies y el paso 3 de 5 pasaría a no existir. Solo se
+  // rehacen cuando de verdad cambia lo que hay que preguntar: al llegar la
+  // lectura, y al aceptar el contexto del aporte anterior.
+  const [vueltas, setVueltas] = useState<Preguntable[][]>([]);
+
+  function repartir(l: Lectura, hayCandidatos: boolean) {
+    const faltan = loQueFalta(l).filter((k) => !(k === "lugar" && hayCandidatos));
+    const trozos: Preguntable[][] = [];
+    for (let i = 0; i < faltan.length; i += POR_VUELTA) trozos.push(faltan.slice(i, i + POR_VUELTA));
+    setVueltas(trozos);
+    return trozos;
+  }
 
   // Los 33 departamentos, al entrar al paso del municipio. No antes: la mayoría
   // de la gente nombra su municipio al contar y nunca llega aquí.
@@ -137,11 +180,24 @@ export function Afinado({ codigo }: { codigo: string }) {
     // preguntar — el mismo agujero que «en mi casa», por otro camino.
     //
     // Si no dijo dónde, la pregunta va en su vuelta y el municipio viene detrás.
+    if (tieneAlgo(heredado)) { setPaso("heredado"); return; }
     if (lect?.lugar) { setVueltaAlVolver(0); setPaso("municipio"); return; }
     setPaso(vueltas.length ? "falta" : "voceria");
   }, [r1]);
   useEffect(() => {
     if (!r2?.ok) return;
+    // Lo que acaba de escribir pasa a ser lo que la pantalla sabe: si no, al
+    // ofrecerle el contexto para su segundo problema solo tendríamos lo que
+    // leyó la IA.
+    if (r2.precisado) {
+      const p = r2.precisado;
+      setLect((l) => l && {
+        ...l,
+        lugar: p.lugar ?? l.lugar,
+        afectados: p.afectados ?? l.afectados,
+        desdeCuando: p.desdeCuando ?? l.desdeCuando,
+      });
+    }
     // Si nombró un sitio y DIVIPOLA encontró candidatos, se le enseñan antes de
     // seguir: es el único momento en que está la persona que de verdad lo sabe.
     // **El municipio se pregunta siempre que se haya preguntado el lugar**, haya
@@ -187,6 +243,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     if (porResidencia) { setPaso("confirmar-residencia"); return; }
     setGuardandoMun(true);
     await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "lo_dijo");
+    setMunicipioPuesto(elegido);
     setGuardandoMun(false);
     seguirDespuesDelMunicipio();
   }
@@ -269,6 +326,7 @@ export function Afinado({ codigo }: { codigo: string }) {
                       onClick={async () => {
                         setGuardandoVoz(true);
                         await declararGrupo(codigo, grupo);
+                        setGrupoPuesto(grupo);
                         setGuardandoVoz(false);
                         setPaso("listo");
                       }}>
@@ -322,9 +380,18 @@ export function Afinado({ codigo }: { codigo: string }) {
               {otros.map((x) => (
                 <button key={x} type="button" className="pc-action" data-variant="secondary"
                         onClick={() => {
-                          // Va por el navegador y no por la dirección: un relato
-                          // en la URL acaba en los registros del servidor.
-                          try { sessionStorage.setItem("pc:otro-relato", x); } catch { /* se escribe a mano */ }
+                          // Se lleva también lo que ya contó: quien cuenta dos
+                          // cosas vive en el mismo sitio y le pasan a la misma
+                          // gente. Volver a preguntárselo todo es lo que hace
+                          // que abandone en el segundo — y entonces la segunda
+                          // necesidad se pierde.
+                          guardarContexto(x, {
+                            lugarDeclarado: lect?.lugar ?? null,
+                            municipio: municipioPuesto,
+                            afectados: lect?.afectados ?? null,
+                            desdeCuando: lect?.desdeCuando ?? null,
+                            colectivo: grupoPuesto,
+                          });
                           location.href = "/participar";
                         }}>
                   Contar: {x}
@@ -605,6 +672,61 @@ export function Afinado({ codigo }: { codigo: string }) {
                   onClick={() => { setElegido(null); setPaso("municipio"); }}>
             No, ocurre en otra parte
           </button>
+        </div>
+      )}
+
+      {paso === "heredado" && heredado && (
+        <div data-prueba="heredado">
+          <h2>¿Esto también es así?</h2>
+          <p className="pc-help">
+            Es lo que nos contaste hace un momento. Si vale igual para esto,{" "}
+            <strong>no hace falta que lo repitas</strong>.
+          </p>
+          <dl className="pc-detail-facts">
+            {heredado.municipio && (<><dt>Dónde ocurre</dt>
+              <dd>{heredado.municipio.nombre}, {heredado.municipio.departamento}</dd></>)}
+            {heredado.lugarDeclarado && (<><dt>Con tus palabras</dt><dd>{heredado.lugarDeclarado}</dd></>)}
+            {heredado.afectados && (<><dt>A quiénes les pasa</dt><dd>{heredado.afectados}</dd></>)}
+            {heredado.desdeCuando && (<><dt>Desde cuándo</dt><dd>{heredado.desdeCuando}</dd></>)}
+            {heredado.colectivo && (<><dt>Hablas por</dt><dd>{heredado.colectivo}</dd></>)}
+          </dl>
+          <Error_ paso={r2} />
+          <div className="pc-actions">
+            <button type="button" className="pc-action" disabled={guardandoMun}
+                    onClick={async () => {
+                      setGuardandoMun(true);
+                      await aplicarContexto(codigo, heredado);
+                      setGuardandoMun(false);
+                      // Lo aplicado deja de faltar, así que no se vuelve a preguntar.
+                      if (lect) {
+                        const nueva = {
+                          ...lect,
+                          lugar: heredado.lugarDeclarado ?? lect.lugar,
+                          afectados: heredado.afectados ?? lect.afectados,
+                          desdeCuando: heredado.desdeCuando ?? lect.desdeCuando,
+                        };
+                        setLect(nueva);
+                        repartir(nueva, Boolean(heredado.municipio));
+                      }
+                      setMunicipioPuesto(heredado.municipio);
+                      setGrupoPuesto(heredado.colectivo);
+                      setHeredado(null);
+                      setRutear(true);
+                    }}>
+              {guardandoMun ? "Guardando…" : "Sí, es igual"}
+            </button>
+            <button type="button" className="pc-text-action"
+                    onClick={() => { setHeredado(null); setRutear(true); }}>
+              No, esto es distinto
+            </button>
+          </div>
+          {/* **No se hereda: se propone.** `I2` prohíbe inferir la ubicación, y
+              dar por hecho que el segundo problema ocurre donde el primero sería
+              justo eso: alguien puede contar lo del agua de su casa y lo de la
+              vía del colegio, que está en otro municipio. */}
+          <p className="pc-help">
+            Si no es igual, te lo preguntamos como si fuera la primera vez.
+          </p>
         </div>
       )}
 

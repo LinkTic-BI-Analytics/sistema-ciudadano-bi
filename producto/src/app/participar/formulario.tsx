@@ -5,6 +5,7 @@ import { enviarAporte, type Resultado } from "./acciones.ts";
 import { claveEnvioVigente, olvidarClaveEnvio } from "../../captura/clave-envio.ts";
 import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
 import { Afinado } from "./afinado.tsx";
+import { LLAVE_RELATO } from "../../captura/contexto.ts";
 
 export function Formulario() {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
@@ -29,8 +30,8 @@ export function Formulario() {
   // relato en la URL acaba en los registros del servidor.
   useEffect(() => {
     try {
-      const otro = sessionStorage.getItem("pc:otro-relato");
-      if (otro) { setRelato(otro); sessionStorage.removeItem("pc:otro-relato"); }
+      const otro = sessionStorage.getItem(LLAVE_RELATO);
+      if (otro) { setRelato(otro); sessionStorage.removeItem(LLAVE_RELATO); }
     } catch { /* sin storage, la caja empieza vacía y no pasa nada */ }
   }, []);
 

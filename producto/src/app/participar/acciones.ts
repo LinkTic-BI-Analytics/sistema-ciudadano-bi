@@ -10,6 +10,7 @@ import {
   type Candidato, type Departamento,
 } from "../../territorio/emparejar.ts";
 import { declararVoceria } from "../../captura/vocero.ts";
+import type { ContextoHeredado } from "../../captura/contexto.ts";
 import { resolverUbicacion } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
@@ -21,7 +22,19 @@ export type Resultado =
 
 /** Lo que devuelve cada vuelta de afinado. Nunca bloquea: el aporte ya está. */
 export type PasoAfinado =
-  | { ok: true; municipios?: Candidato[] }
+  | {
+      ok: true;
+      municipios?: Candidato[];
+      /**
+       * Lo que se acaba de guardar, devuelto a la pantalla.
+       *
+       * La pantalla solo conocía lo que había leído la IA, no lo que la persona
+       * escribió después. Así, al ofrecerle el contexto para su segundo
+       * problema, solo tenía el municipio: lo demás lo había escrito ella y se
+       * había ido al servidor sin dejar rastro aquí.
+       */
+      precisado?: { lugar: string | null; afectados: string | null; desdeCuando: string | null };
+    }
   | { ok: false; error: string };
 
 /**
@@ -181,7 +194,10 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
       });
       await confirmarSintesis({ aporteId, autor: "ciudadano" });
     }
-    return { ok: true, municipios };
+    return {
+      ok: true, municipios,
+      precisado: { lugar, afectados: dato("afectados"), desdeCuando: dato("desdeCuando") },
+    };
   } catch (e) {
     console.error("guardarPrecisiones", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado; puedes intentarlo luego." };
@@ -302,6 +318,41 @@ export async function declararGrupo(codigo: string, colectivo: string): Promise<
     return { ok: true };
   } catch (e) {
     console.error("declararGrupo", e);
+    return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado." };
+  }
+}
+
+
+/**
+ * Aplica al aporte nuevo lo que la persona confirmó que vale también aquí.
+ *
+ * **Confirmado, no heredado.** Se llama solo después de que ella diga que sí:
+ * dar por hecho que el segundo problema ocurre donde el primero es la
+ * inferencia que `I2` prohíbe, y el motivo que queda escrito en la ubicación lo
+ * dice para que un revisor sepa de dónde salió.
+ */
+export async function aplicarContexto(codigo: string, c: ContextoHeredado): Promise<PasoAfinado> {
+  try {
+    const aporteId = await aporteDelCodigo(codigo);
+    if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+
+    await precisarAporte({
+      aporteId,
+      lugarDeclarado: c.lugarDeclarado,
+      afectados: c.afectados,
+      desdeCuando: c.desdeCuando,
+    });
+    if (c.municipio) {
+      await resolverUbicacion({
+        aporteId, codigo: c.municipio.codigo, version: c.municipio.version,
+        autor: "ciudadano",
+        motivo: "la persona confirmó que ocurre en el mismo municipio que su aporte anterior",
+      });
+    }
+    if (c.colectivo) await declararVoceria({ aporteId, colectivo: c.colectivo });
+    return { ok: true };
+  } catch (e) {
+    console.error("aplicarContexto", e);
     return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado." };
   }
 }
