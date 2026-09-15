@@ -184,3 +184,39 @@ export async function buscarPorNombre(parcial: string, limite = 8): Promise<Cand
     codigo: m.codigo, version: m.version, nombre: m.nombre, departamento: m.departamento,
   }));
 }
+
+
+/**
+ * Los 33 departamentos, para escoger de lo macro a lo micro.
+ *
+ * **Ir directo al municipio enreda.** Escribir «rio» devuelve ocho municipios de
+ * ocho departamentos distintos —Río de Oro en Cesar, Río Iró en Chocó,
+ * Riohacha en La Guajira…— y quien busca el suyo tiene que leerlos todos para
+ * encontrarlo. Escogiendo primero el departamento, la lista baja de 1.122 a como
+ * mucho 125, y **ya no hay dos con el mismo nombre**.
+ *
+ * Además es el orden en que la gente sabe dónde vive: nadie duda de su
+ * departamento, y muchos sí del nombre exacto de su municipio.
+ */
+export type Departamento = { codigo: string; version: string; nombre: string };
+
+let departamentosCache: Departamento[] | null = null;
+
+export async function departamentos(): Promise<Departamento[]> {
+  if (departamentosCache) return departamentosCache;
+  const p = clienteServidor().schema("participacion");
+  const { data, error } = await p.from("territorio")
+    .select("codigo, version, nombre").eq("nivel", "departamento").order("nombre");
+  if (error) throw new Error(`no se pudieron leer los departamentos: ${error.message}`);
+  departamentosCache = (data ?? []) as Departamento[];
+  return departamentosCache;
+}
+
+/** Los municipios de un departamento, en orden alfabético. */
+export async function municipiosDe(departamento: string): Promise<Candidato[]> {
+  const todos = await municipios();
+  return todos
+    .filter((m) => m.codigo.startsWith(departamento))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+    .map((m) => ({ codigo: m.codigo, version: m.version, nombre: m.nombre, departamento: m.departamento }));
+}

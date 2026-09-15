@@ -21,7 +21,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const p = clienteServidor().schema("participacion");
 
   const { data: a } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision")
+    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision")
     .eq("id", aporteId).single();
   if (!a) return <div className="pc-backoffice"><p className="bo-empty">No existe ese aporte.</p></div>;
 
@@ -98,6 +98,22 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       `desde_cuando` se muestra tal cual y no se convierte en
                       fecha: «hace tres meses» no es una fecha, y volverlo una
                       sería la inferencia que `I2` prohíbe. */}
+                  {/* **Declarado, no verificado.** La especificación dice que
+                      *«vocero exige verificar representación y destinatario
+                      autorizado»*, y nadie verificó nada: lo dijo quien escribió.
+                      Ponerlo sin ese aviso invitaría a tratarlo como probado, y
+                      el colectivo ni siquiera existe como entidad todavía
+                      (`Q23`). */}
+                  {a.es_colectivo && (
+                    <p className="bo-observation">
+                      <strong>Dice hablar por un grupo:</strong>{" "}
+                      <em>«{a.colectivo_declarado ?? "sin nombrarlo"}»</em>.{" "}
+                      <span className="bo-muted">
+                        Lo dice quien escribió; nadie verificó la representación.
+                        El aporte es del grupo, no de quien lo mandó (V19).
+                      </span>
+                    </p>
+                  )}
                   {([["Dónde dijo que ocurre", a.lugar_declarado],
                      ["A quiénes les pasa", a.afectados],
                      ["Desde cuándo", a.desde_cuando]] as const)

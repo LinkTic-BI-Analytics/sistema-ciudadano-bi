@@ -5,7 +5,11 @@ import { procesoVigente } from "../../datos/proceso.ts";
 import { proponerSintesis, corregirSintesis, confirmarSintesis, sintesisDe } from "../../captura/sintesis.ts";
 import { leer, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 import { precisarAporte } from "../../captura/precisar.ts";
-import { buscarMunicipios, buscarPorNombre, type Candidato } from "../../territorio/emparejar.ts";
+import {
+  buscarMunicipios, buscarPorNombre, departamentos, municipiosDe,
+  type Candidato, type Departamento,
+} from "../../territorio/emparejar.ts";
+import { declararVoceria } from "../../captura/vocero.ts";
 import { resolverUbicacion } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
@@ -269,5 +273,35 @@ export async function confirmarMunicipio(
   } catch (e) {
     console.error("confirmarMunicipio", e);
     return { ok: false, error: "No pudimos guardar el municipio. Tu aporte ya quedó registrado." };
+  }
+}
+
+
+/** Los 33 departamentos, para escoger de lo macro a lo micro. */
+export async function listarDepartamentos(): Promise<Departamento[]> {
+  try { return await departamentos(); } catch (e) { console.error("listarDepartamentos", e); return []; }
+}
+
+/** Los municipios de un departamento. Dentro de uno no hay nombres repetidos. */
+export async function listarMunicipios(departamento: string): Promise<Candidato[]> {
+  try { return await municipiosDe(departamento); } catch (e) { console.error("listarMunicipios", e); return []; }
+}
+
+/**
+ * La persona dice que habla por un grupo.
+ *
+ * Se guarda **el nombre del grupo**, no el suyo: el aporte es del colectivo y no
+ * del vocero (`V19`), así que si mañana cambia quién lo representa, el aporte no
+ * se mueve.
+ */
+export async function declararGrupo(codigo: string, colectivo: string): Promise<PasoAfinado> {
+  try {
+    const aporteId = await aporteDelCodigo(codigo);
+    if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+    await declararVoceria({ aporteId, colectivo });
+    return { ok: true };
+  } catch (e) {
+    console.error("declararGrupo", e);
+    return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado." };
   }
 }

@@ -7,7 +7,7 @@
 // persona, y para eso existe `/validar` — que no se ha corrido.
 
 import { test, expect } from "@playwright/test";
-import { salirDelMunicipio } from "./ayudas.ts";
+import { salirDelMunicipio, hablarPorMi } from "./ayudas.ts";
 
 test("el campo de relato tiene etiqueta visible, no solo placeholder", async ({ page }) => {
   await page.goto("/participar");
@@ -134,6 +134,7 @@ test("lo que afina después queda guardado con el aporte", async ({ page }) => {
   const v3 = page.locator("[data-prueba='vuelta-3']");
   await v3.locator("#resultadoEsperado").fill("que lo revisen antes de que se caiga");
   await v3.getByRole("button", { name: /listo/i }).first().click();
+  await hablarPorMi(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
   // El código de antes de afinar sigue sirviendo: afinar no cambia el aporte.

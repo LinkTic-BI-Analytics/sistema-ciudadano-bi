@@ -132,7 +132,14 @@ create table participacion.aporte (
   lugar_declarado   text,
 
   -- Colectivo: el aporte es del colectivo, no del vocero (`V19`). El colectivo
-  -- todavía no existe como entidad (`Q23`), así que por ahora solo se marca.
+  -- todavía no existe como entidad (`Q23`), así que se guarda **lo que la
+  -- persona dijo**, no una referencia a algo que no está modelado.
+  --
+  -- `colectivo_declarado` es exactamente eso: declarado. **Nadie verificó que
+  -- quien escribe represente a ese grupo**, y la especificación es explícita —
+  -- *«vocero exige verificar representación y destinatario autorizado»*—. Un
+  -- campo que dijera «vocero» a secas se leería como verificado, y aquí no hay
+  -- con qué verificar hasta que `Q23` se cierre.
   -- Lo que la persona precisó después de contar, en las vueltas de afinado
   -- (ADR 0012). Las dos son opcionales: vacío significa **no lo dijo**, y eso
   -- es una respuesta, no un hueco por llenar.
@@ -143,7 +150,13 @@ create table participacion.aporte (
   afectados         text,
   desde_cuando      text,
 
-  es_colectivo      boolean not null default false,
+  es_colectivo        boolean not null default false,
+  colectivo_declarado text,
+  constraint colectivo_con_nombre
+    -- No se puede decir «hablo por un grupo» sin decir cuál. Un aporte marcado
+    -- como colectivo y sin grupo no le sirve a nadie: ni se puede notificar ni
+    -- se puede saber a quién representa.
+    check (colectivo_declarado is null or es_colectivo),
 
   retirado_en       timestamptz,
   retirado_motivo   text,

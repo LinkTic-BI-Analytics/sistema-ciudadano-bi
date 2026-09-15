@@ -1,8 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio, buscarMunicipio, type PasoAfinado } from "./acciones.ts";
-import type { Candidato } from "../../territorio/emparejar.ts";
+import {
+  confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio,
+  listarDepartamentos, listarMunicipios, declararGrupo, type PasoAfinado,
+} from "./acciones.ts";
+import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
@@ -42,11 +45,17 @@ function Guardado({ codigo }: { codigo: string }) {
 export function Afinado({ codigo }: { codigo: string }) {
   const [lect, setLect] = useState<Lectura | null>(null);
   const [leyendo, setLeyendo] = useState(true);
-  const [paso, setPaso] = useState<"entendimos" | "falta" | "municipio" | "confirmar-residencia" | "listo">("entendimos");
+  const [paso, setPaso] = useState<
+    "entendimos" | "falta" | "municipio" | "confirmar-residencia" | "voceria" | "listo"
+  >("entendimos");
+  const [grupo, setGrupo] = useState("");
+  const [porGrupo, setPorGrupo] = useState(false);
+  const [guardandoVoz, setGuardandoVoz] = useState(false);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [guardandoMun, setGuardandoMun] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
-  const [hallados, setHallados] = useState<Candidato[]>([]);
+  const [deptos, setDeptos] = useState<Departamento[]>([]);
+  const [depto, setDepto] = useState("");
+  const [delDepto, setDelDepto] = useState<Candidato[]>([]);
   const [porResidencia, setPorResidencia] = useState(false);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   // A qué vuelta se vuelve al salir del municipio. Se fija **al entrar**, porque
@@ -83,10 +92,16 @@ export function Afinado({ codigo }: { codigo: string }) {
   const vueltas: Preguntable[][] = [];
   for (let i = 0; i < faltan.length; i += POR_VUELTA) vueltas.push(faltan.slice(i, i + POR_VUELTA));
 
+  // Los 33 departamentos, al entrar al paso del municipio. No antes: la mayoría
+  // de la gente nombra su municipio al contar y nunca llega aquí.
+  useEffect(() => {
+    if (paso === "municipio" && deptos.length === 0) listarDepartamentos().then(setDeptos);
+  }, [paso, deptos.length]);
+
   useEffect(() => {
     if (!r1?.ok) return;
     if (candidatos.length) { setVueltaAlVolver(0); setPaso("municipio"); return; }
-    setPaso(vueltas.length ? "falta" : "listo");
+    setPaso(vueltas.length ? "falta" : "voceria");
   }, [r1]);
   useEffect(() => {
     if (!r2?.ok) return;
@@ -104,18 +119,15 @@ export function Afinado({ codigo }: { codigo: string }) {
     }
     setVuelta((v) => {
       const siguiente = v + 1;
-      if (siguiente >= vueltas.length) setPaso("listo");
+      if (siguiente >= vueltas.length) setPaso("voceria");
       return siguiente;
     });
   }, [r2]);
 
-  // La búsqueda va según se escribe. Sin espera artificial: son 1.122 filas ya
-  // en memoria del servidor, y hacer esperar medio segundo a quien teclea con
-  // una mano en un bus es peor que una petición de más.
-  async function buscar(texto: string) {
-    if (texto.trim().length < 3) { setHallados([]); return; }
-    const r = await buscarMunicipio(texto);
-    setHallados(r);
+  async function escogerDepartamento(codigo: string) {
+    setDepto(codigo);
+    setDelDepto([]);
+    if (codigo) setDelDepto(await listarMunicipios(codigo));
   }
 
   async function elegir(c: Candidato, origen: "lo_dijo" | "vive_ahi") {
@@ -131,9 +143,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
   function seguirDespuesDelMunicipio() {
     setCandidatos([]);
-    setBusqueda(""); setHallados([]); setPorResidencia(false); setElegido(null);
+    setDepto(""); setDelDepto([]); setPorResidencia(false); setElegido(null);
     setVuelta(vueltaAlVolver);
-    setPaso(vueltaAlVolver >= vueltas.length ? "listo" : "falta");
+    setPaso(vueltaAlVolver >= vueltas.length ? "voceria" : "falta");
   }
 
   if (leyendo) {
@@ -167,6 +179,60 @@ export function Afinado({ codigo }: { codigo: string }) {
     );
   }
 
+  if (paso === "voceria") {
+    return (
+      <section className="pc-section" data-prueba="voceria">
+        <p className="pc-help" aria-live="polite">Última pregunta</p>
+        <Guardado codigo={codigo} />
+        <h2>¿Hablas por ti o por un grupo?</h2>
+        {!porGrupo ? (
+          <>
+            <p className="pc-help">
+              Muchos aportes salen de una junta de acción comunal, un cabildo, una asociación o
+              una mesa de trabajo. Saberlo cambia a quién hay que responderle.
+            </p>
+            <div className="pc-actions">
+              <button type="button" className="pc-action" onClick={() => setPaso("listo")}>
+                Hablo por mí
+              </button>
+              <button type="button" className="pc-text-action" onClick={() => setPorGrupo(true)}>
+                Hablo por un grupo
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="pc-field">
+              <label className="pc-label" htmlFor="grupo">¿Qué grupo?</label>
+              <input id="grupo" className="pc-input" type="text" value={grupo}
+                     onChange={(e) => setGrupo(e.target.value)}
+                     aria-describedby="grupo-ayuda" />
+              <p className="pc-help" id="grupo-ayuda">
+                Como se llame: «la junta de acción comunal de la vereda El Salado», «la mesa de
+                mujeres del barrio». <strong>Quedará escrito que lo dices tú</strong>: no lo
+                verificamos con nadie, y el aporte queda a nombre del grupo, no del tuyo.
+              </p>
+            </div>
+            <div className="pc-actions">
+              <button type="button" className="pc-action" disabled={guardandoVoz || !grupo.trim()}
+                      onClick={async () => {
+                        setGuardandoVoz(true);
+                        await declararGrupo(codigo, grupo);
+                        setGuardandoVoz(false);
+                        setPaso("listo");
+                      }}>
+                {guardandoVoz ? "Guardando…" : "Listo"}
+              </button>
+              <button type="button" className="pc-text-action" onClick={() => setPaso("listo")}>
+                Mejor no
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+    );
+  }
+
   if (paso === "listo") {
     return (
       <section className="pc-success" data-prueba="afinado-listo" aria-live="polite">
@@ -191,7 +257,7 @@ export function Afinado({ codigo }: { codigo: string }) {
 
   // Se cuenta el del municipio solo cuando existe: prometer un paso que no va a
   // aparecer es peor que no decir cuántos hay.
-  const total = 2 + vueltas.length + (candidatos.length ? 1 : 0);
+  const total = 3 + vueltas.length + (candidatos.length ? 1 : 0);
   const actual = paso === "entendimos" ? 2 : paso === "municipio" ? 2 + vuelta + 2 : 2 + vuelta + 1;
 
   return (
@@ -223,17 +289,21 @@ export function Afinado({ codigo }: { codigo: string }) {
               </dl>
               <p className="pc-help">Si no es eso, corrígelo — mandas tú.</p>
               <Error_ paso={r1} />
-              <form action={accion1}>
+              {/* Los dos en el mismo grupo. Estaban en cajas distintas —uno
+                  dentro del formulario y otro fuera— y salían desalineados y de
+                  tamaños distintos. `.pc-actions` es lo que el sistema de diseño
+                  tiene para una decisión con dos salidas. */}
+              <form action={accion1} className="pc-actions">
                 <input type="hidden" name="codigo" value={codigo} readOnly />
                 <input type="hidden" name="corrigio" value="no" readOnly />
                 <input type="hidden" name="mostrado" value={problema} readOnly />
                 <button type="submit" className="pc-action" disabled={guardando1}>
                   {guardando1 ? "Guardando…" : "Sí, es eso"}
                 </button>
+                <button type="button" className="pc-text-action" onClick={() => setCorrigiendo(true)}>
+                  No es eso — déjame corregirlo
+                </button>
               </form>
-              <button type="button" className="pc-mode" onClick={() => setCorrigiendo(true)}>
-                No es eso — déjame corregirlo
-              </button>
             </>
           ) : (
             <form action={accion1}>
@@ -278,7 +348,7 @@ export function Afinado({ codigo }: { codigo: string }) {
                   </button>
                 ))}
               </div>
-              <button type="button" className="pc-mode" onClick={() => { setCandidatos([]); setBusqueda(""); }}>
+              <button type="button" className="pc-text-action" onClick={() => { setCandidatos([]); setDepto(""); }}>
                 Ninguno de estos
               </button>
             </>
@@ -293,45 +363,60 @@ export function Afinado({ codigo }: { codigo: string }) {
                   segunda vía: dónde vive. Salir sigue siendo posible: `N02` pide
                   aceptar ubicación incompleta, y exigirla excluiría justo a quien
                   menos puede precisarla. */}
-              <h2>{porResidencia ? "¿En qué municipio vives?" : "¿En qué municipio queda?"}</h2>
+              <h2>{porResidencia ? "¿Dónde vives?" : "¿Dónde queda?"}</h2>
               <p className="pc-help">
                 {porResidencia ? (
                   <>Sirve para acercarnos. Después te preguntamos si el problema ocurre ahí mismo.</>
                 ) : (
                   <>
                     Sin municipio, tu aporte <strong>no se puede sumar al de tus vecinos</strong> ni
-                    llegar a quien responde por ese territorio. Escribe el nombre y te lo buscamos.
+                    llegar a quien responde por ese territorio.
                   </>
                 )}
               </p>
+
+              {/* **De lo macro a lo micro.** Buscar el municipio por nombre
+                  devolvía ocho «RÍO…» de ocho departamentos distintos, y quien
+                  buscaba el suyo tenía que leerlos todos. Escogiendo primero el
+                  departamento la lista baja de 1.122 a 125 como mucho, y dentro
+                  de un departamento **no hay dos municipios con el mismo
+                  nombre**: escoger vuelve a ser escoger.
+
+                  Y es el orden en que la gente sabe dónde vive: nadie duda de su
+                  departamento, y mucha gente sí del nombre exacto de su
+                  municipio. */}
               <div className="pc-field">
-                <label className="pc-label" htmlFor="buscar-municipio">Nombre del municipio</label>
-                <input id="buscar-municipio" className="pc-input" type="text" value={busqueda}
-                       onChange={(e) => { setBusqueda(e.target.value); buscar(e.target.value); }}
-                       aria-describedby="buscar-ayuda" />
-                <p className="pc-help" id="buscar-ayuda">
-                  Con las primeras letras basta. Si hay varios con el mismo nombre, salen todos.
-                </p>
+                <label className="pc-label" htmlFor="departamento">Departamento</label>
+                <select id="departamento" className="pc-input" value={depto}
+                        onChange={(e) => escogerDepartamento(e.target.value)}>
+                  <option value="">Escoge uno…</option>
+                  {deptos.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
+                </select>
               </div>
-              {hallados.length > 0 && (
-                <div className="pc-actions">
-                  {hallados.map((c) => (
-                    <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
-                            onClick={() => elegir(c, porResidencia ? "vive_ahi" : "lo_dijo")}>
-                      {c.nombre}, {c.departamento}
-                    </button>
-                  ))}
+
+              {depto && (
+                <div className="pc-field">
+                  <label className="pc-label" htmlFor="municipio">Municipio</label>
+                  <select id="municipio" className="pc-input" defaultValue=""
+                          onChange={(e) => {
+                            const m = delDepto.find((x) => x.codigo === e.target.value);
+                            if (m) elegir(m, porResidencia ? "vive_ahi" : "lo_dijo");
+                          }}>
+                    <option value="">
+                      {delDepto.length ? `Escoge uno de los ${delDepto.length}…` : "Cargando…"}
+                    </option>
+                    {delDepto.map((m) => <option key={m.codigo} value={m.codigo}>{m.nombre}</option>)}
+                  </select>
                 </div>
               )}
-              {busqueda.trim().length >= 3 && hallados.length === 0 && (
-                <p className="pc-note">No encontramos ninguno con ese nombre. Revisa cómo se escribe.</p>
-              )}
+
               {!porResidencia ? (
-                <button type="button" className="pc-mode" onClick={() => { setPorResidencia(true); setBusqueda(""); setHallados([]); }}>
+                <button type="button" className="pc-text-action"
+                        onClick={() => { setPorResidencia(true); setDepto(""); setDelDepto([]); }}>
                   No sé en qué municipio queda
                 </button>
               ) : (
-                <button type="button" className="pc-mode" onClick={seguirDespuesDelMunicipio}>
+                <button type="button" className="pc-text-action" onClick={seguirDespuesDelMunicipio}>
                   Prefiero no decirlo
                 </button>
               )}
@@ -392,7 +477,7 @@ export function Afinado({ codigo }: { codigo: string }) {
             <button type="submit" className="pc-action" disabled={guardando2}>
               {guardando2 ? "Guardando…" : vuelta + 1 >= vueltas.length ? "Listo" : "Continuar"}
             </button>
-            <button type="button" className="pc-mode" onClick={() => setPaso("listo")}>
+            <button type="button" className="pc-text-action" onClick={() => setPaso("voceria")}>
               Terminar aquí
             </button>
           </form>

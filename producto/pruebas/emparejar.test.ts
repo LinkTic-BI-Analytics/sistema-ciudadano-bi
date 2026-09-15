@@ -108,3 +108,21 @@ test("los municipios más lejanos también se encuentran", async () => {
     assert.equal(c[0]?.departamento, depto, `no encontró nada para «${texto}»`);
   }
 });
+
+test("de lo macro a lo micro: 33 departamentos y sus municipios", async () => {
+  const { departamentos, municipiosDe } = await import("../src/territorio/emparejar.ts");
+  const d = await departamentos();
+  assert.equal(d.length, 33, "Colombia tiene 32 departamentos y Bogotá D.C.");
+
+  const antioquia = d.find((x) => x.nombre === "ANTIOQUIA")!;
+  const m = await municipiosDe(antioquia.codigo);
+  assert.equal(m.length, 125, "Antioquia tiene 125 municipios");
+  // **Dentro de un departamento no hay dos con el mismo nombre**, que es lo que
+  // hace que escoger sea escoger y no adivinar.
+  assert.equal(new Set(m.map((x) => x.nombre)).size, m.length);
+  assert.ok(m.some((x) => x.nombre === "RIONEGRO"));
+
+  // Y los lejanos también: son los que menos otra forma tienen de llegar.
+  const amazonas = d.find((x) => x.nombre === "AMAZONAS")!;
+  assert.ok((await municipiosDe(amazonas.codigo)).some((x) => x.nombre === "LETICIA"));
+});
