@@ -95,3 +95,35 @@ test("el caso completo: entra por el QR de A, dice que está en B, cuenta lo de 
   await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
 });
+
+test("de un enlace sale su pieza gráfica, con los datos del registro", async ({ page }) => {
+  // `PIE-01`: la pieza sale **del mismo registro** que alimenta la agenda. Es
+  // toda la razón de que exista: hasta ahora alguien la armaba aparte copiando
+  // los datos, y un afiche con la fecha equivocada no se corrige.
+  await page.goto("/administracion");
+  const material = page.locator(".bo-record-card").first();
+  await expect(material).toBeVisible();
+
+  const enlace = material.getByRole("link", { name: /^afiche$/ });
+  await expect(enlace).toBeVisible();
+
+  const url = await enlace.getAttribute("href");
+  const r = await page.request.get(url!);
+  expect(r.status()).toBe(200);
+  expect(r.headers()["content-type"]).toContain("image/png");
+  // Se descarga, no se abre: es un material para llevarse.
+  expect(r.headers()["content-disposition"]).toContain("attachment");
+  expect((await r.body()).byteLength).toBeGreaterThan(2000);
+
+  // Y el SVG lleva dentro lo que `PIE-02` obliga.
+  const svg = await (await page.request.get(url!.replace("afiche.png", "afiche.svg"))).text();
+  expect(svg).toContain("no es un compromiso de obra");
+  expect(svg).toContain("sin asistir");
+  expect(svg).toMatch(/hora de Bogota/);
+});
+
+test("un material que no existe no produce pieza", async ({ page }) => {
+  // No se inventa un afiche para un enlace que nadie generó.
+  const r = await page.request.get("/administracion/pieza/NOEXISTE9/afiche.png");
+  expect(r.status()).toBe(404);
+});

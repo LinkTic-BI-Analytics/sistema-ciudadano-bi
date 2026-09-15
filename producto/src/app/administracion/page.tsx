@@ -148,6 +148,19 @@ export default async function Administracion() {
                                 {" — "}<span className="bo-muted">describen difusión; no dan permisos</span>
                               </p>
                             )}
+                            {/* Generar la pieza (`PIE-01`). Sale del registro,
+                                no de lo que alguien copie a mano: si el
+                                encuentro cambió, la siguiente sale bien. */}
+                            <p className="bo-small">
+                              Pieza gráfica:{" "}
+                              {(["afiche", "volante", "publicacion", "historia"] as const).map((f) => (
+                                <span key={f}>
+                                  <a className="bo-link" href={`/administracion/pieza/${l.id}/${f}.png`}>{f}</a>
+                                  {" · "}
+                                </span>
+                              ))}
+                              <a className="bo-link" href={`/administracion/pieza/${l.id}/afiche.svg`}>afiche en SVG</a>
+                            </p>
                             {l.estado === "retirado" && (
                               <p className="bo-badge" data-state="clarify">
                                 retirado · lo que entró por él sigue ahí
