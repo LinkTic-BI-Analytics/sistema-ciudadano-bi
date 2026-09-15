@@ -619,3 +619,78 @@ test("la persona puede ver TODO lo que quedó registrado suyo", async ({ page })
   await expect(registrado).toContainText("junta de acción comunal");
   await expect(registrado).toContainText("que vuelva el agua");
 });
+
+test("si el municipio está en el relato, SE PREGUNTA igual", async ({ page }) => {
+  // El caso que rompió: alguien escribió «Las canchas de tunja boyaca están
+  // rotas» y **no se le preguntó nada de ubicación**. El aporte llegó a la
+  // bandeja sin municipio, con Tunja escrito en la primera línea.
+  //
+  // La causa: al encontrar Tunja en el relato se quitaba «dónde» de las
+  // preguntas —para confirmarlo en vez de preguntarlo— pero el paso de
+  // confirmar solo corría si la lectura traía un lugar, y no lo traía. Se
+  // saltaba entero.
+  //
+  // De ahí la regla que ahora vigila esto: **no se llega al final sin haber
+  // pasado por el municipio**, salvo que ya esté resuelto.
+  await contar(page, "Las canchas de tunja boyaca todas estan rotas y los ninos no pueden jugar");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  // Y le ofrece Tunja, que estaba escrito en su relato.
+  await expect(mun).toContainText(/TUNJA/i);
+});
+
+test("nunca se termina sin haber pasado por el municipio", async ({ page }) => {
+  // La red de seguridad: cualquier camino **automático** que llegue al final sin
+  // municipio resuelto pasa antes por preguntarlo. Es la regla que mata esta
+  // familia entera de fallos, no solo el caso que la destapó.
+  //
+  // No vale para «Terminar aquí»: ahí la persona dijo basta, y `N02` no deja
+  // exigir la ubicación.
+  await contar(page, "hay basura acumulada y nadie la recoge");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  // Se contestan las vueltas sin llenar nada —que es lo que hace mucha gente—
+  // y aun así el municipio se pregunta. Con «Terminar aquí» no: ahí la persona
+  // dijo basta, y terminar tiene que terminar.
+  const primera = page.locator("[data-prueba='vuelta-2']");
+  await expect(primera).toBeVisible({ timeout: 15_000 });
+  await primera.getByRole("button", { name: /continuar|listo/i }).first().click();
+  // Aun saltándose todo, el municipio se pregunta.
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("una vuelta no borra lo que la persona escribió en la anterior", async ({ page }) => {
+  // Pasó de verdad: alguien escribió «techarlas y hacerles mantenimiento» en una
+  // vuelta, y la versión vigente de la síntesis acabó sin esa frase. La síntesis
+  // se compone con lo que llega en el formulario, así que la vuelta siguiente la
+  // reescribía con sus dos campos y perdía la anterior.
+  const marca = `acumula-${Date.now()}`;
+  await contar(page, `${marca}: las canchas están rotas`);
+  const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+  await v2.locator("#lugar").fill("la vereda El Salado");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await salirDelMunicipio(page);
+
+  const v3 = page.locator("[data-prueba='vuelta-3']");
+  await expect(v3).toBeVisible({ timeout: 15_000 });
+  await v3.locator("#resultadoEsperado").fill("techarlas y hacerles mantenimiento");
+  await v3.locator("#solucionSugerida").fill("que las arreglen antes del invierno");
+  await v3.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await hablarPorMi(page);
+
+  // Las dos cosas tienen que estar en lo que quedó escrito.
+  await page.goto("/mis-aportes");
+  await page.fill("#codigo", codigo);
+  await page.getByRole("button", { name: /consultar/i }).click();
+  const registrado = page.locator("[data-prueba='lo-registrado']");
+  await expect(registrado).toContainText("techarlas y hacerles mantenimiento", { timeout: 15_000 });
+  await expect(registrado).toContainText("que las arreglen antes del invierno");
+});

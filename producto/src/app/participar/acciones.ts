@@ -34,7 +34,10 @@ export type PasoAfinado =
        * problema, solo tenía el municipio: lo demás lo había escrito ella y se
        * había ido al servidor sin dejar rastro aquí.
        */
-      precisado?: { lugar: string | null; afectados: string | null; desdeCuando: string | null };
+      precisado?: {
+        lugar: string | null; afectados: string | null; desdeCuando: string | null;
+        resultadoEsperado: string | null; solucionSugerida: string | null;
+      };
     }
   | { ok: false; error: string };
 
@@ -210,7 +213,10 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
     }
     return {
       ok: true, municipios,
-      precisado: { lugar, afectados: dato("afectados"), desdeCuando: dato("desdeCuando") },
+      precisado: {
+        lugar, afectados: dato("afectados"), desdeCuando: dato("desdeCuando"),
+        resultadoEsperado: resultado, solucionSugerida: solucion,
+      },
     };
   } catch (e) {
     console.error("guardarPrecisiones", e);

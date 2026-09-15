@@ -7,7 +7,7 @@ import {
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
-import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, type Lectura, type Preguntable } from "../../captura/lectura.ts";
+import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -79,6 +79,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   // dentro del clic leía la lectura vieja y volvía a preguntar lo que se acababa
   // de aplicar.
   const [rutear, setRutear] = useState(false);
+  // **Si ya se pasó por el municipio.** Es la red de seguridad: ningún camino
+  // llega al final sin haber preguntado dónde, salvo que ya esté resuelto.
+  const [municipioVisto, setMunicipioVisto] = useState(false);
   // Lo que contó y no es de lo que hablamos en este aporte. No se pierde: sigue
   // entero en su relato, y al final se le ofrece contarlo aparte.
   const [otros, setOtros] = useState<string[]>([]);
@@ -119,7 +122,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   useEffect(() => {
     if (!rutear) return;
     setRutear(false);
-    if (lect?.lugar && !municipioPuesto) { setVueltaAlVolver(0); setPaso("municipio"); return; }
+    if ((lect?.lugar || candidatos.length) && !municipioPuesto) {
+      setVueltaAlVolver(0); setPaso("municipio"); return;
+    }
     setPaso(vueltas.length ? "falta" : "voceria");
     // `vueltas` sale de `lect`, y se quiere el valor recién puesto.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,7 +186,12 @@ export function Afinado({ codigo }: { codigo: string }) {
     //
     // Si no dijo dónde, la pregunta va en su vuelta y el municipio viene detrás.
     if (tieneAlgo(heredado)) { setPaso("heredado"); return; }
-    if (lect?.lugar) { setVueltaAlVolver(0); setPaso("municipio"); return; }
+    // **Con candidatos también.** Antes esto decía solo `lect?.lugar`, y con un
+    // relato como «las canchas de tunja boyaca están rotas» la lectura no traía
+    // lugar pero sí había candidatos — así que se quitaba «dónde» de las
+    // preguntas *y* se saltaba el paso de confirmarlo. A esa persona no se le
+    // preguntó nada de ubicación, con Tunja escrito en su primera línea.
+    if (lect?.lugar || candidatos.length) { setVueltaAlVolver(0); setPaso("municipio"); return; }
     setPaso(vueltas.length ? "falta" : "voceria");
   }, [r1]);
   useEffect(() => {
@@ -196,6 +206,8 @@ export function Afinado({ codigo }: { codigo: string }) {
         lugar: p.lugar ?? l.lugar,
         afectados: p.afectados ?? l.afectados,
         desdeCuando: p.desdeCuando ?? l.desdeCuando,
+        resultadoEsperado: p.resultadoEsperado ?? l.resultadoEsperado,
+        solucionSugerida: p.solucionSugerida ?? l.solucionSugerida,
       });
     }
     // Si nombró un sitio y DIVIPOLA encontró candidatos, se le enseñan antes de
@@ -212,7 +224,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     }
     setVuelta((v) => {
       const siguiente = v + 1;
-      if (siguiente >= vueltas.length) setPaso("voceria");
+      if (siguiente >= vueltas.length) setPaso(haciaElFinal());
       return siguiente;
     });
   }, [r2]);
@@ -249,9 +261,24 @@ export function Afinado({ codigo }: { codigo: string }) {
   }
 
   // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
+  /**
+   * A dónde ir cuando no quedan vueltas.
+   *
+   * **Nunca al final sin haber preguntado el municipio.** Es la red de
+   * seguridad, y existe porque el fallo que la motivó no fue un despiste en una
+   * condición: fue que había dos caminos hacia el final y solo uno miraba la
+   * ubicación. Con una sola puerta, no puede volver a pasar.
+   */
+  function haciaElFinal(): "municipio" | "voceria" {
+    if (municipioPuesto || municipioVisto) return "voceria";
+    setVueltaAlVolver(99);
+    return "municipio";
+  }
+
   function seguirDespuesDelMunicipio() {
     setCandidatos([]);
     setDepto(""); setDelDepto([]); setFiltro(""); setPorResidencia(false); setElegido(null);
+    setMunicipioVisto(true);
     setVuelta(vueltaAlVolver);
     setPaso(vueltaAlVolver >= vueltas.length ? "voceria" : "falta");
   }
@@ -740,6 +767,15 @@ export function Afinado({ codigo }: { codigo: string }) {
           <form action={accion2} key={vuelta}>
             <input type="hidden" name="codigo" value={codigo} readOnly />
             <input type="hidden" name="problema" value={problema} readOnly />
+            {/* **Lo ya contestado viaja con cada vuelta.** La síntesis se
+                compone con lo que llega en el formulario, así que sin esto la
+                vuelta siguiente la reescribía con sus dos campos y **perdía lo
+                de la anterior**: una persona escribió «techarlas y hacerles
+                mantenimiento» en una vuelta y la versión vigente acabó sin esa
+                frase. */}
+            {PREGUNTABLES.filter((k) => !vueltas[vuelta]!.includes(k) && lect[k]).map((k) => (
+              <input key={k} type="hidden" name={k} value={lect[k]!} readOnly />
+            ))}
             {vueltas[vuelta].map((k) => (
               <div className="pc-field" key={k}>
                 <label className="pc-label" htmlFor={k}>{COMO_SE_PREGUNTA[k].etiqueta}</label>
@@ -751,6 +787,11 @@ export function Afinado({ codigo }: { codigo: string }) {
             <button type="submit" className="pc-action" disabled={guardando2}>
               {guardando2 ? "Guardando…" : vuelta + 1 >= vueltas.length ? "Listo" : "Continuar"}
             </button>
+            {/* **Terminar termina.** La red de seguridad del municipio vale
+                para el camino automático, no para cuando la persona dice basta:
+                `N02` no deja exigir la ubicación, y un botón que dice terminar
+                y saca una pantalla más es una promesa rota — justo lo que hace
+                abandonar a quien ya se estaba yendo. */}
             <button type="button" className="pc-text-action" onClick={() => setPaso("voceria")}>
               Terminar aquí
             </button>

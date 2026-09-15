@@ -202,3 +202,22 @@ test("«abrir siguiente» abre el más antiguo, no el más grave", async ({ page
   const siguiente = await page.getByRole("link", { name: /abrir siguiente/i }).getAttribute("href");
   expect(siguiente).toBe(primero);
 });
+
+test("ningún campo de la consola lleva un ejemplo que parezca el dato", async ({ page }) => {
+  // El campo «la afectación, en una frase» salía con «sin agua en la parte alta
+  // desde hace tres meses» dentro, sobre un aporte de canchas rotas en Tunja.
+  // Un `placeholder` en una pantalla de revisión se lee como contenido: quien
+  // revisa deprisa puede creer que eso dice el aporte.
+  const marca = `ejemplo-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: las canchas están rotas`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await abrirAporte(page, marca);
+  const conEjemplo = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLInputElement>("input")]
+      .filter((i) => i.type !== "hidden" && i.placeholder)
+      .map((i) => `${i.name}: ${i.placeholder}`));
+  expect(conEjemplo, "un ejemplo dentro del campo se lee como el dato del aporte").toEqual([]);
+});

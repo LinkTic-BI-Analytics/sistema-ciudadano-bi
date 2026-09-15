@@ -231,7 +231,17 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     {sint!.map((s) => (
                       <div key={s.version} className="bo-check">
                         <span className="bo-badge" data-state={s.confirmada_en ? "validated" : "draft"}>
-                          v{s.version} · {s.clase}{s.confirmada_en ? " · confirmada por la persona" : ""}
+                          {/* **Solo una está vigente.** Las tres salían
+                              diciendo «confirmada por la persona» porque cada
+                              vuelta confirma la suya, y así el revisor no sabía
+                              cuál manda. La última es la que manda; las
+                              anteriores se conservan para poder mostrar qué
+                              cambió, no para leerlas como el dato. */}
+                          v{s.version} · {s.clase}
+                          {s.confirmada_en && " · la confirmó la persona"}
+                          {s.version === sint![sint!.length - 1]!.version
+                            ? <strong> · vigente</strong>
+                            : <span className="bo-muted"> · sustituida por la v{sint![sint!.length - 1]!.version}</span>}
                         </span>
                         <p style={{ whiteSpace: "pre-wrap" }}>{s.texto}</p>
                       </div>
