@@ -96,6 +96,10 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [depto, setDepto] = useState("");
   const [delDepto, setDelDepto] = useState<Candidato[]>([]);
   const [filtro, setFiltro] = useState("");
+  // Lo detectado en lo que la persona escribió: **no se resuelve solo, pero
+  // tampoco se tira**. Arrancar el selector en blanco después de que alguien
+  // acaba de escribir dónde vive pierde el rastro y le hace repetirlo.
+  const [detectado, setDetectado] = useState<Departamento | null>(null);
   const [porResidencia, setPorResidencia] = useState(false);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   // A qué vuelta se vuelve al salir del municipio. Se fija **al entrar**, porque
@@ -140,6 +144,7 @@ export function Afinado({ codigo }: { codigo: string }) {
         setLect(r.lectura);
         setProblema(r.lectura.problema);
         setCandidatos(r.municipios);
+        setDetectado(r.departamento);
         repartir(r.lectura, r.municipios.length > 0);
         // Si contó varias cosas, lo primero es escoger de cuál hablamos: todo lo
         // que viene después —el lugar, a quiénes, la prioridad— es de **un**
@@ -177,6 +182,14 @@ export function Afinado({ codigo }: { codigo: string }) {
   useEffect(() => {
     if (paso === "municipio" && deptos.length === 0) listarDepartamentos().then(setDeptos);
   }, [paso, deptos.length]);
+
+  // El departamento que la persona nombró llega puesto, con sus municipios
+  // cargados. Es lo que convierte «escoge entre 1.122» en «confirma el tuyo».
+  useEffect(() => {
+    if (paso !== "municipio" || !detectado || depto) return;
+    void escogerDepartamento(detectado.codigo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso, detectado, depto]);
 
   useEffect(() => {
     if (!r1?.ok) return;
@@ -220,6 +233,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     // asociar a un territorio no se puede sumar a ningún lado.
     if (vueltas[vuelta]?.includes("lugar")) {
       setCandidatos(r2.municipios ?? []);
+      if (r2.departamento) setDetectado(r2.departamento);
       setVueltaAlVolver(vuelta + 1);
       setPaso("municipio");
       return;
@@ -604,7 +618,12 @@ export function Afinado({ codigo }: { codigo: string }) {
                   </button>
                 ))}
               </div>
-              <button type="button" className="pc-text-action" onClick={() => { setCandidatos([]); setDepto(""); }}>
+              {/* **Rechazar no borra el rastro.** Al decir «ninguno», el
+                  selector arrancaba en blanco y había que empezar de cero
+                  después de haber escrito dónde. Ahora queda el departamento
+                  detectado y el filtro con lo que escribió. */}
+              <button type="button" className="pc-text-action"
+                      onClick={() => { setCandidatos([]); setFiltro(lect?.lugar ?? ""); }}>
                 Ninguno de estos
               </button>
             </>
@@ -639,6 +658,12 @@ export function Afinado({ codigo }: { codigo: string }) {
                   Y **no avanza solo**. Escoger era irreversible: un toque en el
                   municipio equivocado y la persona ya no podía corregirlo.
                   Ahora dice cuál entendió y espera. */}
+              {detectado && (
+                <p className="pc-note" data-prueba="detectado">
+                  Por lo que contaste, parece <strong>{detectado.nombre}</strong>. Ya está puesto —
+                  cámbialo si no es.
+                </p>
+              )}
               <div className="pc-field">
                 <label className="pc-label" htmlFor="departamento">Departamento</label>
                 <select id="departamento" className="pc-input" value={depto}

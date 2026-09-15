@@ -8,7 +8,7 @@ import { leer, PREGUNTABLES, esTema, type Lectura, type Preguntable } from "../.
 import { precisarAporte } from "../../captura/precisar.ts";
 import { guardarGrabacion } from "../../captura/voz.ts";
 import {
-  buscarMunicipios, buscarPorNombre, departamentos, municipiosDe,
+  buscarMunicipios, buscarPorNombre, departamentos, municipiosDe, departamentoEn,
   type Candidato, type Departamento,
 } from "../../territorio/emparejar.ts";
 import { declararVoceria } from "../../captura/vocero.ts";
@@ -27,6 +27,8 @@ export type PasoAfinado =
   | {
       ok: true;
       municipios?: Candidato[];
+      /** El departamento nombrado, para no volver a preguntarlo. */
+      departamento?: Departamento | null;
       /**
        * Lo que se acaba de guardar, devuelto a la pantalla.
        *
@@ -207,7 +209,11 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
     // los confirme**. No se elige ninguno aquí: `I2` prohíbe inferir, y si el
     // texto dice «Rionegro» y nada más, hay dos y escoge ella.
     const lugar = dato("lugar");
-    const municipios = lugar ? await buscarMunicipios(lugar) : [];
+    // También se mira el departamento: si escribió «Cúcuta, Norte de
+    // Santander» con una errata en el municipio, el departamento ya está dicho.
+    const [municipios, departamento] = lugar
+      ? await Promise.all([buscarMunicipios(lugar), departamentoEn(lugar)])
+      : [[], null];
 
     const resultado = dato("resultadoEsperado");
     const solucion = dato("solucionSugerida");
@@ -221,7 +227,7 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
       await confirmarSintesis({ aporteId, autor: "ciudadano" });
     }
     return {
-      ok: true, municipios,
+      ok: true, municipios, departamento,
       precisado: {
         lugar, afectados: dato("afectados"), desdeCuando: dato("desdeCuando"),
         resultadoEsperado: resultado, solucionSugerida: solucion,
@@ -245,7 +251,19 @@ export async function guardarPrecisiones(_previo: PasoAfinado | null, datos: For
  * eso», quede registrado *qué* le habíamos propuesto: una corrección sin el
  * texto corregido al lado no se puede leer después.
  */
-export type LecturaPreparada = { lectura: Lectura; municipios: Candidato[] };
+export type LecturaPreparada = {
+  lectura: Lectura;
+  municipios: Candidato[];
+  /**
+   * El departamento que la persona nombró, si lo nombró.
+   *
+   * No resuelve nada por sí solo —hace falta el municipio— pero **evita volver
+   * a preguntar lo que ya dijo**: si el relato dice «Norte de Santander» y el
+   * municipio viene con una errata, el selector arranca con el departamento
+   * puesto en vez de en blanco.
+   */
+  departamento: Departamento | null;
+};
 
 export async function prepararLectura(codigo: string): Promise<LecturaPreparada | null> {
   try {
@@ -271,8 +289,12 @@ export async function prepararLectura(codigo: string): Promise<LecturaPreparada 
     // Se busca el municipio **en el relato entero**, no solo en el fragmento que
     // el modelo marcó como lugar: alguien puede nombrar su municipio en mitad de
     // una frase que habla de otra cosa.
-    const municipios = await buscarMunicipios(`${c.relato} ${lectura.lugar ?? ""}`);
-    return { lectura, municipios };
+    const texto = `${c.relato} ${lectura.lugar ?? ""}`;
+    const [municipios, departamento] = await Promise.all([
+      buscarMunicipios(texto),
+      departamentoEn(texto),
+    ]);
+    return { lectura, municipios, departamento };
   } catch (e) {
     console.error("prepararLectura", e);
     return null;

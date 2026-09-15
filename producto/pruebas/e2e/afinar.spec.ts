@@ -717,3 +717,36 @@ test("una vuelta no borra lo que la persona escribió en la anterior", async ({ 
   await expect(registrado).toContainText("techarlas y hacerles mantenimiento", { timeout: 15_000 });
   await expect(registrado).toContainText("que las arreglen antes del invierno");
 });
+
+test("el departamento que nombró llega puesto en el selector", async ({ page }) => {
+  // Salió de un caso real: la persona escribió «en cucuta norte de sarntander»
+  // —con errata— dentro del relato. El municipio se resolvió, pero si hubiera
+  // dicho «ninguno de estos» el selector arrancaba en blanco: le tocaba
+  // escoger entre 1.122 municipios justo después de haber escrito dónde vive.
+  //
+  // Detectar algo y no usarlo es peor que no detectarlo: se le pide dos veces
+  // lo mismo.
+  await contar(page, "el agua llega negra y con olor raro");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  // Escribe el departamento en «¿dónde ocurre?», con el municipio mal escrito.
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+  await v2.locator("#lugar").fill("un barrio de cucutta, norte de santander");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+
+  // Si salieron candidatos, se rechazan para llegar al selector.
+  const ninguno = mun.getByRole("button", { name: /ninguno de estos/i });
+  if (await ninguno.isVisible().catch(() => false)) await ninguno.click();
+
+  // El departamento viene puesto, y se dice de dónde salió: un campo que se
+  // rellena solo sin explicación se lee como un dato que metió alguien.
+  await expect(page.locator("[data-prueba='detectado']")).toContainText(/NORTE DE SANTANDER/i);
+  await expect(mun.locator("#departamento")).toHaveValue(/^\d\d$/);
+  // Y sus municipios ya están cargados: escoger deja de ser buscar entre 1.122.
+  await expect(mun.locator("#filtro-municipio")).toBeVisible();
+});

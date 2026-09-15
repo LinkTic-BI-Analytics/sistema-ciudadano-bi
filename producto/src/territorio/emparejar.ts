@@ -220,3 +220,25 @@ export async function municipiosDe(departamento: string): Promise<Candidato[]> {
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
     .map((m) => ({ codigo: m.codigo, version: m.version, nombre: m.nombre, departamento: m.departamento }));
 }
+
+
+/**
+ * El departamento que la persona nombró, si nombró alguno.
+ *
+ * Sirve cuando el municipio no se puede resolver: si el relato dice «Norte de
+ * Santander» pero el municipio viene con una errata, **el departamento ya está
+ * dicho** y no hay por qué volver a preguntarlo. Empezar el selector en blanco
+ * después de que alguien acaba de escribir dónde vive tira el rastro.
+ *
+ * Se busca el nombre más largo que encaje: «Norte de Santander» antes que
+ * «Santander», que es subcadena suya y está a 500 km.
+ */
+export async function departamentoEn(texto: string): Promise<Departamento | null> {
+  const t = plano(texto);
+  if (t.length < 4) return null;
+
+  const encontrados = (await departamentos())
+    .filter((d) => contiene(t, plano(d.nombre)))
+    .sort((a, b) => b.nombre.length - a.nombre.length);
+  return encontrados[0] ?? null;
+}

@@ -126,3 +126,11 @@ test("de lo macro a lo micro: 33 departamentos y sus municipios", async () => {
   const amazonas = d.find((x) => x.nombre === "AMAZONAS")!;
   assert.ok((await municipiosDe(amazonas.codigo)).some((x) => x.nombre === "LETICIA"));
 });
+
+test("el departamento nombrado se reconoce, y gana el nombre más largo", async () => {
+  const { departamentoEn } = await import("../src/territorio/emparejar.ts");
+  // «Norte de Santander» contiene «Santander», que es otro departamento a 500 km.
+  assert.equal((await departamentoEn("vivo en cucuta norte de santander"))?.nombre, "NORTE DE SANTANDER");
+  assert.equal((await departamentoEn("en bucaramanga santander"))?.nombre, "SANTANDER");
+  assert.equal(await departamentoEn("en la vereda de arriba"), null);
+});
