@@ -1,8 +1,8 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { clienteServidor } from "../../datos/cliente.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { direccionDe, qrDe } from "../../convocatoria/enlaces.ts";
-import { Campo, Opciones } from "../consola/campos.tsx";
 import { CrearEncuentro, GenerarEnlace } from "./formularios.tsx";
 
 // Administración de encuentros y materiales (`M06` · `RF10` · `QR-01`).
@@ -58,8 +58,8 @@ export default async function Administracion() {
         <aside className="bo-sidebar">
           <div className="bo-brand">Administración</div>
           <p className="bo-nav-label">Convocatoria</p>
-          <a className="bo-link" href="/administracion">Encuentros y materiales</a>
-          <a className="bo-link" href="/consola">Bandeja de revisión</a>
+          <Link className="bo-link" href="/administracion">Encuentros y materiales</Link>
+          <Link className="bo-link" href="/consola">Bandeja de revisión</Link>
           <div className="bo-sidebar-bottom">
             <p className="bo-small">
               <strong>Sin permisos.</strong> El módulo exige actor autorizado para publicar;
@@ -174,7 +174,3 @@ export default async function Administracion() {
     </div>
   );
 }
-
-// Reexportados para que los formularios de cliente usen los mismos campos con
-// etiqueta que la consola, en vez de una segunda versión que se desincroniza.
-export { Campo, Opciones };

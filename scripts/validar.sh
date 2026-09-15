@@ -215,6 +215,20 @@ else
   saltó "Playwright no está listo"
 fi
 
+# CHEQUEO: el producto compila de verdad
+# Se ve fallar: poner un <a href="/consola"> en vez de un <Link> en una pantalla
+#
+# `tsc` y los recorridos no lo atrapan: el servidor de desarrollo sirve páginas
+# que la compilación rechaza. Dos veces seguidas el producto se dio por bueno y
+# no compilaba —un `<a>` entre páginas y un `export` que Next no admite—, y se
+# supo al ir a levantarlo.
+if [ -d producto ]; then
+  (cd producto && npm run build) >/tmp/bld.$$ 2>&1 \
+    && ok "el producto compila" \
+    || { mal "el producto no compila"; grep -A3 'Failed to compile' /tmp/bld.$$ | head -6 | sed 's/^/          /'; }
+  rm -f /tmp/bld.$$
+fi
+
 # CHEQUEO: los tipos del producto
 # Se ve fallar: indexa un arreglo sin comprobar, con noUncheckedIndexedAccess puesto
 if [ -f producto/package.json ]; then
