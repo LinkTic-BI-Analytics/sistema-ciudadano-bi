@@ -215,6 +215,19 @@ else
   saltó "Playwright no está listo"
 fi
 
+# CHEQUEO: nada que se guarde se queda sin que alguien lo lea
+# Se ve fallar: añadir una columna a `aporte` y no usarla en ninguna pantalla
+#
+# Salió de una ficha de revisión que mostraba cinco de las diez cosas que la
+# persona había contestado. No falla nada cuando pasa: la columna existe, el
+# `insert` funciona y las pruebas pasan. Solo que le pedimos su tiempo para nada.
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase_db_participacion; then
+  python3 scripts/lib/datos_huerfanos.py . >/tmp/dh.$$ 2>&1 \
+    && ok "$(grep -o 'todo lo que.*' /tmp/dh.$$ | tail -1)" \
+    || { mal "hay datos guardados que nadie lee"; grep FALLA /tmp/dh.$$ | head -4 | sed 's/^/          /'; }
+  rm -f /tmp/dh.$$
+fi
+
 # CHEQUEO: el producto compila de verdad
 # Se ve fallar: poner un <a href="/consola"> en vez de un <Link> en una pantalla
 #

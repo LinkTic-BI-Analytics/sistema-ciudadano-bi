@@ -7,6 +7,15 @@ export type Consulta = {
   lugarDeclarado: string | null;
   estadoUbicacion: string | null;
   recibidoEn: string;
+  /** Lo que precisó después de contar. Es suyo y tiene derecho a verlo. */
+  afectados: string | null;
+  desdeCuando: string | null;
+  canal: string;
+  /** Solo si alguien lo aceptó. El declarado no se devuelve como si lo fuera. */
+  municipio: string | null;
+  colectivo: string | null;
+  /** La versión vigente de la síntesis, que es la que manda. */
+  sintesis: string | null;
 };
 
 /**
@@ -64,5 +73,11 @@ export async function canjearComprobante(
     lugarDeclarado: fila.lugar_declarado,
     estadoUbicacion: fila.estado_ubicacion,
     recibidoEn: fila.recibido_en,
+    afectados: fila.afectados,
+    desdeCuando: fila.desde_cuando,
+    canal: fila.canal,
+    municipio: fila.municipio,
+    colectivo: fila.colectivo,
+    sintesis: fila.sintesis,
   };
 }

@@ -41,9 +41,26 @@ export function Consultar() {
         <section className="pc-summary-item" aria-live="polite">
           <h2 className="pc-summary-head">Esto fue lo que nos contaste</h2>
           <p className="pc-summary-text" data-prueba="relato">{r.relato}</p>
-          {r.lugarDeclarado && (
-            <p className="pc-meta">Dónde dijiste que ocurre: {r.lugarDeclarado}</p>
+          {r.canal === "voz_transcrita" && (
+            // Que sepa que lo suyo entró hablando: el texto de arriba es lo que
+            // entendió una máquina, y su grabación es el original (ADR 0013).
+            <p className="pc-meta">
+              Lo contaste hablando. <strong>Tu grabación es el original</strong>; lo de arriba es
+              lo que entendimos de ella.
+            </p>
           )}
+
+          {/* **Todo lo que quedó registrado, devuelto.** Antes solo veía el
+              relato y el lugar, y había contestado el doble. No poder ver lo
+              que uno mismo contó es lo que hace dejar de creer que sirvió. */}
+          <dl className="pc-detail-facts" data-prueba="lo-registrado">
+            {r.municipio && (<><dt>Municipio</dt><dd>{r.municipio}</dd></>)}
+            {r.lugarDeclarado && (<><dt>Dónde dijiste que ocurre</dt><dd>{r.lugarDeclarado}</dd></>)}
+            {r.afectados && (<><dt>A quiénes les pasa</dt><dd>{r.afectados}</dd></>)}
+            {r.desdeCuando && (<><dt>Desde cuándo</dt><dd>{r.desdeCuando}</dd></>)}
+            {r.colectivo && (<><dt>Dijiste hablar por</dt><dd>{r.colectivo}</dd></>)}
+            {r.sintesis && (<><dt>Lo que quedó escrito</dt><dd>{r.sintesis}</dd></>)}
+          </dl>
           <p className="pc-status">{COMO_VA[r.estadoUbicacion ?? ""] ?? "Está en revisión."}</p>
           <p className="pc-help">
             Que esté registrado no significa que se haya resuelto ni que haya un compromiso de

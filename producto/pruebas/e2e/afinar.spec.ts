@@ -580,3 +580,42 @@ test("si el segundo problema es en otra parte, se pregunta de nuevo", async ({ p
   await expect(page.locator("[data-prueba='vuelta-2']").locator("#lugar"))
     .toBeVisible({ timeout: 15_000 });
 });
+
+test("la persona puede ver TODO lo que quedó registrado suyo", async ({ page }) => {
+  // Antes solo veía el relato y el lugar, y había contestado el doble. No poder
+  // ver lo que uno mismo contó es lo que hace dejar de creer que sirvió de algo.
+  const marca = `registrado-${Date.now()}`;
+  await contar(page, `${marca}: no hay agua en la escuela`);
+  const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("la vereda El Salado");
+  await v2.locator("#afectados").fill("unas veinte familias");
+  await v2.locator("#desdeCuando").fill("desde hace dos meses");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await page.locator("[data-prueba='vuelta-3']").locator("#resultadoEsperado")
+    .fill("que vuelva el agua a la escuela");
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const voz = page.locator("[data-prueba='voceria']");
+  await voz.getByRole("button", { name: /hablo por un grupo/i }).click();
+  await voz.locator("#grupo").fill("la junta de acción comunal");
+  await voz.getByRole("button", { name: /^listo$/i }).click();
+  await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto("/mis-aportes");
+  await page.fill("#codigo", codigo);
+  await page.getByRole("button", { name: /consultar/i }).click();
+
+  const registrado = page.locator("[data-prueba='lo-registrado']");
+  await expect(registrado).toBeVisible({ timeout: 15_000 });
+  await expect(registrado).toContainText("RIONEGRO");
+  await expect(registrado).toContainText("El Salado");
+  await expect(registrado).toContainText("veinte familias");
+  await expect(registrado).toContainText("dos meses");
+  await expect(registrado).toContainText("junta de acción comunal");
+  await expect(registrado).toContainText("que vuelva el agua");
+});

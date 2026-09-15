@@ -41,6 +41,13 @@ export default async function Administracion() {
     .select("id, titulo, tema, modalidad, comienza_en, zona_horaria, lugar, sala, estado")
     .eq("proceso_id", procesoId).order("comienza_en");
 
+  // Desde cuándo está publicada. El módulo dice que «publicación y cambios de
+  // fase deben tener versión y fundamento», y quien va a colgar un encuentro
+  // necesita saber a qué convocatoria lo está colgando y desde cuándo recibe.
+  const { data: convocatoria } = await p.from("convocatoria")
+    .select("nombre, publicada_en, cierra_en").eq("proceso_id", procesoId)
+    .eq("estado", "publicada").order("abre_en", { ascending: false }).limit(1).maybeSingle();
+
   const { data: enlaces } = await p.from("enlace")
     .select("id, encuentro_id, pieza, estado, utm_source, utm_medium, utm_campaign, creado_por")
     .eq("proceso_id", procesoId).order("creado_en", { ascending: false });
@@ -79,8 +86,17 @@ export default async function Administracion() {
           <main className="bo-main">
             <section className="bo-section-head">
               <h1>Crear un encuentro</h1>
+              {convocatoria && (
+                <p className="bo-observation">
+                  Cuelga de «{convocatoria.nombre}», publicada el{" "}
+                  {cuando(convocatoria.publicada_en, "America/Bogota")}
+                  {convocatoria.cierra_en
+                    ? <> · recibe aportes hasta el {cuando(convocatoria.cierra_en, "America/Bogota")}</>
+                    : <> · sin fecha de cierre</>}
+                </p>
+              )}
               <p className="bo-muted">
-                Cuelga de la convocatoria publicada. Sale en la portada en cuanto se crea:
+                Sale en la portada en cuanto se crea:
                 <strong> no hay borrador todavía</strong>, y eso es una carencia, no una decisión.
               </p>
             </section>

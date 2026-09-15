@@ -69,16 +69,33 @@ create or replace function participacion.canjear_comprobante(
   relato           text,
   lugar_declarado  text,
   estado_ubicacion text,
-  recibido_en      timestamptz
-)
-language sql
-security definer
-set search_path = identidad, participacion, pg_temp
-as $$
+  recibido_en      timestamptz,
+  -- Lo que la persona precisó, devuelto **a ella misma**. No es filtrar nada:
+  -- es su aporte, y no poder ver lo que uno mismo contó es lo que hace que la
+  -- gente deje de creer que sirvió de algo.
+  afectados        text,
+  desde_cuando     text,
+  canal            text,
+  municipio        text,
+  colectivo        text,
+  sintesis         text
+) language sql security definer set search_path = identidad, participacion, pg_temp as $$
   select a.id, a.relato_original, a.lugar_declarado,
          (select ub.estado from participacion.ubicacion ub
            where ub.aporte_id = a.id order by ub.creada_en desc limit 1),
-         a.recibido_en
+         a.recibido_en,
+         a.afectados, a.desde_cuando, a.canal,
+         -- El municipio **solo si alguien lo aceptó**. Mostrar el declarado
+         -- como si fuera el aceptado sería la inferencia que `I2` prohíbe, y
+         -- aquí además se la estaríamos devolviendo a ella como un hecho.
+         (select t.nombre from participacion.ubicacion ub
+            join participacion.territorio t
+              on t.codigo = ub.territorio_codigo and t.version = ub.territorio_version
+           where ub.aporte_id = a.id and ub.estado = 'confirmada' limit 1),
+         a.colectivo_declarado,
+         -- La síntesis vigente: la última versión, que es la que manda.
+         (select s.texto from participacion.sintesis s
+           where s.aporte_id = a.id order by s.version desc limit 1)
   from identidad.comprobante c
   join participacion.aporte a on a.id = c.aporte_id
   where c.codigo_hash = p_hash

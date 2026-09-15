@@ -21,7 +21,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const p = clienteServidor().schema("participacion");
 
   const { data: a } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision")
+    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas")
     .eq("id", aporteId).single();
   if (!a) return <div className="pc-backoffice"><p className="bo-empty">No existe ese aporte.</p></div>;
 
@@ -33,6 +33,28 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const { data: alerta } = await p.from("alerta")
     .select("origen, indicio, orientacion_mostrada_en, contacto_intentado_en, recepcion_confirmada_en, devuelta_en")
     .eq("aporte_id", aporteId).maybeSingle();
+  // Las versiones de la transcripción, si habló. **Es el corazón del ADR
+  // 0013**: sin poder comparar lo que oyó la máquina con lo que corrigió la
+  // persona, guardar el audio no sirve de nada.
+  const transcripciones = a?.grabacion_id
+    ? (await p.from("transcripcion")
+        .select("version, texto, autor, motivo, creada_en")
+        .eq("grabacion_id", a.grabacion_id).order("version")).data ?? []
+    : [];
+
+  // El contexto del enlace (`QR-03`): de dónde vino y en qué evento dice
+  // participar. Son cosas distintas y el revisor tiene que verlas separadas.
+  const enlace = a?.enlace_id
+    ? (await p.from("enlace").select("id, pieza, encuentro_id, utm_source, utm_medium, utm_campaign")
+        .eq("id", a.enlace_id).maybeSingle()).data
+    : null;
+  const encuentros = (enlace || a?.evento_confirmado_id)
+    ? (await p.from("encuentro").select("id, titulo, comienza_en")
+        .in("id", [enlace?.encuentro_id, a?.evento_confirmado_id].filter(Boolean) as string[])).data ?? []
+    : [];
+  const tituloDe = (id: string | null | undefined) =>
+    encuentros.find((e) => e.id === id)?.titulo ?? null;
+
   const { data: mun } = await p.from("territorio")
     .select("codigo, version, nombre, departamento:padre")
     .eq("nivel", "municipio").order("nombre").limit(1200);
@@ -124,6 +146,84 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       </p>
                     ))}
                 </section>
+
+                {a.canal === "voz_transcrita" && (
+                  <section className="bo-history-section" data-prueba="grabacion">
+                    <h2>Lo contó hablando</h2>
+                    {/* **El audio es el original** (ADR 0013). El texto de
+                        arriba es la lectura de una máquina, y las máquinas se
+                        equivocan con los nombres de veredas: en la primera
+                        prueba «La Martinita» volvió como «La Martinica». */}
+                    <p className="bo-small">
+                      <strong>El original es la grabación</strong>, no el texto. Escúchala antes de
+                      dar por buena una vereda, una cantidad o un «no».
+                    </p>
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <audio controls preload="none" src={`/consola/audio/${aporteId}`} style={{ width: "100%" }} />
+
+                    {transcripciones.length > 0 ? (
+                      <dl className="bo-context-grid">
+                        {transcripciones.map((v) => (
+                          <div key={v.version}>
+                            <dt className="bo-small">
+                              v{v.version} · {v.autor.startsWith("modelo:")
+                                ? <>la transcribió <code>{v.autor.replace("modelo:", "")}</code></>
+                                : "la corrigió la persona"}
+                            </dt>
+                            <dd>{v.texto}{v.motivo && <span className="bo-small"> · {v.motivo}</span>}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : (
+                      <p className="bo-observation">
+                        No se entendió la grabación. <strong>El audio está ahí</strong> y se puede
+                        transcribir otra vez cuando haya con qué.
+                      </p>
+                    )}
+                  </section>
+                )}
+
+                {(enlace || a.evento_confirmado_id) && (
+                  <section className="bo-history-section" data-prueba="contexto">
+                    <h2>De dónde llegó</h2>
+                    {/* `QR-03` obliga a distinguir tres cosas que la gente
+                        mezcla. Juntarlas haría creer que quien escaneó el
+                        afiche de A asistió a A. */}
+                    <dl className="bo-context-grid">
+                      {enlace && (
+                        <div>
+                          <dt className="bo-small">Enlace por el que entró</dt>
+                          <dd>
+                            <code>{enlace.id}</code> · pieza «{enlace.pieza}»
+                            {tituloDe(enlace.encuentro_id) && <> · apuntaba a «{tituloDe(enlace.encuentro_id)}»</>}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="bo-small">Evento en el que dice participar</dt>
+                        <dd>
+                          {a.evento_confirmado_id
+                            ? tituloDe(a.evento_confirmado_id) ?? "un encuentro que ya no está"
+                            : <span className="bo-muted">ninguno</span>}
+                          {" · "}<span className="bo-muted">{a.estado_contexto}</span>
+                        </dd>
+                      </div>
+                      {a.utms_recibidas && (
+                        <div>
+                          <dt className="bo-small">Difusión declarada en la dirección</dt>
+                          <dd>
+                            <code>{JSON.stringify(a.utms_recibidas)}</code>{" "}
+                            <span className="bo-muted">— pudo venir alterada; no da permisos</span>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                    <p className="bo-small">
+                      <strong>Nada de esto es asistencia.</strong> Abrir un enlace no prueba que
+                      alguien estuviera en ningún sitio: pudo reenviárselo otra persona.
+                    </p>
+                  </section>
+                )}
 
                 {(sint?.length ?? 0) > 0 && (
                   <section className="bo-synthesis">
