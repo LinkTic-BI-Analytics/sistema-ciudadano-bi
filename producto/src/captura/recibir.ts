@@ -16,6 +16,13 @@ export type EntradaAporte = {
    * (ADR 0013), y la base rechaza un aporte por voz sin ella.
    */
   grabacionId?: string;
+  /** De dónde vino el enlace (`QR-03`). Nunca se reescribe. */
+  enlaceId?: string | null;
+  /** En qué evento dice participar. Puede ser otro, o ninguno. */
+  eventoConfirmadoId?: string | null;
+  estadoContexto?: "confirmado" | "cambiado" | "sin_evento" | null;
+  /** Lo que llegó en la dirección, ya limpio. Describe difusión; no da permisos. */
+  utms?: Record<string, string> | null;
 };
 
 export type ResultadoAporte = {
@@ -64,6 +71,10 @@ export async function recibirAporte(entrada: EntradaAporte): Promise<ResultadoAp
         canal: entrada.canal,
         lugar_declarado: entrada.lugarDeclarado ?? null,
         grabacion_id: entrada.grabacionId ?? null,
+        enlace_id: entrada.enlaceId ?? null,
+        evento_confirmado_id: entrada.eventoConfirmadoId ?? null,
+        estado_contexto: entrada.estadoContexto ?? "sin_resolver",
+        utms_recibidas: entrada.utms ?? null,
       },
       { onConflict: "proceso_id,clave_envio", ignoreDuplicates: true },
     )

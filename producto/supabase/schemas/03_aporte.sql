@@ -57,6 +57,32 @@ create table participacion.aporte (
   constraint la_voz_exige_grabacion
     check ((canal = 'voz_transcrita') = (grabacion_id is not null)),
 
+  -- El contexto del enlace (`QR-03`), en columnas separadas a propósito.
+  --
+  -- `enlace_id` dice **de dónde vino**; `evento_confirmado_id`, **en qué evento
+  -- dice la persona que participa**; y `lugar_declarado`, más arriba, **dónde
+  -- ocurre el problema**. Los tres pueden ser distintos y juntarlos en uno solo
+  -- es lo que haría creer que quien escaneó el afiche de A asistió a A.
+  --
+  -- El evento de origen no se guarda: sale del enlace. «El vínculo registrado
+  -- del enlace determina su evento de origen», y duplicarlo abriría la puerta a
+  -- que los dos dijeran cosas distintas.
+  enlace_id           text references participacion.enlace (id),
+  evento_confirmado_id uuid references participacion.encuentro (id),
+
+  -- **Abrir un enlace no confirma contexto.** Nace sin resolver, y solo la
+  -- persona lo mueve.
+  estado_contexto     text not null default 'sin_resolver'
+                      check (estado_contexto in ('confirmado','cambiado','sin_evento','sin_resolver')),
+  constraint contexto_con_evento check (
+    (estado_contexto in ('confirmado','cambiado')) = (evento_confirmado_id is not null)
+  ),
+
+  -- Lo que llegó en la dirección, tal cual y ya validado. Se guarda aparte de
+  -- las UTMs configuradas del enlace porque **no son lo mismo**: estas pueden
+  -- venir alteradas, y una alterada no cambia el evento registrado.
+  utms_recibidas      jsonb,
+
   es_colectivo        boolean not null default false,
   colectivo_declarado text,
   constraint colectivo_con_nombre

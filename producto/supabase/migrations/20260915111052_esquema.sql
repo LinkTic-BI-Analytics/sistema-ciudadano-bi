@@ -212,6 +212,32 @@ create table participacion.aporte (
   constraint la_voz_exige_grabacion
     check ((canal = 'voz_transcrita') = (grabacion_id is not null)),
 
+  -- El contexto del enlace (`QR-03`), en columnas separadas a propósito.
+  --
+  -- `enlace_id` dice **de dónde vino**; `evento_confirmado_id`, **en qué evento
+  -- dice la persona que participa**; y `lugar_declarado`, más arriba, **dónde
+  -- ocurre el problema**. Los tres pueden ser distintos y juntarlos en uno solo
+  -- es lo que haría creer que quien escaneó el afiche de A asistió a A.
+  --
+  -- El evento de origen no se guarda: sale del enlace. «El vínculo registrado
+  -- del enlace determina su evento de origen», y duplicarlo abriría la puerta a
+  -- que los dos dijeran cosas distintas.
+  enlace_id           text references participacion.enlace (id),
+  evento_confirmado_id uuid references participacion.encuentro (id),
+
+  -- **Abrir un enlace no confirma contexto.** Nace sin resolver, y solo la
+  -- persona lo mueve.
+  estado_contexto     text not null default 'sin_resolver'
+                      check (estado_contexto in ('confirmado','cambiado','sin_evento','sin_resolver')),
+  constraint contexto_con_evento check (
+    (estado_contexto in ('confirmado','cambiado')) = (evento_confirmado_id is not null)
+  ),
+
+  -- Lo que llegó en la dirección, tal cual y ya validado. Se guarda aparte de
+  -- las UTMs configuradas del enlace porque **no son lo mismo**: estas pueden
+  -- venir alteradas, y una alterada no cambia el evento registrado.
+  utms_recibidas      jsonb,
+
   es_colectivo        boolean not null default false,
   colectivo_declarado text,
   constraint colectivo_con_nombre
@@ -1065,6 +1091,49 @@ returns boolean language sql immutable as $$
      and c.abre_en <= now()
      and (c.cierra_en is null or c.cierra_en > now());
 $$;
+
+-- ═══ 16_enlace.sql ═══
+-- Enlaces y QR por evento y por pieza (`QR-01` … `QR-04`).
+--
+-- La clave del requerimiento, dicha en su primera página:
+--
+--   > separar **de dónde vino el enlace**, **en qué evento dice participar la
+--   > persona** y **dónde ocurre el problema que está reportando**. Estos datos
+--   > pueden ser distintos y los tres son útiles.
+--
+-- Todo lo de abajo existe para que esos tres no se confundan nunca. El caso que
+-- lo explica: alguien recibe reenviado el QR del evento A mientras está en el
+-- evento B, y cuenta un problema de una vereda del municipio C. **Es un solo
+-- aporte con tres contextos distintos**, y ninguno de ellos es asistencia.
+
+create table participacion.enlace (
+  -- Corto y estable: va impreso en un afiche y se teclea a mano cuando la
+  -- cámara no lee. Por eso es `text` y no un uuid.
+  id            text primary key check (id ~ '^[A-Z0-9]{6,12}$'),
+  proceso_id    uuid not null references participacion.proceso (id),
+  encuentro_id  uuid not null references participacion.encuentro (id),
+
+  -- Afiche y publicación digital del mismo encuentro se distinguen **sin
+  -- dividir el evento**: son piezas, no eventos distintos.
+  pieza         text not null
+                check (pieza in ('afiche','volante','publicacion','radio','otro')),
+
+  -- Las UTMs describen difusión y **no otorgan permisos**. Se guardan las
+  -- configuradas, que es distinto de las recibidas: las de abajo son lo que
+  -- alguien puso en la dirección, y pueden venir manipuladas.
+  utm_source    text,
+  utm_medium    text,
+  utm_campaign  text,
+  utm_content   text,
+
+  -- Retirar un enlace le quita el acceso, pero **no borra los aportes que
+  -- entraron por él** ni su procedencia. Puede seguir explicando qué pasó.
+  estado        text not null default 'activo' check (estado in ('activo','retirado')),
+  creado_por    text not null,
+  creado_en     timestamptz not null default now()
+);
+
+create index on participacion.enlace (encuentro_id);
 
 -- ═══ 99_acceso.sql ═══
 -- El acceso, en su versión mínima: **negar por defecto**.

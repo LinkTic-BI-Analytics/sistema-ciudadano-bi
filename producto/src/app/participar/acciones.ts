@@ -73,6 +73,13 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
   // Si habló, el aporte apunta a la grabación: **es el original** (ADR 0013).
   const grabacionId = String(datos.get("grabacion") ?? "").trim() || undefined;
 
+  // El contexto del QR (`QR-03`), en columnas separadas: de dónde vino el
+  // enlace, en qué evento dice participar, y —más adelante— dónde ocurre el
+  // problema. Los tres pueden ser distintos.
+  const enlaceId = String(datos.get("enlace") ?? "").trim() || null;
+  const eventoConfirmado = String(datos.get("eventoConfirmado") ?? "").trim() || null;
+  const estadoContexto = String(datos.get("estadoContexto") ?? "").trim() || null;
+
   const errores: string[] = [];
   if (!relato) errores.push("Cuéntanos qué está pasando. Es lo único que necesitamos para empezar.");
   if (!clave) errores.push("Algo falló al preparar el envío. Recarga la página e inténtalo de nuevo.");
@@ -85,6 +92,9 @@ export async function enviarAporte(_previo: Resultado | null, datos: FormData): 
       relato,
       canal: grabacionId ? "voz_transcrita" : "web",
       grabacionId,
+      enlaceId, eventoConfirmadoId: eventoConfirmado,
+      estadoContexto: estadoContexto as never,
+      utms: (() => { try { return JSON.parse(String(datos.get("utms") ?? "null")); } catch { return null; } })(),
       lugarDeclarado: lugar || undefined,
     });
     // **Aquí no se llama a la IA.** `IA-01` dice que la recepción no depende de

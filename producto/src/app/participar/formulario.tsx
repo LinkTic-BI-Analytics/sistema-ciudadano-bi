@@ -7,6 +7,7 @@ import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
 import { Afinado } from "./afinado.tsx";
 import { Microfono } from "./microfono.tsx";
 import { LLAVE_RELATO } from "../../captura/contexto.ts";
+import { leerContextoEvento, type ContextoEvento } from "../e/contexto.ts";
 
 export function Formulario() {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
@@ -21,6 +22,10 @@ export function Formulario() {
   // La grabación, si habló. Va con el envío: el aporte apunta a ella porque
   // **es el original** (ADR 0013).
   const [grabacion, setGrabacion] = useState("");
+  // El contexto del QR, si entró por uno. **El origen no se reescribe**: lo que
+  // la persona confirme cambia el evento, nunca de dónde vino el enlace.
+  const [evento, setEvento] = useState<ContextoEvento | null>(null);
+  useEffect(() => setEvento(leerContextoEvento()), []);
   const resumen = useRef<HTMLDivElement>(null);
   // **Se evalúa mientras escribe, no al enviar.** Alguien que está reportando un
   // derrumbe no debería tener que terminar un formulario para ver a dónde
@@ -60,6 +65,14 @@ export function Formulario() {
     <form action={accion} noValidate>
       <input type="hidden" name="clave" value={clave} readOnly />
       <input type="hidden" name="grabacion" value={grabacion} readOnly />
+      {evento && (
+        <>
+          <input type="hidden" name="enlace" value={evento.enlaceId} readOnly />
+          <input type="hidden" name="eventoConfirmado" value={evento.eventoConfirmadoId ?? ""} readOnly />
+          <input type="hidden" name="estadoContexto" value={evento.estado} readOnly />
+          <input type="hidden" name="utms" value={JSON.stringify(evento.utms ?? null)} readOnly />
+        </>
+      )}
 
       {resultado && !resultado.ok && (
         <div className="pc-error-summary" role="alert" tabIndex={-1} ref={resumen}>

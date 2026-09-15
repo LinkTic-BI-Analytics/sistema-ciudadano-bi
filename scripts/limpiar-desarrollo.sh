@@ -16,6 +16,16 @@ set -euo pipefail
 C=${DB_CONTENEDOR:-supabase_db_participacion}
 docker exec -i "$C" psql -U postgres -d postgres -qAt <<'SQL'
 begin;
+-- Los encuentros que crean los recorridos, y sus materiales. La agenda
+-- sembrada se queda: sin ella la portada no tiene qué mostrar.
+--
+-- Hace falta por lo mismo que la limpieza de aportes: la portada muestra seis
+-- encuentros y las corridas acumulan, así que el recién creado se salía de la
+-- lista y la prueba fallaba sin que nada estuviera roto.
+delete from participacion.enlace
+ where encuentro_id in (select id from participacion.encuentro where titulo like 'Mesa de prueba%');
+delete from participacion.encuentro where titulo like 'Mesa de prueba%';
+
 delete from participacion.prioridad_examen;
 delete from participacion.actuacion;
 delete from participacion.alerta;
@@ -27,6 +37,9 @@ delete from participacion.ubicacion;
 delete from identidad.comprobante;
 delete from identidad.contacto;
 delete from participacion.aporte;
+delete from participacion.enlace;
+delete from participacion.transcripcion;
+delete from participacion.grabacion;
 -- La auditoría NO se borra: es append-only por regla y eso es la invariante.
 -- Por eso los procesos de prueba se retiran en vez de borrarse.
 update participacion.proceso
