@@ -100,7 +100,17 @@ export default async function Administracion() {
                 <strong> no hay borrador todavía</strong>, y eso es una carencia, no una decisión.
               </p>
             </section>
-            <CrearEncuentro />
+            {convocatoria ? <CrearEncuentro /> : (
+              // **No se ofrece lo que va a fallar.** Sin convocatoria publicada
+              // el formulario se podía llenar entero y reventaba al enviarlo.
+              // Un encuentro cuelga de una convocatoria: sin ella no hay a qué.
+              <p className="bo-empty" data-prueba="sin-convocatoria">
+                <strong>No hay convocatoria publicada.</strong> Un encuentro cuelga de una
+                convocatoria, así que primero hay que publicar una — y eso todavía se hace por
+                guion (<code>scripts/sembrar-agenda.sh</code>), porque publicar exige actor
+                autorizado y eso es <code>T032</code>.
+              </p>
+            )}
 
             <section className="bo-history-section">
               <h2>Encuentros</h2>

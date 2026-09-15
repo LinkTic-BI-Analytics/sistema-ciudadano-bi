@@ -100,16 +100,24 @@ export default async function Consola({
               // lo que pide la especificación. Una lista vacía sin decir por
               // qué parece un error del sistema.
               <p className="bo-empty" data-prueba="sin-resultados">
-                {texto || ubicacion !== "todos" ? (
+                {/* **Vacío no es lo mismo que sin coincidencias.** Con la base
+                    en blanco decía «ninguno coincide con lo que estás
+                    buscando», que manda a alguien a revisar un filtro cuando lo
+                    que pasa es que no ha llegado nada. Solo se ve probando en
+                    blanco, y probar en blanco casi nunca se hace. */}
+                {(totalAportes ?? 0) === 0 ? (
+                  <>
+                    No ha llegado ningún aporte todavía. Manda uno desde{" "}
+                    <Link className="bo-link" href="/participar">/participar</Link> para ver cómo
+                    se ve la bandeja.
+                  </>
+                ) : texto || ubicacion !== "todos" ? (
                   <>
                     Ningún aporte coincide con lo que estás buscando.{" "}
                     <Link className="bo-link" href="/consola?ubicacion=todos">Ver todos</Link>.
                   </>
                 ) : (
-                  <>
-                    No ha llegado ningún aporte. Si acabas de sembrar la base, manda uno desde{" "}
-                    <Link className="bo-link" href="/participar">/participar</Link>.
-                  </>
+                  <>Ningún aporte está por aclarar. Están todos ubicados.</>
                 )}
               </p>
             ) : (

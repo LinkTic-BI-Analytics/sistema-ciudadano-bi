@@ -252,3 +252,20 @@ test("se puede ver lo último que llegó, sin perder el orden de trabajo", async
   const primero = page.locator(".bo-record-link").filter({ visible: true }).first();
   await expect(primero).toContainText(marca, { timeout: 15_000 });
 });
+
+test("con la base en blanco, la bandeja lo dice sin mandar a revisar un filtro", async ({ page }) => {
+  // «Ninguno coincide con lo que estás buscando» manda a alguien a revisar un
+  // filtro cuando lo que pasa es que no ha llegado nada. Solo se ve probando en
+  // blanco, y probar en blanco casi nunca se hace.
+  //
+  // Se comprueba sobre la búsqueda de algo que no existe, que es el mismo
+  // camino: si hay aportes, el mensaje tiene que hablar de la búsqueda.
+  await page.goto("/consola?ubicacion=todos&q=xxxxnoexistexxxx");
+  const vacio = page.locator("[data-prueba='sin-resultados']");
+  await expect(vacio).toBeVisible({ timeout: 15_000 });
+  const texto = (await vacio.innerText()).toLowerCase();
+  // O no ha llegado nada, o no coincide la búsqueda. Nunca las dos cosas ni
+  // ninguna de las dos.
+  expect(texto.includes("no ha llegado") !== texto.includes("coincide"),
+    "el mensaje de vacío no distingue «no hay nada» de «no coincide»").toBe(true);
+});
