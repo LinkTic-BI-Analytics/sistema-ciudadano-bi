@@ -200,7 +200,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     // La lectura no salió. No se pierde nada: el aporte está guardado y el
     // código es lo único que la persona necesita de nosotros.
     return (
-      <section className="pc-success" data-prueba="afinar">
+      <section className="pc-section" data-prueba="afinar">
         <h2>Recibimos lo que nos contaste</h2>
         <p className="pc-status" data-prueba="codigo" style={{ fontSize: "1.5rem", letterSpacing: "0.1em" }}>
           {codigo}
@@ -267,33 +267,41 @@ export function Afinado({ codigo }: { codigo: string }) {
 
   if (paso === "listo") {
     return (
-      <section className="pc-success" data-prueba="afinado-listo" aria-live="polite">
-        <h2>Listo. Quedó registrado con tus palabras</h2>
-        <p>Guarda este código. Con él vuelves a ver tu aporte y qué pasó con él,
-          <strong> sin dar correo ni crear una cuenta</strong>.</p>
-        <p className="pc-status" data-prueba="codigo" style={{ fontSize: "1.5rem", letterSpacing: "0.1em" }}>
-          {codigo}
-        </p>
-        <p className="pc-help">
-          Anótalo o tómale una foto. No te lo podemos volver a mostrar: en nuestro sistema solo
-          queda una huella del código, no el código.
-        </p>
-        <p className="pc-help">
-          Esto no significa que el problema esté resuelto ni que haya un compromiso de obra.
-          Significa que quedó registrado y que alguien lo va a revisar.
-        </p>
-        <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
+      <>
+        <section className="pc-section" data-prueba="afinado-listo" aria-live="polite">
+          <h2>Listo. Quedó registrado con tus palabras</h2>
+          {/* `.pc-success` es un estilo de texto, no una caja: va en la frase
+              que da la buena noticia y en nada más. Puesto en la sección teñía
+              de verde y agrandaba todo lo de dentro, avisos incluidos. */}
+          <p className="pc-success">Guarda este código.</p>
+          <p className="pc-key" data-prueba="codigo">{codigo}</p>
+          <p className="pc-help">
+            Con él vuelves a ver tu aporte y qué pasó con él, <strong>sin dar correo ni crear una
+            cuenta</strong>. Anótalo o tómale una foto: no te lo podemos volver a mostrar, porque
+            en nuestro sistema solo queda una huella del código, no el código.
+          </p>
+          <p className="pc-note">
+            Esto no significa que el problema esté resuelto ni que haya un compromiso de obra.
+            Significa que quedó registrado y que alguien lo va a revisar.
+          </p>
+          <div className="pc-actions">
+            <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
+          </div>
+        </section>
 
         {otros.length > 0 && (
-          <div data-prueba="pendientes">
-            <h3>También nos contaste esto</h3>
+          // Sección aparte, no pegada debajo del comprobante: son dos cosas
+          // distintas —tu aporte quedó / y además nos contaste esto— y juntas se
+          // leían como una sola lista de botones azules compitiendo.
+          <section className="pc-section" data-prueba="pendientes">
+            <h2>También nos contaste esto</h2>
             <p className="pc-help">
               Queda guardado en tu relato, pero <strong>como aporte aparte se puede atender
               aparte</strong>: va a otra entidad y sigue su propio camino.
             </p>
             <div className="pc-actions">
               {otros.map((x) => (
-                <button key={x} type="button" className="pc-action"
+                <button key={x} type="button" className="pc-action" data-variant="secondary"
                         onClick={() => {
                           // Va por el navegador y no por la dirección: un relato
                           // en la URL acaba en los registros del servidor.
@@ -304,14 +312,12 @@ export function Afinado({ codigo }: { codigo: string }) {
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         )}
-      </section>
+      </>
     );
   }
 
-  // Se cuenta el del municipio solo cuando existe: prometer un paso que no va a
-  // aparecer es peor que no decir cuántos hay.
   const total = 3 + vueltas.length + (candidatos.length ? 1 : 0) + (paso === "escoger" ? 1 : 0);
   const actual = paso === "entendimos" ? 2 : paso === "municipio" ? 2 + vuelta + 2 : 2 + vuelta + 1;
 

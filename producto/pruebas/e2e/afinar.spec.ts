@@ -419,3 +419,44 @@ test("si en realidad era una sola cosa, se puede decir", async ({ page }) => {
   await expect(page.locator("[data-prueba='vuelta-1']")).toBeVisible();
   await expect(page.locator("[data-prueba='escoger']")).toHaveCount(0);
 });
+
+
+test("la pantalla final no mezcla el comprobante con lo que queda por contar", async ({ page }) => {
+  // `.pc-success` es un estilo de TEXTO —verde y grande—, no una caja. Puesto
+  // en la sección teñía de verde y agrandaba todo lo de dentro, incluido el
+  // aviso de que esto no es un compromiso de obra: un aviso en verde de buena
+  // noticia se lee como lo contrario de lo que dice.
+  //
+  // Y el bloque de «también nos contaste» iba pegado debajo del comprobante,
+  // con dos botones azules compitiendo por el mismo clic.
+  await contar(page, "no hay agua en la vereda, la vía está muy mala");
+  await page.locator("[data-prueba='escoger']")
+    .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
+  // La vuelta 2 pregunta el lugar, así que el municipio viene detrás de ella.
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await salirDelMunicipio(page);
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await hablarPorMi(page);
+
+  const listo = page.locator("[data-prueba='afinado-listo']");
+  const pendientes = page.locator("[data-prueba='pendientes']");
+  await expect(listo).toBeVisible({ timeout: 15_000 });
+  await expect(pendientes).toBeVisible();
+
+  // Son dos secciones, con aire entre ellas.
+  const separacion = await pendientes.evaluate((el) => parseFloat(getComputedStyle(el).marginTop));
+  expect(separacion, "el bloque de lo pendiente va pegado al comprobante").toBeGreaterThan(24);
+
+  // El aviso no está teñido del color de la buena noticia.
+  const colores = await listo.evaluate((el) => ({
+    exito: getComputedStyle(el.querySelector(".pc-success")!).color,
+    aviso: getComputedStyle(el.querySelector(".pc-note")!).color,
+  }));
+  expect(colores.aviso, "el aviso se está pintando como buena noticia").not.toBe(colores.exito);
+
+  // Y los dos botones no compiten: el de contar otra cosa es secundario.
+  await expect(pendientes.locator(".pc-action[data-variant='secondary']").first()).toBeVisible();
+});
