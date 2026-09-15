@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { bandeja, type Filtro } from "../../revision/bandeja.ts";
-import { Filtros, Señales, DeQue, Donde, Gestion } from "./bandeja.tsx";
+import { Filtros, Señales, DeQue, Donde, Gestion, ElAporte, Rangos } from "./bandeja.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 
@@ -34,6 +34,8 @@ export default async function Consola({
   const municipio = uno("municipio");
   const tema = uno("tema");
   const gestion = uno("gestion");
+  const antiguedad = uno("antiguedad");
+  const alcance = uno("alcance");
   const soloAlerta = uno("alerta") === "1";
   // El orden de trabajo manda por defecto: el que lleva más esperando primero.
   const orden = (typeof q.orden === "string" ? q.orden : "antiguos") as Filtro["orden"];
@@ -43,6 +45,8 @@ export default async function Consola({
   const { filas, opciones, total, hayMas } = await bandeja(procesoId, {
     texto, ubicacion, orden, departamento, municipio, tema,
     gestion: (gestion || undefined) as Filtro["gestion"],
+    antiguedad: (antiguedad || undefined) as Filtro["antiguedad"],
+    alcance: (alcance || undefined) as Filtro["alcance"],
     soloAlerta,
   }, limite);
 
@@ -97,7 +101,8 @@ export default async function Consola({
             <Filtros texto={texto} ubicacion={ubicacion ?? "todos"}
                      orden={orden ?? "antiguos"} siguiente={siguiente}
                      opciones={opciones} departamento={departamento} municipio={municipio}
-                     tema={tema} gestion={gestion} soloAlerta={soloAlerta} />
+                     tema={tema} gestion={gestion} soloAlerta={soloAlerta}
+                     antiguedad={antiguedad} alcance={alcance} />
 
             {/* **Cuántos hay y cuántos se ven.** Cortar en 50 sin decirlo es
                 cómo diez aportes recién registrados se volvieron invisibles:
@@ -147,7 +152,7 @@ export default async function Consola({
                 {filas.map((f) => (
                   <li key={f.aporteId} className="bo-record-card">
                     <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
-                      {f.relato.slice(0, 90)}{f.relato.length > 90 ? "…" : ""}
+                      <ElAporte fila={f} />
                     </Link>
                     <div className="bo-card-meta"><Señales fila={f} /></div>
                     {/* **Los mismos datos que la tabla.** El sistema de diseño
@@ -156,6 +161,7 @@ export default async function Consola({
                         razón de mirar la bandeja. */}
                     <p><DeQue tema={f.tema} /> · {fecha(f.recibidoEn)}</p>
                     <p><Donde fila={f} /></p>
+                    <p><Rangos fila={f} /></p>
                     <p>
                       Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")}
                       {" · "}<Gestion fila={f} />
@@ -176,21 +182,29 @@ export default async function Consola({
                         qué le falta y si ya se escaló. «Quién lo tiene» se fue
                         porque no tenía de dónde salir — mostraba «ciudadano»,
                         que es quien confirmó el municipio, no un revisor. */}
-                    <th>Aporte</th><th>De qué</th><th>Dónde</th><th>Qué falta y gestión</th>
+                    <th>Aporte</th><th>De qué</th><th>Dónde y desde cuándo</th>
+                    <th>Qué falta y gestión</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filas.map((f) => (
                     <tr key={f.aporteId}>
                       <td>
+                        {/* Lo confirmado arriba y sus palabras debajo, en
+                            pequeño: se lee de qué va sin tener que descifrar la
+                            redacción, y el original sigue a la vista (`N03`). */}
                         <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
-                          {f.relato.slice(0, 70)}{f.relato.length > 70 ? "…" : ""}
+                          <ElAporte fila={f} />
                         </Link>
                         <p className="bo-small">{fecha(f.recibidoEn)}</p>
                         <Señales fila={f} />
                       </td>
                       <td className="bo-small"><DeQue tema={f.tema} /></td>
-                      <td className="bo-small"><Donde fila={f} /></td>
+                      <td className="bo-small">
+                        <Donde fila={f} />
+                        <br />
+                        <Rangos fila={f} />
+                      </td>
                       <td className="bo-small">
                         {f.falta.length === 0
                           ? <span className="bo-muted">no le falta nada</span>

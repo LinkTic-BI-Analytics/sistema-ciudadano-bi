@@ -28,6 +28,28 @@ export function Formulario({ claveDeReserva }: {
   // no lo borre — `direccion-visual.md` lo pide, y perder lo escrito al tocar un
   // botón es la forma más rápida de que alguien abandone.
   const [relato, setRelato] = useState("");
+  // **La caja no la controla React, y es a propósito.**
+  //
+  // Iba con `value={relato}`, y eso significa que lo que alguien escriba antes
+  // de que el navegador hidrate **se pierde**: React toma el control, ve su
+  // estado vacío y borra la caja. Quien tecleó deprisa en un teléfono lento
+  // veía «cuéntanos qué está pasando» después de haber contado.
+  //
+  // Con `defaultValue` React no pisa el DOM, así que lo escrito sobrevive. El
+  // estado sigue existiendo —lo necesita `hayIndicio` mientras escribe— pero es
+  // un espejo, no la fuente. Quien escriba ahí desde el código tiene que usar
+  // `ponerRelato`, que mueve los dos.
+  const caja = useRef<HTMLTextAreaElement>(null);
+  function ponerRelato(texto: string) {
+    setRelato(texto);
+    if (caja.current) caja.current.value = texto;
+  }
+  // Lo que ya estuviera escrito al hidratar pasa al estado: si no, la
+  // orientación de urgencia (`V13`) no vería las primeras palabras.
+  useEffect(() => {
+    const escrito = caja.current?.value;
+    if (escrito) setRelato(escrito);
+  }, []);
   // **Llega dibujada desde el servidor.** Empezaba vacía y se llenaba en el
   // primer efecto: si alguien enviaba antes de que el navegador hidratara —un
   // teléfono lento, una red mala— el campo iba vacío, el servidor rechazaba el
@@ -58,7 +80,7 @@ export function Formulario({ claveDeReserva }: {
   useEffect(() => {
     try {
       const otro = sessionStorage.getItem(LLAVE_RELATO);
-      if (otro) { setRelato(otro); sessionStorage.removeItem(LLAVE_RELATO); }
+      if (otro) { ponerRelato(otro); sessionStorage.removeItem(LLAVE_RELATO); }
     } catch { /* sin storage, la caja empieza vacía y no pasa nada */ }
   }, []);
 
@@ -125,7 +147,7 @@ export function Formulario({ claveDeReserva }: {
             // **Se añade, no se reemplaza.** Si ya había escrito algo, borrarlo
             // castiga a quien empezó a teclear y se cansó — que es justo quien
             // más necesita hablar.
-            setRelato((antes) => (antes.trim() ? `${antes.trim()}\n${texto}` : texto));
+            ponerRelato(relato.trim() ? `${relato.trim()}\n${texto}` : texto);
             setGrabacion(id);
             setModo("escribir");
           }}
@@ -136,7 +158,7 @@ export function Formulario({ claveDeReserva }: {
         <label className="pc-label" htmlFor="relato">¿Qué está pasando?</label>
         <textarea
           id="relato" name="relato" className="pc-input" rows={6}
-          value={relato} onChange={(e) => setRelato(e.target.value)}
+          ref={caja} defaultValue="" onChange={(e) => setRelato(e.target.value)}
           aria-invalid={resultado && !resultado.ok && !relato ? true : undefined}
           aria-describedby="relato-ayuda"
         />

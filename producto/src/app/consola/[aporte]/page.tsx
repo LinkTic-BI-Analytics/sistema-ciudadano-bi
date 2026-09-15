@@ -4,6 +4,9 @@ import { recurrenciaDe } from "../../../revision/recurrencia.ts";
 import { COMO_SE_LLAMA, TEMAS, type Tema } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
 import { enPartes } from "../../../revision/sintesis-en-partes.ts";
+import {
+  antiguedadDe, alcanceDe, COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE,
+} from "../../../revision/normalizar.ts";
 import { clienteServidor } from "../../../datos/cliente.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { expedientesDe } from "../../../revision/expediente.ts";
@@ -200,18 +203,32 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       gente le pasa. */}
                   <dt className="bo-small">A quiénes</dt>
                   <dd>
-                    {a.afectados
-                      ? <>«{a.afectados}»</>
-                      : <span className="bo-muted">no lo dijo · nadie se lo preguntó o no lo sabía</span>}
+                    {/* El rango primero, su frase después. El rango es una
+                        lectura nuestra para poder agrupar (`NOR-02`); lo que
+                        ella dijo es el dato, y por eso va al lado y no se
+                        sustituye. */}
+                    {a.afectados ? (
+                      <>
+                        <strong>{COMO_SE_LEE_ALCANCE[alcanceDe(a.afectados)]}</strong>
+                        <span className="bo-small"> · «{a.afectados}»</span>
+                      </>
+                    ) : (
+                      <span className="bo-muted">no lo dijo · nadie se lo preguntó o no lo sabía</span>
+                    )}
                   </dd>
 
                   <dt className="bo-small">Desde cuándo</dt>
                   <dd>
                     {/* Tal cual. «Hace tres meses» no es una fecha, y volverlo
                         una sería la inferencia que `I2` prohíbe. */}
-                    {a.desde_cuando
-                      ? <>«{a.desde_cuando}»</>
-                      : <span className="bo-muted">no lo dijo</span>}
+                    {a.desde_cuando ? (
+                      <>
+                        <strong>{COMO_SE_LEE_ANTIGUEDAD[antiguedadDe(a.desde_cuando)]}</strong>
+                        <span className="bo-small"> · «{a.desde_cuando}»</span>
+                      </>
+                    ) : (
+                      <span className="bo-muted">no lo dijo</span>
+                    )}
                   </dd>
 
                   <dt className="bo-small">Cuántos más como este</dt>

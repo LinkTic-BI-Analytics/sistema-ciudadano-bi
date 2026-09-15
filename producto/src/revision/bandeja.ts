@@ -1,4 +1,6 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import { antiguedadDe, alcanceDe, type Antiguedad, type Alcance } from "./normalizar.ts";
+import { enPartes } from "./sintesis-en-partes.ts";
 
 /**
  * La bandeja de revisión (`backoffice-especificacion.md` · «Bandeja de aportes»).
@@ -27,6 +29,24 @@ export type Señal = "voz" | "grupo" | "urgencia" | "evento";
 export type FilaBandeja = {
   aporteId: string;
   relato: string;
+  /**
+   * El problema y lo que se espera, **como la persona los confirmó** (`V14`).
+   *
+   * La fila enseñaba los primeros 70 caracteres del relato crudo: había que
+   * leer redacción para saber de qué se trata, y con un relato largo el corte
+   * dejaba fuera justo lo que importa. `NOR-03`.
+   *
+   * `null` cuando todavía no hay síntesis confirmada — entonces manda el
+   * relato, que es lo que hay.
+   */
+  problema: string | null;
+  loQueSeEspera: string | null;
+  /** Hace cuánto, en rango. El texto declarado sigue siendo el dato (`NOR-01`). */
+  antiguedad: Antiguedad;
+  /** A cuántos, en rango (`NOR-02`). */
+  alcance: Alcance;
+  desdeCuando: string | null;
+  afectados: string | null;
   recibidoEn: string;
   /** El municipio aceptado, o `null` si nadie lo ha resuelto todavía. */
   territorio: string | null;
@@ -83,6 +103,15 @@ export type Filtro = {
   soloAlerta?: boolean;
   /** Dónde va la gestión: sin expediente, con expediente, remitido, recibido. */
   gestion?: "sin_expediente" | "con_expediente" | "pendiente" | "recibido";
+  /**
+   * Hace cuánto, en rango.
+   *
+   * Es la mitad de la pregunta del negocio: *«qué comunidades tienen más
+   * afectaciones del agua con más de cuatro años»*. La otra mitad son el tema y
+   * el territorio, que ya se filtran.
+   */
+  antiguedad?: Antiguedad;
+  alcance?: Alcance;
   /** `por_aclarar` · `ubicados` · `todos`. */
   ubicacion?: "por_aclarar" | "ubicados" | "todos";
   /**
@@ -171,6 +200,17 @@ export async function bandeja(
     p.from("territorio").select("codigo, nombre, padre").eq("nivel", "municipio"),
   ]);
 
+  // La síntesis vigente de cada aporte: es lo que la persona confirmó, y lo que
+  // se enseña en la fila. Aparte y no anidada, como las demás: los anidados de
+  // PostgREST recortan a 1.000 filas sin avisar.
+  const { data: sintesis } = await p.from("sintesis")
+    .select("aporte_id, version, texto").in("aporte_id", ids).order("version");
+  const vigenteDe = new Map<string, string>();
+  for (const s of sintesis ?? []) {
+    // Van ordenadas por versión, así que la última que pase es la vigente.
+    vigenteDe.set(s.aporte_id as string, s.texto as string);
+  }
+
   // Los 33 departamentos, para poder decir «Rionegro, Antioquia» y no «05615».
   const { data: deptos } = await p.from("territorio")
     .select("codigo, nombre").eq("nivel", "departamento");
@@ -231,9 +271,20 @@ export async function bandeja(
 
     const padre = u?.codigo ? padreDe.get(u.codigo) ?? null : null;
 
+    // De la síntesis salen las dos líneas que se leen primero. Si no hay, la
+    // fila enseña el relato: `N03` no admite que falte el original, pero
+    // tampoco obliga a esconder lo que la persona confirmó.
+    const campos = new Map(vigenteDe.has(a.id) ? enPartes(vigenteDe.get(a.id)!) : []);
+
     return {
       aporteId: a.id,
       relato: a.relato_original,
+      problema: campos.get("Problema") ?? null,
+      loQueSeEspera: campos.get("Lo que se espera") ?? null,
+      antiguedad: antiguedadDe(a.desde_cuando),
+      alcance: alcanceDe(a.afectados),
+      desdeCuando: a.desde_cuando,
+      afectados: a.afectados,
       recibidoEn: a.recibido_en,
       territorio: u?.codigo ? nombreMunicipio.get(u.codigo) ?? u.codigo : null,
       territorioCodigo: u?.codigo ?? null,
@@ -288,6 +339,8 @@ export async function bandeja(
       if (filtro.tema === "sin_tema" && f.tema) return false;
       if (filtro.tema && filtro.tema !== "sin_tema" && f.tema !== filtro.tema) return false;
       if (filtro.soloAlerta && !f.señales.includes("urgencia")) return false;
+      if (filtro.antiguedad && f.antiguedad !== filtro.antiguedad) return false;
+      if (filtro.alcance && f.alcance !== filtro.alcance) return false;
       if (filtro.gestion === "sin_expediente" && f.conExpediente) return false;
       if (filtro.gestion === "con_expediente" && !f.conExpediente) return false;
       if (filtro.gestion === "pendiente" && f.escalado !== "pendiente") return false;

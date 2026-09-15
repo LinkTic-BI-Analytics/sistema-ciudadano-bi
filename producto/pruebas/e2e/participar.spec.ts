@@ -193,3 +193,40 @@ test("el formulario se puede enviar ANTES de que el navegador hidrate", async ({
 
   await contexto.close();
 });
+
+test("lo escrito en la caja sobrevive a que React vuelva a dibujar", async ({ page }) => {
+  // **Era un fallo real, y el más caro de todos**: quien teclea deprisa en un
+  // teléfono lento escribía su relato, tocaba «continuar» y veía «cuéntanos qué
+  // está pasando». Había contado, y no quedó nada. Se vio en una prueba del QR
+  // que fallaba solo con la máquina cargada: el aporte llegaba con el relato
+  // vacío.
+  //
+  // La causa es que la caja iba controlada por React (`value={relato}`): lo que
+  // entra en el DOM sin pasar por su `onChange` —porque todavía no hidrató— lo
+  // borra el primer redibujado.
+  //
+  // Aquí se reproduce **el mecanismo**, que es lo que se puede reproducir
+  // siempre: se escribe en el DOM sin avisarle a React y se provoca un
+  // redibujado. Esperar a pillar la carrera de la hidratación da una prueba que
+  // a veces pasa, y una prueba que a veces pasa no dice nada.
+  await page.goto("/participar");
+  const caja = page.locator("#relato");
+  await expect(caja).toBeVisible();
+
+  await caja.evaluate((el: HTMLTextAreaElement) => {
+    // Sin disparar `input`: así es como llega lo tecleado antes de hidratar.
+    el.value = "el agua llega turbia y no hay a quién llamar";
+  });
+
+  // Cualquier cosa que cambie el estado redibuja el formulario. Tocar el modo
+  // es lo que hace mucha gente: escribe, se cansa y prueba a hablar.
+  await page.getByRole("button", { name: /^hablar$/i }).click();
+  await page.getByRole("button", { name: /^escribir$/i }).click();
+
+  await expect(caja, "React borró lo que la persona había escrito")
+    .toHaveValue(/agua llega turbia/);
+
+  // Y al enviarlo, llega: no se pierde por el camino.
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 30_000 });
+});

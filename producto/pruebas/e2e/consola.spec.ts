@@ -4,7 +4,7 @@
 // T027, el expediente de T028 y la prioridad de T035.
 
 import { test, expect, type Page } from "@playwright/test";
-import { escogerMunicipio } from "./ayudas.ts";
+import { escogerMunicipio, salirDelMunicipio } from "./ayudas.ts";
 
 // Abre el aporte marcado, haciendo clic en **lo que una persona vería**.
 //
@@ -517,4 +517,69 @@ test("ninguna pantalla mete bloques donde no caben", async ({ page }) => {
   await abrirAporte(page, marca);
 
   expect(quejas, `el navegador se queja del HTML:\n${quejas.join("\n")}`).toEqual([]);
+});
+
+test("se puede preguntar por agua de más de cuatro años, y la fila se lee de un vistazo", async ({ page }) => {
+  // Es la pregunta que el negocio puso como ejemplo: *«cuáles son las
+  // comunidades que tienen más afectaciones del agua con más de cuatro años»*.
+  // Son tres filtros —tema, territorio y hace cuánto— y un total, no una tabla
+  // ordenada de mayor a menor: `BI-02` prohíbe justo eso.
+  const marca = `cronico-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua nos llega sucia`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+  await v2.locator("#afectados").fill("toda la vereda El Salado");
+  await v2.locator("#desdeCuando").fill("desde hace cinco años");
+  await v2.locator("#resultadoEsperado").fill("que llegue agua limpia");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+
+  // El cruce: hace cuánto + departamento.
+  await page.goto("/consola?antiguedad=mas_de_cuatro&departamento=05");
+  const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
+    .filter({ hasText: marca }).filter({ visible: true }).first();
+  await expect(fila).toBeVisible({ timeout: 15_000 });
+
+  // El rango se muestra **con el texto que ella escribió al lado**: sin eso,
+  // «más de cuatro años» parece un hecho medido y no una lectura nuestra.
+  await expect(fila).toContainText(/más de cuatro años/i);
+  await expect(fila).toContainText(/desde hace cinco años/i);
+  await expect(fila).toContainText(/una vereda o un barrio/i);
+
+  // Y la fila se lee de un vistazo: lo confirmado arriba, sus palabras debajo.
+  await expect(fila).toContainText(/Espera: que llegue agua limpia/i);
+  await expect(fila, "el relato literal desapareció de la fila (N03)").toContainText(marca);
+
+  // Un rango que no es el suyo no lo trae.
+  await page.goto("/consola?antiguedad=menos_de_un_ano&departamento=05");
+  await expect(page.locator(".bo-record-link", { hasText: marca })).toHaveCount(0);
+});
+
+test("lo que no se puede leer dice que no se sabe, no que sea cero", async ({ page }) => {
+  // La ayuda del propio formulario propone «desde que empezaron las lluvias»,
+  // así que esto va a llegar mucho. Meterlo en un rango sería inventar.
+  const marca = `sindecir-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: la vía está intransitable`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+  await salirDelMunicipio(page);
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#desdeCuando").fill("desde que empezaron las lluvias");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
+  const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
+    .filter({ hasText: marca }).filter({ visible: true }).first();
+  await expect(fila).toContainText(/no dijo desde cuándo/i, { timeout: 15_000 });
+  // Y su frase sigue ahí: no se pudo agrupar, pero no se perdió.
+  await expect(fila).toContainText(/empezaron las lluvias/i);
 });
