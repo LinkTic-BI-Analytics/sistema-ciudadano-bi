@@ -73,6 +73,7 @@ Reglas absolutas:
 6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
 7. "afectados" son PERSONAS: quiénes o cuántos. Un sitio NUNCA va en "afectados". "en mi casa", "en el barrio", "en la vereda" son "lugar", no "afectados".
 8. "lugar" incluye el municipio y el departamento si aparecen, aunque estén sueltos al final ("... y rionegro antioquia").
+9a. Extrae el fragmento MÍNIMO que conteste. Quita del principio los verbos y muletillas que no aportan: de "tenemos niños afectados" el valor es "niños afectados"; de "es que no hay agua" es "no hay agua"; de "somos como veinte familias" es "veinte familias". Quita también las muletillas del final ("así", "pues", "ya", "y eso"): de "como un mes asi" el valor es "como un mes". Sigue siendo literal: solo se recorta, nunca se cambia una palabra.
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 

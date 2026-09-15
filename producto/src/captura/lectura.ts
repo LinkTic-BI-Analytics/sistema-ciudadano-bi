@@ -42,6 +42,22 @@ export const PREGUNTABLES = [
 
 export type Preguntable = (typeof PREGUNTABLES)[number];
 
+/**
+ * Cómo se nombra cada parte **cuando se le devuelve lo entendido**.
+ *
+ * Son afirmaciones, no preguntas: en el formulario se pregunta, y aquí se le
+ * enseña lo que contó. Mezclar las dos formas hacía que el resumen se leyera
+ * como medio cuestionario.
+ */
+export const COMO_SE_RESUME: Record<Preguntable | "problema", string> = {
+  problema: "El problema",
+  lugar: "Dónde ocurre",
+  afectados: "A quiénes les pasa",
+  desdeCuando: "Desde cuándo",
+  resultadoEsperado: "Qué debería cambiar",
+  solucionSugerida: "Una solución que propones",
+};
+
 export const COMO_SE_PREGUNTA: Record<Preguntable, { etiqueta: string; ayuda: string }> = {
   lugar: {
     etiqueta: "¿Dónde ocurre?",

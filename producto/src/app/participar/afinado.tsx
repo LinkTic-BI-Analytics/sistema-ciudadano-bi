@@ -6,7 +6,7 @@ import {
   listarDepartamentos, listarMunicipios, declararGrupo, type PasoAfinado,
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
-import { loQueFalta, COMO_SE_PREGUNTA, type Lectura, type Preguntable } from "../../captura/lectura.ts";
+import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, type Lectura, type Preguntable } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -294,19 +294,19 @@ export function Afinado({ codigo }: { codigo: string }) {
               {/* **Un solo bloque.** El relato y lo que entendimos estaban en
                   dos cajas grises separadas por un hueco, y se leían como dos
                   cosas sin relación. Son lo mismo: lo que contaste, partido. */}
+              {/* `dt` y `dd` como **hijos directos**. Envueltos en un `div`,
+                  todos los `dt` pasaban a ser `:first-child` y la hoja les
+                  quitaba el margen de arriba: la respuesta de una pregunta
+                  quedaba pegada al título de la siguiente. */}
               <dl className="pc-detail-facts">
-                <div>
-                  <dt>Lo que contaste</dt>
-                  <dd>{problema}</dd>
-                </div>
-                {(["lugar", "afectados", "desdeCuando"] as const)
+                <dt>{COMO_SE_RESUME.problema}</dt>
+                <dd>{problema}</dd>
+                {(["lugar", "afectados", "desdeCuando", "resultadoEsperado", "solucionSugerida"] as const)
                   .filter((k) => lect[k])
-                  .map((k) => (
-                    <div key={k}>
-                      <dt>{COMO_SE_PREGUNTA[k].etiqueta}</dt>
-                      <dd>{lect[k]}</dd>
-                    </div>
-                  ))}
+                  .flatMap((k) => [
+                    <dt key={`t-${k}`}>{COMO_SE_RESUME[k]}</dt>,
+                    <dd key={`d-${k}`}>{lect[k]}</dd>,
+                  ])}
               </dl>
               <p className="pc-help">Si no es eso, corrígelo — mandas tú.</p>
               <Error_ paso={r1} />

@@ -347,3 +347,31 @@ test("el filtro del municipio ignora tildes y mayúsculas", async ({ page }) => 
   await mun.locator("#filtro-municipio").fill("abriaqui");
   await expect(mun.getByRole("button", { name: /^ABRIAQUÍ$/i })).toBeVisible();
 });
+
+
+test("lo entendido no queda pegado: los términos son hijos directos", async ({ page }) => {
+  // El sistema de diseño espacia la lista con `dt:first-child {margin-top:0}`.
+  // Al envolver cada par en un `div`, **todos** los `dt` pasaban a ser primer
+  // hijo y perdían el margen: la respuesta de una pregunta quedaba pegada al
+  // título de la siguiente.
+  //
+  // Se comprueba la causa y no el margen, porque el margen solo se nota cuando
+  // hay dos datos —y sin IA la lectura trae uno solo—. Una prueba que solo pasa
+  // cuando hay IA no vigila nada en los recorridos.
+  //
+  // No lo vio el compilador, ni el chequeo de clases, ni ninguna prueba. Lo vio
+  // una persona mirando la pantalla.
+  await contar(page, "El agua de nuestras casas está llegando con olores a gasolina");
+  const lista = page.locator("[data-prueba='vuelta-1'] .pc-detail-facts");
+  await expect(lista).toBeVisible({ timeout: 20_000 });
+
+  const sueltos = await lista.evaluate((dl) => ({
+    todos: dl.querySelectorAll("dt").length,
+    directos: dl.querySelectorAll(":scope > dt").length,
+    envoltorios: dl.querySelectorAll(":scope > div").length,
+  }));
+  expect(sueltos.todos).toBeGreaterThan(0);
+  expect(sueltos.directos, "hay dt envueltos: el sistema de diseño no los va a espaciar")
+    .toBe(sueltos.todos);
+  expect(sueltos.envoltorios, "un div dentro del dl rompe dt:first-child").toBe(0);
+});
