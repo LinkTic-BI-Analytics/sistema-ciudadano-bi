@@ -415,9 +415,32 @@ test("si en realidad era una sola cosa, se puede decir", async ({ page }) => {
   await contar(page, "no hay agua en la vereda, la vía está muy mala");
   const escoger = page.locator("[data-prueba='escoger']");
   await expect(escoger).toBeVisible({ timeout: 20_000 });
-  await escoger.getByRole("button", { name: /una sola cosa/i }).click();
+  await escoger.getByRole("button", { name: /son lo mismo/i }).click();
   await expect(page.locator("[data-prueba='vuelta-1']")).toBeVisible();
   await expect(page.locator("[data-prueba='escoger']")).toHaveCount(0);
+});
+
+test("juntar dos que son lo mismo NO pierde lo que decía la segunda", async ({ page }) => {
+  // El caso real: «tenemos problemas con aguas potables» y «esas aguas están
+  // llegando con un color negro que parece petróleo» son lo mismo dicho dos
+  // veces. Antes, «en realidad es una sola cosa» se quedaba con el primer
+  // fragmento y el color negro desaparecía del problema — el relato seguía
+  // guardado, pero lo que el revisor iba a leer ya no lo decía.
+  //
+  // Y separar de más es tan malo como juntar de más: dos expedientes para lo
+  // mismo es lo que `R1` existe para evitar.
+  const marca = `juntar-${Date.now()}`;
+  await contar(page, `${marca}: tenemos problemas con el agua, el agua llega con color negro`);
+
+  const escoger = page.locator("[data-prueba='escoger']");
+  await expect(escoger).toBeVisible({ timeout: 20_000 });
+  await escoger.getByRole("button", { name: /son lo mismo/i }).click();
+
+  // Las dos cosas están en lo que se va a revisar.
+  const v1 = page.locator("[data-prueba='vuelta-1']");
+  await expect(v1).toBeVisible();
+  await expect(v1).toContainText(/problemas con el agua/);
+  await expect(v1).toContainText(/color negro/);
 });
 
 

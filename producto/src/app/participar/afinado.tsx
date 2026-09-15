@@ -447,9 +447,13 @@ export function Afinado({ codigo }: { codigo: string }) {
       {paso === "escoger" && lect && (
         <div data-prueba="escoger">
           <h2>Nos contaste {otros.length + 1} cosas</h2>
+          {/* **«Puede que»**, no «cada una va». A veces son dos formas de decir
+              lo mismo —«problemas con el agua» y «el agua llega negra»— y
+              afirmarlo de entrada empuja a partir algo que no había que
+              partir. */}
           <p className="pc-help">
-            Cada una va a una entidad distinta y se atiende por separado, así que{" "}
-            <strong>vamos de a una</strong>. ¿Por cuál empezamos?
+            Puede que cada una vaya a una entidad distinta, y por eso se atienden por separado.
+            ¿Por cuál empezamos?
           </p>
           <div className="pc-actions">
             {[problema, ...otros].map((x) => (
@@ -464,9 +468,21 @@ export function Afinado({ codigo }: { codigo: string }) {
               </button>
             ))}
           </div>
-          <button type="button" className="pc-text-action"
-                  onClick={() => { setOtros([]); setPaso("entendimos"); }}>
-            En realidad es una sola cosa
+          {/* **Juntarlas, no descartarlas.** Antes esto decía «en realidad es
+              una sola cosa» y se quedaba con el primer fragmento: «esas aguas
+              llegan con un color negro» desaparecía del problema. El relato
+              entero seguía guardado, pero lo que el revisor iba a leer ya no lo
+              decía.
+
+              Separar de más es tan malo como juntar de más: dos expedientes
+              para lo mismo es justo lo que `R1` existe para evitar. */}
+          <button type="button" className="pc-text-action" data-prueba="juntar"
+                  onClick={() => {
+                    setProblema([problema, ...otros].join(". "));
+                    setOtros([]);
+                    setPaso("entendimos");
+                  }}>
+            Son lo mismo — júntalas en una
           </button>
           {/* Que no se pierde nada es lo primero que hay que decir: si no,
               escoger se siente como que le estamos borrando lo demás. */}

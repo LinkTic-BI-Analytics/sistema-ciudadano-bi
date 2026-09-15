@@ -108,6 +108,28 @@ decidido. **Rellenar no es decidir**: el acto sigue siendo del revisor y queda a
 **Aceptación:** abrir un expediente sobre un aporte completo son dos clics y una razón escrita.
 El expediente guarda quién lo abrió, no quién lo propuso.
 
+## CLA-05 · Juntar lo que la lectura separó de más
+
+**Quién:** la persona que cuenta.
+
+**Con qué llega:** dos o más fragmentos que la lectura marcó como problemas distintos.
+
+**Qué queda:** un solo problema, **con el texto de todos**.
+
+Separar de más es tan malo como juntar de más. La lectura partió *«tenemos problemas con el agua
+potable»* y *«esas aguas llegan con un color negro que parece petróleo»* en dos, y son lo mismo
+dicho dos veces: dos expedientes para eso es justo lo que `R1` existe para evitar.
+
+Y la pantalla no puede afirmar lo que no sabe: dice **«puede que cada una vaya a una entidad
+distinta»**, no «cada una va». Afirmarlo empuja a partir algo que no había que partir.
+
+**Qué NO hace:** quedarse con un fragmento y descartar los otros —el relato sigue guardado, pero
+lo que el revisor va a leer ya no lo diría—; juntar por su cuenta; impedir separar después
+corrigiendo la síntesis.
+
+**Aceptación:** al juntar dos fragmentos, los dos textos aparecen en lo que se va a revisar. Un
+aporte juntado no deja «pendientes» que ofrecer al final.
+
 ## Lo que esta ampliación NO cubre
 
 - **Competencia** — a qué entidad le toca. Depende del tema **y** del municipio, y eso es un

@@ -53,8 +53,7 @@ test("un encuentro produce un QR con dirección legible, sin servicio externo", 
 });
 
 test("escanear el QR pregunta, no afirma que asististe", async ({ page }) => {
-  await page.goto("/administracion");
-  const url = (await page.locator(".bo-record-card code").first().innerText()).trim();
+  const url = await unMaterial(page);
 
   await page.goto(url + "?utm_source=whatsapp&utm_medium=mensajeria");
   const confirmar = page.locator("[data-prueba='confirmar-evento']");
@@ -75,9 +74,25 @@ test("un enlace que no existe NO inventa un evento", async ({ page }) => {
   await expect(page.getByRole("link", { name: /sin estar en un encuentro/i })).toBeVisible();
 });
 
-test("el caso completo: entra por el QR de A, dice que está en B, cuenta lo de C", async ({ page }) => {
+/**
+ * Genera un material y devuelve su dirección.
+ *
+ * Cada prueba genera el suyo en vez de reusar el de la anterior: una prueba que
+ * depende del efecto de otra falla cuando esa otra falla, y entonces hay dos
+ * fallos y solo uno real.
+ */
+async function unMaterial(page: import("@playwright/test").Page): Promise<string> {
   await page.goto("/administracion");
-  const url = (await page.locator(".bo-record-card code").first().innerText()).trim();
+  await page.locator("#enl-encuentro").selectOption({ index: 1 });
+  await page.selectOption("#enl-pieza", "afiche");
+  await page.getByRole("button", { name: /generar enlace y qr/i }).click();
+  const material = page.locator(".bo-record-card").first();
+  await expect(material).toBeVisible({ timeout: 20_000 });
+  return (await material.locator("code").first().innerText()).trim();
+}
+
+test("el caso completo: entra por el QR de A, dice que está en B, cuenta lo de C", async ({ page }) => {
+  const url = await unMaterial(page);
 
   await page.goto(url);
   await page.locator("[data-prueba='confirmar-evento']")
