@@ -21,7 +21,27 @@ export default async function limpiar() {
     // Si la base no está levantada, las pruebas van a decirlo con más claridad
     // que esto.
   }
+  sembrarAgenda();
   await calentar();
+}
+
+/**
+ * Se asegura de que haya convocatoria y encuentros.
+ *
+ * Los recorridos de la portada los necesitan, y hasta ahora dependían de que
+ * alguien hubiera corrido el sembrado a mano: la suite pasaba en esta máquina y
+ * habría fallado en cualquier otra, que es la peor forma de fallar.
+ *
+ * `limpiar-desarrollo.sh` no los borra —como no borra el catálogo territorial—
+ * así que sembrar una vez basta; el guion no duplica porque solo inserta cuando
+ * no hay ninguna publicada.
+ */
+function sembrarAgenda() {
+  try {
+    execFileSync("../scripts/sembrar-agenda.sh", { stdio: "pipe" });
+  } catch {
+    // Si falla, los recorridos de la portada lo dirán con más claridad.
+  }
 }
 
 /**
