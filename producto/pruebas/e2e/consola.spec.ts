@@ -103,7 +103,9 @@ test("abrir un expediente y priorizarlo, sin puntaje", async ({ page }) => {
   await panel.getByRole("button", { name: /^abrir$/i }).click();
   await expect(panel).toContainText(/sin agua en la escuela/, { timeout: 15_000 });
 
-  await panel.locator("input[name='motivo']").fill("afecta a menores y es una sola fuente");
+  // Por su id: en el panel hay tres campos `motivo` —abrir, priorizar y
+  // remitir— y sin acotar el `fill` va al primero que encuentre.
+  await panel.locator("#pri-motivo").fill("afecta a menores y es una sola fuente");
   await panel.locator("select[name='afectacion']").selectOption("alta");
   await panel.getByRole("button", { name: /registrar prioridad/i }).click();
   await expect(panel).toContainText(/afecta a menores/, { timeout: 15_000 });
@@ -307,4 +309,73 @@ test("la gestión llega medio llena con lo que la persona confirmó", async ({ p
   await expect(page.locator("#exp-descripcion")).toHaveValue(new RegExp(marca));
   // Y el motivo sigue siendo obligatorio: el acto es del revisor.
   await expect(page.locator("#exp-motivo")).toHaveAttribute("required", "");
+});
+
+test("escalar a una mesa: queda pendiente hasta que alguien confirme", async ({ page }) => {
+  // Lo pidió el negocio con estas palabras: *«acá es como una gestión que
+  // podría escalarla de una mejor forma a una mesa puntual o a un equipo que
+  // pueda desagregarla un poco mejor»*. Faltaba entero: la ficha sabía abrir el
+  // expediente y priorizarlo, pero no sacarlo de aquí.
+  //
+  // Y lo que se vigila es la mitad que se olvida: **remitir no es haber
+  // atendido**. La especificación lo dice literal —*«remisión no aceptada sigue
+  // pendiente»*, *«entidad sin responder no cierra por silencio»*— y una
+  // pantalla que lo diera por resuelto convertiría el silencio en respuesta.
+  const marca = `escalar-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua, la vía y el puesto de salud, todo junto`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 20_000 });
+
+  await abrirAporte(page, marca);
+
+  const panel = page.locator(".bo-inspector");
+  await panel.locator("input[name='descripcion']").fill("tres necesidades en un relato");
+  await panel.locator("input[name='motivo']").fill("es el relato que las origina");
+  await panel.getByRole("button", { name: /^abrir$/i }).click();
+
+  const escalar = page.locator("[data-prueba='escalar']");
+  await expect(escalar).toBeVisible({ timeout: 15_000 });
+  await escalar.locator("#rem-destino").fill("mesa técnica de agua del Huila");
+  await escalar.locator("#rem-motivo").fill("necesita desagregarse: son tres necesidades");
+  await escalar.getByRole("button", { name: /^remitir$/i }).click();
+
+  await expect(escalar).toContainText(/mesa técnica de agua del Huila/, { timeout: 15_000 });
+  await expect(escalar).toContainText(/pendiente de aceptación/i);
+  // Remitido no es respondido, y se ve en el estado derivado.
+  await expect(escalar).toContainText(/estado de atención: remitido/i);
+
+  // La bandeja lo dice sin abrir el aporte: si no, se remite dos veces.
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
+  await expect(page.locator(".bo-record-card").first()).toContainText(/remitido · sin aceptar/i);
+
+  // Aceptar es un acto aparte, de alguien.
+  await abrirAporte(page, marca);
+  // Acotado al formulario de aceptar: en esta sección hay dos campos `motivo`
+  // —el de remitir y el de confirmar— y sin acotar el `fill` va al primero.
+  await page.locator("[data-prueba='aceptar-remision'] input[name='motivo']")
+    .fill("la secretaría lo radicó con el número 4471");
+  await page.getByRole("button", { name: /confirmar recepción/i }).click();
+  await expect(page.locator("[data-prueba='escalar']")).toContainText(/recibida/i, { timeout: 15_000 });
+});
+
+test("la ficha dice qué se puede corregir y qué no se toca", async ({ page }) => {
+  // El techo de esta pantalla, dicho en la pantalla. Sin decirlo, «corregir» y
+  // «reescribir» se parecen demasiado — y si la consola puede cambiar el
+  // sentido de lo que alguien contó, lo que sube al sistema de planeación ya no
+  // es lo que la gente dijo.
+  const marca = `techo-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua llega turbia desde hace meses`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 20_000 });
+
+  await abrirAporte(page, marca);
+  const techo = page.locator("[data-prueba='lo-que-no-se-toca']");
+  await expect(techo).toContainText(/no se reescribe nada/i);
+  await expect(techo).toContainText(/N03/);
+  await expect(techo).toContainText(/V14/);
+
+  // Y el relato sigue sin ser editable en ninguna parte.
+  await expect(page.locator("textarea[name='relato'], textarea[name='relato_original']")).toHaveCount(0);
 });

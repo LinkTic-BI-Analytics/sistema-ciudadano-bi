@@ -69,6 +69,39 @@ export async function registrarActuacion(a: {
   return { actuacionId: data.id };
 }
 
+/**
+ * La destinataria dice que lo recibió.
+ *
+ * **Es un hecho aparte, con su fecha.** No un booleano que alguien cambia sin
+ * dejar cuándo: la especificación dice que *«remisión no aceptada sigue
+ * pendiente»*, y eso solo se puede sostener si aceptar deja rastro.
+ *
+ * No existe la operación contraria por descuido: una remisión no se «des-acepta»
+ * borrando la fecha. Si la destinataria se desdice, eso es otra actuación.
+ */
+export async function aceptarRemision(e: {
+  actuacionId: string; autor: string; motivo: string;
+}): Promise<void> {
+  if (!e.motivo?.trim()) throw new Error("aceptar una remisión exige decir quién confirmó y cómo");
+  const p = clienteServidor().schema("participacion");
+
+  const { data: act } = await p.from("actuacion")
+    .select("id, tipo, proceso_id, expediente_id, aceptada_en")
+    .eq("id", e.actuacionId).single();
+  if (!act) throw new Error(`no existe la actuación ${e.actuacionId}`);
+  if (act.tipo !== "remision") throw new Error("solo una remisión se acepta");
+  if (act.aceptada_en) return;
+
+  const { error } = await p.from("actuacion")
+    .update({ aceptada_en: new Date().toISOString() }).eq("id", e.actuacionId);
+  if (error) throw new Error(`no se pudo aceptar la remisión: ${error.message}`);
+
+  await p.from("auditoria").insert({
+    proceso_id: act.proceso_id, actor: e.autor, accion: "aceptar_remision",
+    entidad: "expediente", entidad_id: act.expediente_id, motivo: e.motivo,
+  });
+}
+
 /** La historia de un expediente, en orden. Conserva quién y por qué. */
 export async function historiaDe(expedienteId: string): Promise<Actuacion[]> {
   const p = clienteServidor().schema("participacion");

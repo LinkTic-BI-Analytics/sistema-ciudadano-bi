@@ -13,7 +13,7 @@ import {
 } from "../../territorio/emparejar.ts";
 import { declararVoceria } from "../../captura/vocero.ts";
 import type { ContextoHeredado } from "../../captura/contexto.ts";
-import { resolverUbicacion } from "../../revision/ubicacion.ts";
+import { resolverUbicacion, corregirUbicacionDelCiudadano } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
 import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
@@ -301,6 +301,32 @@ export async function prepararLectura(codigo: string): Promise<LecturaPreparada 
   }
 }
 
+/**
+ * Lo que la persona escribe **con sus palabras**, convertido en candidatos.
+ *
+ * Es lo que permite que la pregunta sea una sola: escribe «la vereda La
+ * Martinita, en Rionegro Antioquia» y debajo aparecen el municipio y el
+ * departamento, sin cambiar de pantalla. Antes eso solo pasaba si el municipio
+ * venía en el relato; quien lo escribía después no recibía ninguna ayuda.
+ *
+ * **No elige nada** (`I2`): si hay dos Rionegro, salen los dos.
+ */
+export async function ubicarTexto(
+  texto: string,
+): Promise<{ municipios: Candidato[]; departamento: Departamento | null }> {
+  const dicho = texto.trim();
+  if (dicho.length < 4) return { municipios: [], departamento: null };
+  try {
+    const [municipios, departamento] = await Promise.all([
+      buscarMunicipios(dicho), departamentoEn(dicho),
+    ]);
+    return { municipios, departamento };
+  } catch (e) {
+    console.error("ubicarTexto", e);
+    return { municipios: [], departamento: null };
+  }
+}
+
 /** Para la caja de búsqueda del paso del municipio. */
 export async function buscarMunicipio(texto: string): Promise<Candidato[]> {
   try {
@@ -326,13 +352,57 @@ export async function buscarMunicipio(texto: string): Promise<Candidato[]> {
  * Y el texto que escribió se queda igual en `lugar_declarado`: el código no lo
  * sustituye. Es lo que mantiene reversible haber aplazado el barrio (`Q26`).
  */
+/**
+ * El lugar **con sus palabras**: el barrio, la vereda, la referencia.
+ *
+ * Va en la misma pantalla que el municipio y no en una vuelta aparte, porque
+ * preguntar dos veces dónde ocurre algo —una en texto libre y otra por
+ * departamento y municipio— es preguntar lo mismo dos veces. Para quien vive en
+ * una vereda dispersa, la segunda pregunta no agrega nada y sí da motivos para
+ * cerrar la página.
+ *
+ * Se guarda **tal como lo escribió**. Es lo que exige `I2`, y es lo único que
+ * mantiene reversible haber aplazado el barrio (`Q26`): si alguien decide
+ * mañana que el barrio importa, el texto está ahí.
+ *
+ * **Solo llena lo que estaba vacío** (`precisarAporte`): quien vuelve a pasar
+ * por aquí no pisa lo que ya había declarado.
+ */
+export async function anotarLugar(codigo: string, texto: string): Promise<PasoAfinado> {
+  const dicho = texto.trim();
+  if (!dicho) return { ok: true };
+  try {
+    const aporteId = await aporteDelCodigo(codigo);
+    if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+    await precisarAporte({ aporteId, lugarDeclarado: dicho });
+    return { ok: true };
+  } catch (e) {
+    console.error("anotarLugar", e);
+    return { ok: false, error: "No pudimos guardar el lugar. Tu aporte ya quedó registrado." };
+  }
+}
+
 export async function confirmarMunicipio(
   codigo: string, territorio: string, version: string,
   origen: "lo_dijo" | "vive_ahi" = "lo_dijo",
+  /**
+   * La persona ya había confirmado uno y volvió atrás a cambiarlo.
+   *
+   * Sin esto, volver atrás dejaba **los dos municipios confirmados** y el aporte
+   * se sumaba en dos territorios. Corregir no es agregar.
+   */
+  corrige = false,
 ): Promise<PasoAfinado> {
   try {
     const aporteId = await aporteDelCodigo(codigo);
     if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+    if (corrige) {
+      await corregirUbicacionDelCiudadano({
+        aporteId, codigo: territorio, version,
+        motivo: "la persona volvió atrás y corrigió el municipio durante la captura",
+      });
+      return { ok: true };
+    }
     await resolverUbicacion({
       aporteId, codigo: territorio, version,
       autor: "ciudadano",

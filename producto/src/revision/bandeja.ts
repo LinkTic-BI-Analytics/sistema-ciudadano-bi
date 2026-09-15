@@ -35,6 +35,18 @@ export type FilaBandeja = {
   estadoRevision: string;
   /** Quién lo tiene. `null` es «nadie», y es una respuesta, no un hueco. */
   responsable: string | null;
+  /**
+   * De qué habla, confirmado por la persona. `null` es «sin tema», y eso
+   * también se dice: un aporte sin tema no se puede enrutar a ninguna mesa.
+   */
+  tema: string | null;
+  /**
+   * Si ya salió hacia una mesa o un equipo, y si allá lo aceptaron.
+   *
+   * Sin esto, dos personas remiten lo mismo dos veces — y la segunda no tiene
+   * forma de saberlo sin abrir el aporte.
+   */
+  escalado: "no" | "pendiente" | "recibido";
   señales: Señal[];
   /** Lo que la persona no dijo y el revisor va a echar en falta. */
   falta: string[];
@@ -78,6 +90,7 @@ type FilaAporte = {
   recibido_en: string; estado_revision: string;
   es_colectivo: boolean; colectivo_declarado: string | null;
   evento_confirmado_id: string | null;
+  tema: string | null;
 };
 
 const plano = (s: string) =>
@@ -90,7 +103,7 @@ export async function bandeja(
 
   const { data: aportes, error } = await p.from("aporte")
     .select("id, relato_original, lugar_declarado, afectados, desde_cuando, canal, " +
-            "recibido_en, estado_revision, es_colectivo, colectivo_declarado, evento_confirmado_id")
+            "recibido_en, estado_revision, es_colectivo, colectivo_declarado, evento_confirmado_id, tema")
     .eq("proceso_id", procesoId).is("retirado_en", null)
     .order("recibido_en", { ascending: true })
     // Se lee de más para poder contar y filtrar en memoria. Cuando esto se
@@ -123,6 +136,32 @@ export async function bandeja(
   }
   const conAlerta = new Set((alertas ?? []).filter((a) => !a.devuelta_en).map((a) => a.aporte_id));
 
+  // **Si ya se escaló.** Va por el expediente, que es lo que se remite: el
+  // aporte es de la persona y no se manda a ninguna parte. Dos consultas
+  // sueltas, no un anidado: los anidados de PostgREST recortan a 1.000 filas
+  // sin avisar.
+  const { data: vinculos } = await p.from("vinculo_aporte_expediente")
+    .select("aporte_id, expediente_id").in("aporte_id", ids).is("desvinculado_en", null);
+  const expedientes = [...new Set((vinculos ?? []).map((v) => v.expediente_id as string))];
+  const { data: remisiones } = expedientes.length
+    ? await p.from("actuacion").select("expediente_id, aceptada_en")
+        .in("expediente_id", expedientes).eq("tipo", "remision")
+    : { data: [] };
+  const remisionDe = new Map<string, boolean>();
+  for (const r of remisiones ?? []) {
+    // Una aceptada manda sobre una pendiente: lo que importa es si alguien allá
+    // lo tiene, no cuántas veces se mandó.
+    const ya = remisionDe.get(r.expediente_id as string);
+    remisionDe.set(r.expediente_id as string, ya === true || r.aceptada_en !== null);
+  }
+  const escaladoDe = new Map<string, "no" | "pendiente" | "recibido">();
+  for (const v of vinculos ?? []) {
+    const estado = remisionDe.get(v.expediente_id as string);
+    if (estado === undefined) continue;
+    const actual = escaladoDe.get(v.aporte_id as string);
+    if (actual !== "recibido") escaladoDe.set(v.aporte_id as string, estado ? "recibido" : "pendiente");
+  }
+
   const filas: FilaBandeja[] = filasCrudas.map((a) => {
     const u = porAporte.get(a.id);
     const señales: Señal[] = [];
@@ -147,6 +186,8 @@ export async function bandeja(
       estadoUbicacion: u?.estado ?? "sin_ubicacion",
       estadoRevision: a.estado_revision,
       responsable: u?.autor ?? null,
+      tema: a.tema,
+      escalado: escaladoDe.get(a.id) ?? "no",
       señales, falta,
     };
   });

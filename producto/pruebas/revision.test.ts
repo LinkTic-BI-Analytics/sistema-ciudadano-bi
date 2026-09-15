@@ -311,3 +311,41 @@ test("volver a vincular crea un vínculo NUEVO, no revive el viejo", async () =>
   assert.equal(data?.length, 2, "dos filas: la historia no se reescribe");
   assert.equal(data!.filter((v) => v.desvinculado_en === null).length, 1);
 });
+
+import { bandeja } from "../src/revision/bandeja.ts";
+import { registrarActuacion, aceptarRemision } from "../src/gestion/actuacion.ts";
+
+test("la bandeja dice de qué habla y si ya se escaló", async () => {
+  // Sin el tema no se enruta a ninguna mesa, y sin el escalamiento dos personas
+  // remiten lo mismo dos veces — la segunda sin forma de saberlo salvo abriendo
+  // el aporte uno por uno.
+  const sinEscalar = await nuevoAporte("bandeja-tema");
+  await p.from("aporte").update({ tema: "agua" }).eq("id", sinEscalar.aporteId);
+
+  const escalado = await nuevoAporte("bandeja-escalado");
+  const e = await crearExpediente({
+    procesoId, descripcion: "el agua no llega a la parte alta",
+    desdeAporte: escalado.aporteId, autor: "revisora", motivo: "origen",
+  });
+  const r = await registrarActuacion({
+    expedienteId: e.expedienteId, tipo: "remision", autor: "revisora",
+    destino: "la mesa técnica de agua", motivo: "necesita desagregarse",
+  });
+
+  const antes = await bandeja(procesoId, { ubicacion: "todos" }, 500);
+  const filaTema = antes.filas.find((f) => f.aporteId === sinEscalar.aporteId);
+  assert.equal(filaTema!.tema, "agua");
+  assert.equal(filaTema!.escalado, "no", "un aporte sin expediente no está escalado");
+  assert.equal(
+    antes.filas.find((f) => f.aporteId === escalado.aporteId)!.escalado,
+    "pendiente",
+    "remitir no es que lo hayan recibido: mientras nadie confirme, sigue pendiente",
+  );
+
+  await aceptarRemision({ actuacionId: r.actuacionId, autor: "revisora", motivo: "radicado 4471" });
+  const despues = await bandeja(procesoId, { ubicacion: "todos" }, 500);
+  assert.equal(
+    despues.filas.find((f) => f.aporteId === escalado.aporteId)!.escalado,
+    "recibido",
+  );
+});

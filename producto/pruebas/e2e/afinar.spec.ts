@@ -11,7 +11,7 @@
 //   · nada se pide dos veces — se pregunta solo por lo que la persona no dijo.
 
 import { test, expect, type Page } from "@playwright/test";
-import { salirDelMunicipio, escogerMunicipio, confirmarMunicipio, hablarPorMi } from "./ayudas.ts";
+import { salirDelMunicipio, escogerMunicipio, confirmarMunicipio, hablarPorMi, decirElLugar } from "./ayudas.ts";
 
 async function contar(page: Page, relato: string) {
   await page.goto("/participar");
@@ -55,7 +55,8 @@ test("dice qué entendió, y se puede corregir con las palabras de uno", async (
   await expect(caja).toHaveValue(/hueco/);
   await caja.fill("la vía principal está intransitable para las motos");
   await v1.getByRole("button", { name: /guardar y seguir/i }).click();
-  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+  // Corregir no cambia el orden: lo siguiente es dónde ocurre, una sola vez.
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("ninguna vuelta pide más de tres cosas, y el paso se ve", async ({ page }) => {
@@ -64,13 +65,14 @@ test("ninguna vuelta pide más de tres cosas, y el paso se ve", async ({ page })
   await expect(page.locator("body")).toContainText(/paso \d+ de \d+/i);
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
 
+  // **El lugar va primero y va solo**: es la única pantalla que lo pregunta.
+  await salirDelMunicipio(page);
+
   const v2 = page.locator("[data-prueba='vuelta-2']");
   await expect(v2).toBeVisible({ timeout: 15_000 });
   expect(await v2.locator("input:not([type=hidden]), textarea").count(),
          "la vuelta 2 pide más de tres cosas a la vez").toBeLessThanOrEqual(3);
   await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
-  await salirDelMunicipio(page);
 
   const v3 = page.locator("[data-prueba='vuelta-3']");
   await expect(v3).toBeVisible({ timeout: 15_000 });
@@ -85,6 +87,7 @@ test("se puede terminar en cualquier punto, y el código sigue sirviendo", async
   await contar(page, "no hay alumbrado en la vía de entrada");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
+  await salirDelMunicipio(page);
   await page.locator("[data-prueba='vuelta-2']").getByRole("button", { name: /terminar aquí/i }).click();
   await hablarPorMi(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
@@ -96,21 +99,21 @@ test("lo que precisa después llega al aporte y a la consola", async ({ page }) 
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
 
+  // El lugar, con sus palabras, en la pantalla del municipio. «La vereda El
+  // Salado» no llega a ninguno: se guarda igual y se sale sin inventarlo.
+  await decirElLugar(page, "la vereda El Salado");
+  await salirDelMunicipio(page);
+
   const v2 = page.locator("[data-prueba='vuelta-2']");
   await expect(v2).toBeVisible({ timeout: 15_000 });
-  await v2.locator("#lugar").fill("la vereda El Salado");
   await v2.locator("#afectados").fill("unas veinte familias");
   await v2.locator("#desdeCuando").fill("desde el invierno pasado");
+  await v2.locator("#resultadoEsperado").fill("que arreglen el desagüe");
   await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
-  // «la vereda El Salado» no llega a un municipio, así que ahora se insiste en
-  // vez de seguir de largo.
-  await salirDelMunicipio(page);
 
   const v3 = page.locator("[data-prueba='vuelta-3']");
   await expect(v3).toBeVisible({ timeout: 15_000 });
-  await v3.locator("#resultadoEsperado").fill("que arreglen el desagüe");
-  await v3.getByRole("button", { name: /listo/i }).first().click();
+  await v3.getByRole("button", { name: /listo|continuar/i }).first().click();
   await hablarPorMi(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
@@ -132,19 +135,20 @@ test("si nombra un municipio, se lo ofrecemos para que lo confirme", async ({ pa
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
 
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("en la verede la martinita y rionegro antioquia");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  // Lo escribe con sus palabras y la pantalla busca sola: es lo que permite que
+  // el lugar se pregunte **una vez**.
+  await decirElLugar(page, "en la verede la martinita y rionegro antioquia");
 
   const mun = page.locator("[data-prueba='municipio']");
-  await expect(mun).toBeVisible({ timeout: 15_000 });
-  await expect(mun).toContainText(/RIONEGRO/i);
-  await expect(mun).toContainText(/ANTIOQUIA/i);
+  const sugerencias = page.locator("[data-prueba='sugerencias']");
+  await expect(sugerencias).toBeVisible({ timeout: 15_000 });
+  await expect(sugerencias).toContainText(/RIONEGRO/i);
+  await expect(sugerencias).toContainText(/ANTIOQUIA/i);
   // La salida importa tanto como la lista: sin ella, quien no reconozca ninguno
-  // escoge el primero por salir del paso.
-  await expect(mun.getByRole("button", { name: /ninguno|no estoy seguro/i })).toBeVisible();
+  // escoge el primero por salir del paso. Ahora el selector está ahí mismo.
+  await expect(mun.locator("#departamento")).toBeVisible();
 
-  await mun.getByRole("button", { name: /RIONEGRO/i }).first().click();
+  await sugerencias.getByRole("button", { name: /RIONEGRO/i }).first().click();
   await confirmarMunicipio(page, "RIONEGRO");
 
   // **El efecto que se busca: sale de la bandeja de «por aclarar».** Ya no hay
@@ -168,15 +172,13 @@ test("un nombre que existe en dos departamentos los muestra los dos", async ({ p
   await contar(page, "se cayó el puente y no podemos pasar");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("en rionegro");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await decirElLugar(page, "en rionegro");
 
-  const mun = page.locator("[data-prueba='municipio']");
-  await expect(mun).toBeVisible({ timeout: 15_000 });
-  await expect(mun).toContainText(/ANTIOQUIA/i);
-  await expect(mun).toContainText(/SANTANDER/i);
-  await expect(mun).toContainText(/solo tú sabes cuál/i);
+  const sug = page.locator("[data-prueba='sugerencias']");
+  await expect(sug).toBeVisible({ timeout: 15_000 });
+  await expect(sug).toContainText(/ANTIOQUIA/i);
+  await expect(sug).toContainText(/SANTANDER/i);
+  await expect(sug).toContainText(/solo tú sabes cuál/i);
 });
 
 test("si lo que escribió no llega a un municipio, se le pregunta por el nombre", async ({ page }) => {
@@ -187,18 +189,15 @@ test("si lo que escribió no llega a un municipio, se le pregunta por el nombre"
   await contar(page, "no hay agua");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("en mi casa");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await decirElLugar(page, "en mi casa");
 
   const mun = page.locator("[data-prueba='municipio']");
-  await expect(mun).toBeVisible({ timeout: 15_000 });
   await expect(mun).toContainText(/dónde queda/i);
   // Se le dice qué se pierde, sin regañarla.
   await expect(mun).toContainText(/no se puede sumar al de tus vecinos/i);
 
   await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
-  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("si no sabe el municipio del problema, se le pregunta dónde vive", async ({ page }) => {
@@ -208,9 +207,7 @@ test("si no sabe el municipio del problema, se le pregunta dónde vive", async (
   await contar(page, "se cayó el puente y no podemos pasar al colegio");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("aquí cerca");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await decirElLugar(page, "aquí cerca");
 
   const mun = page.locator("[data-prueba='municipio']");
   await mun.getByRole("button", { name: /no sé en qué municipio/i }).click({ timeout: 15_000 });
@@ -222,7 +219,7 @@ test("si no sabe el municipio del problema, se le pregunta dónde vive", async (
   await expect(conf).toBeVisible({ timeout: 15_000 });
   await expect(conf).toContainText(/dónde ocurre el problema/i);
   await conf.getByRole("button", { name: /sí, ocurre ahí/i }).click();
-  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
   // Que el motivo diga de dónde salió el municipio se comprueba en
   // `pruebas/ubicacion-ciudadana.test.ts`: es un dato, no una pantalla.
 });
@@ -231,12 +228,8 @@ test("decir que el problema NO ocurre donde vive no deja municipio puesto", asyn
   await contar(page, "hay basura acumulada");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("por allá");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
   const mun = page.locator("[data-prueba='municipio']");
-  await mun.getByRole("button", { name: /no sé en qué municipio/i }).click({ timeout: 15_000 });
+  await mun.getByRole("button", { name: /no sé en qué municipio/i }).click({ timeout: 20_000 });
   await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
   await page.locator("[data-prueba='confirmar-residencia']")
     .getByRole("button", { name: /no, ocurre en otra parte/i }).click();
@@ -254,9 +247,9 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   await contar(page, `${marca}: la vía principal está intransitable`);
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
   await salirDelMunicipio(page);
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
 
@@ -282,9 +275,9 @@ test("hablar por uno mismo no deja grupo puesto", async ({ page }) => {
   await contar(page, "no hay alumbrado en la calle");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
+  await salirDelMunicipio(page);
   await page.locator("[data-prueba='vuelta-2']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
-  await salirDelMunicipio(page);
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await page.locator("[data-prueba='voceria']").getByRole("button", { name: /hablo por mí/i }).click();
@@ -301,12 +294,8 @@ test("escoger mal el municipio se puede corregir antes de guardarlo", async ({ p
   await contar(page, `${marca}: se inunda la vía cuando llueve`);
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("por allá arriba");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
   const mun = page.locator("[data-prueba='municipio']");
-  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await expect(mun).toBeVisible({ timeout: 20_000 });
   await mun.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
 
   // El buscador: 125 municipios no se recorren en una lista.
@@ -326,7 +315,7 @@ test("escoger mal el municipio se puede corregir antes de guardarlo", async ({ p
   await expect(conf).toContainText(/RIONEGRO/);
   await conf.getByRole("button", { name: /sí, es ahí/i }).click();
 
-  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
 
   // Y lo guardado es el segundo, no el primero.
   await page.goto("/mis-aportes");
@@ -338,11 +327,8 @@ test("el filtro del municipio ignora tildes y mayúsculas", async ({ page }) => 
   await contar(page, "no hay agua en la vereda");
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
     .click({ timeout: 20_000 });
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("por allá");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
   const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 20_000 });
   await mun.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
   await mun.locator("#filtro-municipio").fill("abriaqui");
   await expect(mun.getByRole("button", { name: /^ABRIAQUÍ$/i })).toBeVisible();
@@ -456,10 +442,10 @@ test("la pantalla final no mezcla el comprobante con lo que queda por contar", a
   await page.locator("[data-prueba='escoger']")
     .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
-  // La vuelta 2 pregunta el lugar, así que el municipio viene detrás de ella.
+  // El lugar es el primer paso después de lo que entendimos.
+  await salirDelMunicipio(page);
   await page.locator("[data-prueba='vuelta-2']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
-  await salirDelMunicipio(page);
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await hablarPorMi(page);
@@ -500,8 +486,6 @@ test("después de corregir, los pasos siguientes dicen de qué va el aporte", as
   await expect(sobre).toContainText("el internet no llega a la vereda");
 
   // Y sigue diciéndolo en el paso del municipio, no solo en el primero.
-  await page.locator("[data-prueba='vuelta-2']")
-    .getByRole("button", { name: /continuar|listo/i }).first().click();
   await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
   await expect(sobre).toContainText("el internet no llega a la vereda");
 });
@@ -532,14 +516,16 @@ test("al contar el segundo problema no se vuelve a preguntar lo que ya dijo", as
     .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
 
-  // Se contesta el contexto del primero.
+  // Se contesta el contexto del primero: el lugar en su pantalla, lo demás en
+  // las vueltas.
+  await decirElLugar(page, "la vereda El Salado");
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+
   const v2 = page.locator("[data-prueba='vuelta-2']");
   await expect(v2).toBeVisible({ timeout: 15_000 });
-  await v2.locator("#lugar").fill("la vereda El Salado");
   await v2.locator("#afectados").fill("unas veinte familias");
   await v2.locator("#desdeCuando").fill("desde hace dos meses");
   await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await hablarPorMi(page);
@@ -563,10 +549,12 @@ test("al contar el segundo problema no se vuelve a preguntar lo que ya dijo", as
   await heredado.getByRole("button", { name: /sí, es igual/i }).click();
 
   // Y ya no se le pregunta ni el lugar, ni a quiénes, ni desde cuándo: solo lo
-  // que es propio de **este** problema.
+  // que es propio de **este** problema. **Tampoco vuelve la pantalla del
+  // municipio**: ya hay uno aceptado, y repetirla sería preguntar dos veces lo
+  // mismo por un camino distinto.
   const resto = page.locator("[data-prueba='vuelta-2']");
   await expect(resto).toBeVisible({ timeout: 15_000 });
-  await expect(resto.locator("#lugar")).toHaveCount(0);
+  await expect(page.locator("[data-prueba='municipio']")).toHaveCount(0);
   await expect(resto.locator("#afectados")).toHaveCount(0);
   await expect(resto.locator("#desdeCuando")).toHaveCount(0);
   await expect(resto.locator("#resultadoEsperado")).toBeVisible();
@@ -583,10 +571,10 @@ test("si el segundo problema es en otra parte, se pregunta de nuevo", async ({ p
   await page.locator("[data-prueba='escoger']")
     .getByRole("button", { name: /no hay agua/i }).click({ timeout: 20_000 });
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("la vereda El Salado");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+  await decirElLugar(page, "la vereda El Salado");
   await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await hablarPorMi(page);
@@ -599,9 +587,8 @@ test("si el segundo problema es en otra parte, se pregunta de nuevo", async ({ p
 
   await page.locator("[data-prueba='heredado']")
     .getByRole("button", { name: /esto es distinto/i }).click({ timeout: 15_000 });
-  // Se le pregunta como si fuera la primera vez.
-  await expect(page.locator("[data-prueba='vuelta-2']").locator("#lugar"))
-    .toBeVisible({ timeout: 15_000 });
+  // Se le pregunta como si fuera la primera vez: vuelve la pantalla del lugar.
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("la persona puede ver TODO lo que quedó registrado suyo", async ({ page }) => {
@@ -612,14 +599,15 @@ test("la persona puede ver TODO lo que quedó registrado suyo", async ({ page })
   const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
 
+  await decirElLugar(page, "la vereda El Salado");
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+
   const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.locator("#lugar").fill("la vereda El Salado");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
   await v2.locator("#afectados").fill("unas veinte familias");
   await v2.locator("#desdeCuando").fill("desde hace dos meses");
+  await v2.locator("#resultadoEsperado").fill("que vuelva el agua a la escuela");
   await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
-  await page.locator("[data-prueba='vuelta-3']").locator("#resultadoEsperado")
-    .fill("que vuelva el agua a la escuela");
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
 
@@ -679,11 +667,16 @@ test("nunca se termina sin haber pasado por el municipio", async ({ page }) => {
   // Se contestan las vueltas sin llenar nada —que es lo que hace mucha gente—
   // y aun así el municipio se pregunta. Con «Terminar aquí» no: ahí la persona
   // dijo basta, y terminar tiene que terminar.
+  // Aun saltándose todo, el municipio se pregunta — y ahora se pregunta
+  // **primero**, que es lo que hace que no dependa de ningún camino.
+  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
+  await salirDelMunicipio(page);
+
   const primera = page.locator("[data-prueba='vuelta-2']");
   await expect(primera).toBeVisible({ timeout: 15_000 });
-  await primera.getByRole("button", { name: /continuar|listo/i }).first().click();
-  // Aun saltándose todo, el municipio se pregunta.
-  await expect(page.locator("[data-prueba='municipio']")).toBeVisible({ timeout: 15_000 });
+  // Y «Terminar aquí» termina: `N02` no deja exigir la ubicación.
+  await primera.getByRole("button", { name: /terminar aquí/i }).click();
+  await expect(page.locator("[data-prueba='voceria']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("una vuelta no borra lo que la persona escribió en la anterior", async ({ page }) => {
@@ -696,15 +689,16 @@ test("una vuelta no borra lo que la persona escribió en la anterior", async ({ 
   const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
 
+  await decirElLugar(page, "la vereda El Salado");
+  await salirDelMunicipio(page);
+
   const v2 = page.locator("[data-prueba='vuelta-2']");
   await expect(v2).toBeVisible({ timeout: 15_000 });
-  await v2.locator("#lugar").fill("la vereda El Salado");
+  await v2.locator("#resultadoEsperado").fill("techarlas y hacerles mantenimiento");
   await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-  await salirDelMunicipio(page);
 
   const v3 = page.locator("[data-prueba='vuelta-3']");
   await expect(v3).toBeVisible({ timeout: 15_000 });
-  await v3.locator("#resultadoEsperado").fill("techarlas y hacerles mantenimiento");
   await v3.locator("#solucionSugerida").fill("que las arreglen antes del invierno");
   await v3.getByRole("button", { name: /continuar|listo/i }).first().click();
   await hablarPorMi(page);
@@ -730,18 +724,9 @@ test("el departamento que nombró llega puesto en el selector", async ({ page })
   await page.locator("[data-prueba='vuelta-1']")
     .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
 
-  // Escribe el departamento en «¿dónde ocurre?», con el municipio mal escrito.
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await expect(v2).toBeVisible({ timeout: 15_000 });
-  await v2.locator("#lugar").fill("un barrio de cucutta, norte de santander");
-  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
-
+  // Escribe el departamento con sus palabras, con el municipio mal escrito.
+  await decirElLugar(page, "un barrio de cucutta, norte de santander");
   const mun = page.locator("[data-prueba='municipio']");
-  await expect(mun).toBeVisible({ timeout: 15_000 });
-
-  // Si salieron candidatos, se rechazan para llegar al selector.
-  const ninguno = mun.getByRole("button", { name: /ninguno de estos/i });
-  if (await ninguno.isVisible().catch(() => false)) await ninguno.click();
 
   // El departamento viene puesto, y se dice de dónde salió: un campo que se
   // rellena solo sin explicación se lee como un dato que metió alguien.
@@ -749,4 +734,91 @@ test("el departamento que nombró llega puesto en el selector", async ({ page })
   await expect(mun.locator("#departamento")).toHaveValue(/^\d\d$/);
   // Y sus municipios ya están cargados: escoger deja de ser buscar entre 1.122.
   await expect(mun.locator("#filtro-municipio")).toBeVisible();
+});
+
+test("el lugar se pregunta UNA sola vez, y no en las vueltas", async ({ page }) => {
+  // El negocio lo dijo pensando en quien vive lejos: *«preguntar dos veces, por
+  // ejemplo dónde ocurre, no tiene mucho sentido»*. Antes se preguntaba en texto
+  // libre en una vuelta y otra vez por departamento y municipio, y para quien
+  // vive en una vereda dispersa esas dos son la misma pregunta seguida.
+  await contar(page, "el puente está agrietado y nadie lo revisa");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  // Una pantalla, con las tres formas de decirlo: con sus palabras, el
+  // departamento y el municipio.
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await expect(mun.locator("#con-sus-palabras")).toBeVisible();
+  await expect(mun.locator("#departamento")).toBeVisible();
+  await salirDelMunicipio(page);
+
+  // Y ninguna vuelta vuelve a preguntarlo.
+  for (const v of ["vuelta-2", "vuelta-3"]) {
+    const vuelta = page.locator(`[data-prueba='${v}']`);
+    await expect(vuelta).toBeVisible({ timeout: 15_000 });
+    await expect(vuelta.locator("#lugar"), `${v} vuelve a preguntar dónde ocurre`).toHaveCount(0);
+    await vuelta.getByRole("button", { name: /continuar|listo/i }).first().click();
+  }
+  await expect(page.locator("[data-prueba='voceria']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("se puede volver atrás, y lo escrito sigue ahí", async ({ page }) => {
+  // Se podía ir para adelante y no para atrás: quien se daba cuenta en la
+  // vuelta 2 de que el municipio estaba mal no tenía más salida que cerrar la
+  // página — con el aporte guardado, pero a medio contar.
+  await contar(page, "no hay alumbrado en la vía de entrada");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  await decirElLugar(page, "la vereda El Salado");
+  await salirDelMunicipio(page);
+
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+  await v2.locator("#afectados").fill("unas veinte familias");
+
+  // Atrás: vuelve al lugar, y lo que escribió sigue escrito.
+  await page.locator("[data-prueba='volver']").click();
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await expect(mun.locator("#con-sus-palabras")).toHaveValue(/El Salado/);
+
+  // Y adelante otra vez, sin haber perdido el sitio.
+  await salirDelMunicipio(page);
+  await expect(v2).toBeVisible({ timeout: 15_000 });
+});
+
+test("volver atrás y cambiar el municipio NO deja dos territorios", async ({ page }) => {
+  // `GEO-01` permite que un aporte tenga varios territorios, y eso vale cuando
+  // el problema de verdad cruza dos municipios. Un error de dedo no es eso:
+  // dejar los dos convertiría la equivocación en un dato, y el aporte se
+  // contaría en dos sitios.
+  const marca = `corregir-${Date.now()}`;
+  await contar(page, `${marca}: el agua llega turbia`);
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+
+  await escogerMunicipio(page, "ANTIOQUIA", "BELLO");
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+
+  // Se dio cuenta: no era Bello.
+  await page.locator("[data-prueba='volver']").click();
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
+  await page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true })
+    .click({ timeout: 15_000 });
+  await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
+
+  // Sobre los territorios, no sobre la sección: el formulario de corregir lleva
+  // dentro los 1.122 municipios del catálogo, y buscar «BELLO» en la sección
+  // entera encuentra la opción del desplegable — una prueba que falla por lo
+  // que hay para escoger y no por lo que quedó guardado.
+  const territorios = page.locator("[data-prueba='territorio']");
+  await expect(territorios).toHaveCount(1, { timeout: 15_000 });
+  await expect(territorios).toContainText(/RIONEGRO|05615/);
+  await expect(territorios, "quedó guardado el municipio equivocado")
+    .not.toContainText(/BELLO|05088/);
 });

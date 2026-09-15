@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { bandeja, type Filtro } from "../../revision/bandeja.ts";
-import { Filtros, Señales } from "./bandeja.tsx";
+import { Filtros, Señales, DeQue, Escalado } from "./bandeja.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 
@@ -137,8 +137,14 @@ export default async function Consola({
                         lo pide literal: «no se ocultan datos esenciales» al
                         pasar a lista. Lo que falta y quién lo tiene son la
                         razón de mirar la bandeja. */}
-                    <p>{f.territorio ?? (f.lugarDeclarado ? `«${f.lugarDeclarado}»` : "sin lugar")} · {fecha(f.recibidoEn)}</p>
-                    <p>Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")} · Lo tiene: {f.responsable ?? "nadie"}</p>
+                    <p>
+                      <DeQue tema={f.tema} /> · {f.territorio ?? (f.lugarDeclarado ? `«${f.lugarDeclarado}»` : "sin lugar")}
+                      {" · "}{fecha(f.recibidoEn)}
+                    </p>
+                    <p>
+                      Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")} · Lo tiene:{" "}
+                      {f.responsable ?? "nadie"} · <Escalado estado={f.escalado} />
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -146,7 +152,8 @@ export default async function Consola({
               <table className="bo-table bo-table-desktop">
                 <thead>
                   <tr>
-                    <th>Aporte</th><th>Territorio</th><th>Qué falta</th><th>Quién lo tiene</th>
+                    <th>Aporte</th><th>De qué</th><th>Territorio</th><th>Qué falta</th>
+                    <th>Quién lo tiene</th><th>Escalado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,6 +166,7 @@ export default async function Consola({
                         <p className="bo-small">{fecha(f.recibidoEn)}</p>
                         <Señales fila={f} />
                       </td>
+                      <td className="bo-small"><DeQue tema={f.tema} /></td>
                       <td>
                         {f.territorio
                           ? <strong>{f.territorio}</strong>
@@ -174,6 +182,7 @@ export default async function Consola({
                       <td className="bo-small">
                         {f.responsable ?? <span className="bo-muted">nadie</span>}
                       </td>
+                      <td className="bo-small"><Escalado estado={f.escalado} /></td>
                     </tr>
                   ))}
                 </tbody>

@@ -6,7 +6,11 @@ import { clienteServidor } from "../../../datos/cliente.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { expedientesDe } from "../../../revision/expediente.ts";
 import { prioridadVigente, historiaDePrioridad } from "../../../priorizacion/prioridad.ts";
-import { accionResolver, accionDevolver, accionCrearExpediente, accionPriorizar } from "../acciones.ts";
+import { historiaDe, estadoDeAtencion } from "../../../gestion/actuacion.ts";
+import {
+  accionResolver, accionDevolver, accionCrearExpediente, accionPriorizar,
+  accionCorregirMunicipio, accionRemitir, accionAceptarRemision,
+} from "../acciones.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +90,8 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const { data: mun } = await p.from("territorio")
     .select("codigo, version, nombre, departamento:padre")
     .eq("nivel", "municipio").order("nombre").limit(1200);
+  // El nombre por código, para no enseñar «15001» a quien revisa.
+  const nombreDe = new Map((mun ?? []).map((m) => [m.codigo as string, m.nombre as string]));
 
   const expIds = await expedientesDe(aporteId);
   const exp = expIds[0]
@@ -93,6 +99,12 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
     : null;
   const prio = exp ? await prioridadVigente(exp.id) : null;
   const historia = exp ? await historiaDePrioridad(exp.id) : [];
+  // Lo que se hizo con el expediente y el estado que de ahí se deriva. **Nunca
+  // almacenado**: un campo `estado` se desincroniza de sus hechos, y entonces la
+  // pantalla afirma algo que la historia contradice.
+  const actuaciones = exp ? await historiaDe(exp.id) : [];
+  const atencion = exp ? await estadoDeAtencion(exp.id) : null;
+  const remisiones = actuaciones.filter((x) => x.tipo === "remision");
 
   return (
     <div className="pc-backoffice">
@@ -184,9 +196,17 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                 <section className="bo-source">
                   <h2>Lo que la persona contó</h2>
                   <blockquote>{a.relato_original}</blockquote>
-                  <p className="bo-small">
-                    <strong>El relato original no se edita.</strong> La síntesis nunca lo
-                    sustituye (N03).
+                  {/* **El techo de esta pantalla, dicho en la pantalla.**
+                      Sin decirlo, «corregir» y «reescribir» se parecen
+                      demasiado — y la diferencia entre las dos es todo el valor
+                      de esto: si la consola puede cambiar el sentido de lo que
+                      alguien contó, lo que sube ya no es lo que la gente dijo. */}
+                  <p className="bo-small" data-prueba="lo-que-no-se-toca">
+                    <strong>El relato original no se edita</strong>, y la síntesis nunca lo
+                    sustituye (N03). Aquí no se reescribe nada: ni lo que la persona confirmó
+                    —la última palabra sobre lo que quiso decir es suya (V14)— ni lo que declaró
+                    con sus palabras. Lo que sí se corrige es el municipio y el tema, con motivo
+                    y firma.
                   </p>
                   {/* Lo que la persona precisó al contar, **con sus palabras**
                       (ADR 0012). Lo que no dijo no aparece: un campo vacío es
@@ -329,17 +349,54 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   </section>
                 )}
 
-                <section className="bo-history-section">
+                <section className="bo-history-section" data-prueba="ubicacion">
                   <h2>Ubicación</h2>
                   {ubi?.map((u, i) => (
-                    <p key={i}>
+                    <p key={i} data-prueba="territorio">
                       <span className="bo-badge" data-state={u.estado === "confirmada" ? "validated" : "clarify"}>
                         {u.estado}
                       </span>{" "}
-                      {u.territorio_codigo ?? <span className="bo-muted">sin código — no se infiere</span>}
+                      {/* **El nombre, y el código al lado.** Decía «15001» y
+                          nada más: quien revisa no trabaja con códigos DANE de
+                          memoria, y un dato que hay que ir a buscar a otra
+                          parte es un dato que no está. */}
+                      {u.territorio_codigo
+                        ? <><strong>{nombreDe.get(u.territorio_codigo) ?? "un municipio que no está en el catálogo"}</strong>
+                            {" "}<span className="bo-small">({u.territorio_codigo})</span></>
+                        : <span className="bo-muted">sin código — no se infiere</span>}
                       {u.motivo && <span className="bo-small"> · {u.motivo}</span>}
                     </p>
                   ))}
+
+                  {/* **Corregir en un paso.** Cambiar un municipio mal aceptado
+                      obligaba a devolverlo a «por aclarar» y aceptarlo otra vez:
+                      dos formularios y dos motivos para arreglar una letra. Y
+                      entre los dos pasos el aporte pasaba por un estado que no
+                      era cierto.
+
+                      Corregir **reemplaza**, no agrega: dos territorios
+                      significan que el problema cruza dos municipios (`GEO-01`),
+                      y un error de dedo no es eso. */}
+                  {ubi?.some((u) => u.estado === "confirmada") && (
+                    <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
+                      <input type="hidden" name="aporteId" value={aporteId} />
+                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
+                      <Opciones id="cor-codigo" name="codigo" etiqueta="Corregir el municipio">
+                        <option value="">Escoge uno…</option>
+                        {mun?.map((m) => (
+                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                        ))}
+                      </Opciones>
+                      <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
+                             ejemplo="dice El Salado de Rionegro, no el de Bello" />
+                      <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
+                      <button className="bo-button">Corregir</button>
+                      <p className="bo-small">
+                        Reemplaza el que había, <strong>no agrega otro</strong>. Queda en auditoría
+                        con el anterior, el nuevo, quién y por qué.
+                      </p>
+                    </form>
+                  )}
 
                   {ubi?.some((u) => u.estado === "confirmada") && (
                     <form action={accionDevolver}>
@@ -452,6 +509,66 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         quién se atiende primero con una cuenta que nadie autorizó.
                       </p>
                     </form>
+
+                    {/* **Escalar: a dónde va esto y quién puede desagregarlo.**
+                        Faltaba entero: la ficha sabía abrir el expediente y
+                        priorizarlo, pero no sacarlo de aquí. Y un aporte que
+                        describe una necesidad que no es una sola cosa lo parte
+                        el equipo que conoce el territorio, no quien lo recibió.
+
+                        Lo que se registra es un **hecho**, no un estado: remitir
+                        no es haber atendido, y esta pantalla no mueve nada hacia
+                        «resuelto». */}
+                    <section data-prueba="escalar">
+                      <h3>Escalar</h3>
+                      {atencion && (
+                        <p className="bo-small">
+                          Estado de atención: <strong>{atencion.estado.replace(/_/g, " ")}</strong>
+                          {" · "}{atencion.diasSinActuar} días sin actuar
+                          {atencion.remisionPendiente && (
+                            <> · <span className="bo-badge" data-state="clarify">remisión sin aceptar</span></>
+                          )}
+                        </p>
+                      )}
+
+                      {remisiones.map((r) => (
+                        <div key={r.actuacionId} className="bo-check">
+                          <span className="bo-badge" data-state={r.aceptadaEn ? "validated" : "clarify"}>
+                            {r.aceptadaEn ? "recibida" : "pendiente de aceptación"}
+                          </span>
+                          <p>
+                            <strong>{r.destino}</strong>
+                            {r.motivo && <span className="bo-small"> · {r.motivo}</span>}
+                            <span className="bo-small"> · por {r.autor}</span>
+                          </p>
+                          {!r.aceptadaEn && (
+                            <form action={accionAceptarRemision} data-prueba="aceptar-remision">
+                              <input type="hidden" name="actuacionId" value={r.actuacionId} />
+                              <Campo id={`ace-${r.actuacionId}`} name="motivo"
+                                     etiqueta="Quién confirmó que lo recibió"
+                                     ejemplo="la secretaría lo radicó con el número 4471" />
+                              <button className="bo-button">Confirmar recepción</button>
+                            </form>
+                          )}
+                        </div>
+                      ))}
+
+                      <form action={accionRemitir}>
+                        <input type="hidden" name="expedienteId" value={exp.id} />
+                        <Campo id="rem-destino" name="destino" etiqueta="A qué mesa o equipo"
+                               ejemplo="mesa técnica de agua del Huila / equipo de infraestructura educativa" />
+                        <Campo id="rem-motivo" name="motivo" etiqueta="Por qué se escala"
+                               ejemplo="necesita desagregarse: son tres necesidades en una" opcional />
+                        <Campo id="rem-autor" name="autor" etiqueta="Tu nombre" opcional />
+                        <button className="bo-button" data-variant="primary">Remitir</button>
+                        <p className="bo-small">
+                          <strong>Remitir no es haber atendido.</strong> Queda pendiente hasta que
+                          la destinataria confirme, y <strong>el silencio no cierra nada</strong>.
+                          El directorio real de entidades sigue pendiente: por eso el destinatario
+                          se escribe como se llame.
+                        </p>
+                      </form>
+                    </section>
 
                     {historia.length > 1 && (
                       <section className="bo-history">

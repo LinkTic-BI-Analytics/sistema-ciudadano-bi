@@ -125,15 +125,14 @@ test("lo que afina después queda guardado con el aporte", async ({ page }) => {
   const codigo = await page.locator("[data-prueba='codigo']").innerText({ timeout: 20_000 });
 
   await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i }).click();
-  // Este relato no dice dónde, ni a quiénes, ni desde cuándo: esas tres van en
-  // la primera vuelta y lo que debería cambiar en la segunda.
-  const v2 = page.locator("[data-prueba='vuelta-2']");
-  await v2.getByRole("button", { name: /continuar/i }).first().click();
-  // La vuelta 2 pregunta el lugar, así que ahora se pasa por el municipio.
+  // El lugar va primero y en una sola pantalla. Lo demás —a quiénes, desde
+  // cuándo, qué debería cambiar— en las vueltas.
   await salirDelMunicipio(page);
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#resultadoEsperado").fill("que lo revisen antes de que se caiga");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
   const v3 = page.locator("[data-prueba='vuelta-3']");
-  await v3.locator("#resultadoEsperado").fill("que lo revisen antes de que se caiga");
-  await v3.getByRole("button", { name: /listo/i }).first().click();
+  await v3.getByRole("button", { name: /listo|continuar/i }).first().click();
   await hablarPorMi(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 

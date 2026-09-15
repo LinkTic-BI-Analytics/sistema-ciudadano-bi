@@ -95,6 +95,49 @@ export async function resolverUbicacion(e: ResolverUbicacion): Promise<void> {
 }
 
 /**
+ * La persona corrige el municipio que ella misma acababa de confirmar.
+ *
+ * **No es un segundo territorio: es el mismo, corregido.** `GEO-01` permite que
+ * un aporte tenga varios, y eso vale cuando un problema de verdad cruza dos
+ * municipios. Pero volver atrás dentro de la misma captura y escoger otro
+ * significa que el primero estaba mal, y dejar los dos convertiría un error de
+ * dedo en un dato: el aporte aparecería sumado en dos territorios.
+ *
+ * Solo toca las filas que confirmó **el ciudadano**. Lo que resolvió un revisor
+ * en la bandeja no se pisa desde aquí.
+ */
+export async function corregirUbicacionDelCiudadano(
+  e: { aporteId: string; codigo: string; version: string; motivo: string },
+): Promise<void> {
+  if (!e.motivo?.trim()) throw new Error("corregir una ubicación exige motivo");
+  const p = clienteServidor().schema("participacion");
+
+  const { data: aporte } = await p.from("aporte").select("proceso_id").eq("id", e.aporteId).single();
+  if (!aporte) throw new Error(`no existe el aporte ${e.aporteId}`);
+
+  const { data: suyas } = await p.from("ubicacion").select("id, territorio_codigo")
+    .eq("aporte_id", e.aporteId).eq("autor", "ciudadano").eq("estado", "confirmada");
+
+  // Si no hay ninguna suya, esto es la primera vez: el camino normal.
+  if (!suyas?.length) {
+    await resolverUbicacion({ ...e, autor: "ciudadano" });
+    return;
+  }
+
+  const { error } = await p.from("ubicacion")
+    .update({ territorio_codigo: e.codigo, territorio_version: e.version, motivo: e.motivo })
+    .in("id", suyas.map((u) => u.id));
+  if (error) throw new Error(`no se pudo corregir la ubicación: ${error.message}`);
+
+  await p.from("auditoria").insert({
+    proceso_id: aporte.proceso_id, actor: "ciudadano", accion: "corregir_ubicacion",
+    entidad: "ubicacion", entidad_id: e.aporteId, motivo: e.motivo,
+    antes: { codigos: suyas.map((u) => u.territorio_codigo) },
+    despues: { codigo: e.codigo, version: e.version },
+  });
+}
+
+/**
  * Devuelve un aporte a la bandeja.
  *
  * **Borra el código**, no lo deja de adorno con otro estado: un código guardado

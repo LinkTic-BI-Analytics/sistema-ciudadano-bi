@@ -11,10 +11,21 @@ import { expect, type Page } from "@playwright/test";
 export async function salirDelMunicipio(page: Page) {
   const m = page.locator("[data-prueba='municipio']");
   await expect(m).toBeVisible({ timeout: 20_000 });
-  const ninguno = m.getByRole("button", { name: /ninguno de estos/i });
-  if (await ninguno.isVisible().catch(() => false)) await ninguno.click();
   await m.getByRole("button", { name: /no sé en qué municipio/i }).click();
   await m.getByRole("button", { name: /prefiero no decirlo/i }).click();
+}
+
+/**
+ * Dice dónde ocurre **con sus palabras**, en la misma pantalla del municipio.
+ *
+ * Se pregunta una sola vez: antes había una vuelta de texto libre y después el
+ * selector, y para quien vive en una vereda dispersa esa era la misma pregunta
+ * dos veces seguidas.
+ */
+export async function decirElLugar(page: Page, texto: string) {
+  const m = page.locator("[data-prueba='municipio']");
+  await expect(m).toBeVisible({ timeout: 20_000 });
+  await m.locator("#con-sus-palabras").fill(texto);
 }
 
 /**

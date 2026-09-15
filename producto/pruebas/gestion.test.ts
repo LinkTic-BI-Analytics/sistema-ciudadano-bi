@@ -10,7 +10,7 @@
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { registrarActuacion, historiaDe, estadoDeAtencion } from "../src/gestion/actuacion.ts";
+import { registrarActuacion, historiaDe, estadoDeAtencion, aceptarRemision } from "../src/gestion/actuacion.ts";
 import { crearExpediente } from "../src/revision/expediente.ts";
 import { recibirAporte } from "../src/captura/recibir.ts";
 import { clienteServidor } from "../src/datos/cliente.ts";
@@ -79,6 +79,46 @@ test("aceptar la remisión es otra actuación, con su fecha", async () => {
   await p.from("actuacion").update({ aceptada_en: new Date().toISOString() }).eq("id", r.actuacionId);
   const s = await estadoDeAtencion(e.expedienteId);
   assert.equal(s.remisionPendiente, false);
+});
+
+test("aceptar una remisión exige decir quién confirmó", async () => {
+  // Sin eso, «aceptada» sería indistinguible de que alguien la marcó para
+  // quitársela de encima. `N13` solo se sostiene si aceptar deja rastro.
+  const e = await nuevoExpediente("aceptación sin quién");
+  const r = await registrarActuacion({ expedienteId: e.expedienteId, tipo: "remision",
+    autor: "responsable", destino: "la mesa técnica de agua", motivo: "competencia" });
+  await assert.rejects(() => aceptarRemision({
+    actuacionId: r.actuacionId, autor: "responsable", motivo: "  " }));
+  const s = await estadoDeAtencion(e.expedienteId);
+  assert.equal(s.remisionPendiente, true, "quedó aceptada sin decir quién lo confirmó");
+});
+
+test("aceptar deja la remisión recibida, y solo se acepta una remisión", async () => {
+  const e = await nuevoExpediente("aceptación con quién");
+  const r = await registrarActuacion({ expedienteId: e.expedienteId, tipo: "remision",
+    autor: "responsable", destino: "equipo de infraestructura educativa", motivo: "para desagregar" });
+  await aceptarRemision({ actuacionId: r.actuacionId, autor: "responsable",
+                          motivo: "la secretaría lo radicó con el número 4471" });
+  assert.equal((await estadoDeAtencion(e.expedienteId)).remisionPendiente, false);
+
+  // Una recepción no se «acepta»: no es una remisión.
+  const otra = await registrarActuacion({ expedienteId: e.expedienteId, tipo: "recepcion",
+    autor: "responsable" });
+  await assert.rejects(() => aceptarRemision({
+    actuacionId: otra.actuacionId, autor: "responsable", motivo: "confirmó" }));
+});
+
+test("escalar NO cierra nada: el estado sigue sin respuesta de nadie", async () => {
+  // Es la mitad que se olvida. Remitir se siente como haber hecho algo, y por
+  // eso hay que ver en el dato que no hay respuesta: *«entidad sin responder no
+  // cierra por silencio»*.
+  const e = await nuevoExpediente("escalar no cierra");
+  const r = await registrarActuacion({ expedienteId: e.expedienteId, tipo: "remision",
+    autor: "responsable", destino: "la mesa técnica de agua", motivo: "necesita desagregarse" });
+  await aceptarRemision({ actuacionId: r.actuacionId, autor: "responsable", motivo: "radicado" });
+  const s = await estadoDeAtencion(e.expedienteId);
+  assert.equal(s.estado, "remitido");
+  assert.notEqual(s.estado, "respondido", "remitir no es haber respondido");
 });
 
 test("un tipo que no sea uno de los cinco se rechaza", async () => {

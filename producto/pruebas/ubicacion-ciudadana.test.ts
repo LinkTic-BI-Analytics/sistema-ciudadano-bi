@@ -9,7 +9,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { recibirAporte } from "../src/captura/recibir.ts";
-import { resolverUbicacion } from "../src/revision/ubicacion.ts";
+import { resolverUbicacion, corregirUbicacionDelCiudadano } from "../src/revision/ubicacion.ts";
 import { clienteServidor } from "../src/datos/cliente.ts";
 
 const p = clienteServidor().schema("participacion");
@@ -81,4 +81,68 @@ test("resolver sin motivo no se puede, ni siendo la propia persona", async () =>
     /motivo/,
     "un acto sin razón es indistinguible de una inferencia automática",
   );
+});
+
+test("corregir el municipio REEMPLAZA: no deja dos territorios", async () => {
+  // `GEO-01` permite que un aporte tenga varios territorios, y eso vale cuando
+  // el problema cruza dos municipios. Volver atrás en la captura y escoger otro
+  // no es eso: es que el primero estaba mal. Dejar los dos convertiría un error
+  // de dedo en un dato, y el aporte se contaría en dos sitios.
+  const { data: dos } = await p.from("territorio").select("codigo, version")
+    .eq("nivel", "municipio").limit(2);
+  const [uno, otro] = dos!;
+
+  const a = await unAporte("las canchas están rotas");
+  await resolverUbicacion({
+    aporteId: a, codigo: uno!.codigo, version: uno!.version, autor: "ciudadano",
+    motivo: "la persona lo confirmó al contar su aporte",
+  });
+  await corregirUbicacionDelCiudadano({
+    aporteId: a, codigo: otro!.codigo, version: otro!.version,
+    motivo: "la persona volvió atrás y corrigió el municipio durante la captura",
+  });
+
+  const { data: filas } = await p.from("ubicacion")
+    .select("territorio_codigo, estado").eq("aporte_id", a);
+  assert.equal(filas!.length, 1, "quedaron dos territorios: el equivocado también");
+  assert.equal(filas![0]!.territorio_codigo, otro!.codigo);
+});
+
+test("corregir sin haber confirmado nunca es resolver, no duplicar", async () => {
+  // Quien llega aquí sin una ubicación suya no está corrigiendo nada: es la
+  // primera vez. Fallar ahí obligaría a quien llama a saber en qué estado está
+  // el aporte, y ese es justo el conocimiento que se pierde entre pantallas.
+  const m = await unMunicipio();
+  const a = await unAporte("no hay alumbrado");
+  await corregirUbicacionDelCiudadano({
+    aporteId: a, codigo: m.codigo, version: m.version,
+    motivo: "la persona volvió atrás y corrigió el municipio durante la captura",
+  });
+  const { data: filas } = await p.from("ubicacion").select("estado").eq("aporte_id", a);
+  assert.equal(filas!.length, 1);
+  assert.equal(filas![0]!.estado, "confirmada");
+});
+
+test("corregir NO pisa lo que resolvió un revisor", async () => {
+  // Lo que decidió alguien en la bandeja tiene su propio autor y su propio
+  // motivo. Esta función es la del ciudadano corrigiéndose a sí mismo durante
+  // la captura, y pisar una decisión ajena con ella la borraría sin rastro.
+  const { data: dos } = await p.from("territorio").select("codigo, version")
+    .eq("nivel", "municipio").limit(2);
+  const [uno, otro] = dos!;
+
+  const a = await unAporte("el puente está agrietado");
+  await resolverUbicacion({
+    aporteId: a, codigo: uno!.codigo, version: uno!.version, autor: "una revisora",
+    motivo: "la referencia solo existe en ese municipio",
+  });
+  await corregirUbicacionDelCiudadano({
+    aporteId: a, codigo: otro!.codigo, version: otro!.version,
+    motivo: "la persona volvió atrás y corrigió el municipio durante la captura",
+  });
+
+  const { data: filas } = await p.from("ubicacion")
+    .select("territorio_codigo, autor").eq("aporte_id", a).order("creada_en");
+  const dela = filas!.find((f) => f.autor === "una revisora");
+  assert.equal(dela!.territorio_codigo, uno!.codigo, "se pisó lo que resolvió un revisor");
 });

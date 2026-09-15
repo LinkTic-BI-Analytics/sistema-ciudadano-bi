@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { FilaBandeja } from "../../revision/bandeja.ts";
+import { COMO_SE_LLAMA, esTema } from "../../captura/lectura.ts";
 
 // Las señales que cambian cómo se revisa un aporte.
 //
@@ -12,6 +13,33 @@ const COMO_SE_LEE = {
   urgencia: { texto: "alerta de urgencia", estado: "review" },
   evento: { texto: "viene de un encuentro", estado: "validated" },
 } as const;
+
+/**
+ * De qué habla el aporte.
+ *
+ * **Sin tema no se puede enrutar a ninguna mesa**, y por eso se dice en vez de
+ * dejar la celda vacía: un hueco parece un fallo de la pantalla; «sin tema» es
+ * un dato sobre el aporte.
+ */
+export function DeQue({ tema }: { tema: string | null }) {
+  if (!tema || !esTema(tema)) return <span className="bo-muted">sin tema</span>;
+  return <strong>{COMO_SE_LLAMA[tema]}</strong>;
+}
+
+/**
+ * Si ya salió hacia una mesa o un equipo.
+ *
+ * **«Remitido» no es «atendido».** Mientras la destinataria no confirme, sigue
+ * pendiente, y el silencio no lo cierra.
+ */
+export function Escalado({ estado }: { estado: FilaBandeja["escalado"] }) {
+  if (estado === "no") return <span className="bo-muted">no</span>;
+  return (
+    <span className="bo-badge" data-state={estado === "recibido" ? "validated" : "clarify"}>
+      {estado === "recibido" ? "lo recibieron" : "remitido · sin aceptar"}
+    </span>
+  );
+}
 
 export function Señales({ fila }: { fila: FilaBandeja }) {
   if (fila.señales.length === 0) return null;

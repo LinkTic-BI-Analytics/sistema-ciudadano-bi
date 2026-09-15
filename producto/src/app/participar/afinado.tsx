@@ -3,7 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
   confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio,
-  listarDepartamentos, listarMunicipios, declararGrupo, aplicarContexto, type PasoAfinado,
+  listarDepartamentos, listarMunicipios, declararGrupo, aplicarContexto, anotarLugar, ubicarTexto,
+  type PasoAfinado,
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
@@ -87,6 +88,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Lo que contó y no es de lo que hablamos en este aporte. No se pierde: sigue
   // entero en su relato, y al final se le ofrece contarlo aparte.
   const [otros, setOtros] = useState<string[]>([]);
+  // Que hubo que escoger entre varias cosas no deja de ser cierto cuando la
+  // persona las junta en una: el paso existió y cuenta.
+  const [huboEscoger, setHuboEscoger] = useState(false);
   const [grupo, setGrupo] = useState("");
   const [porGrupo, setPorGrupo] = useState(false);
   const [guardandoVoz, setGuardandoVoz] = useState(false);
@@ -100,6 +104,9 @@ export function Afinado({ codigo }: { codigo: string }) {
   // tampoco se tira**. Arrancar el selector en blanco después de que alguien
   // acaba de escribir dónde vive pierde el rastro y le hace repetirlo.
   const [detectado, setDetectado] = useState<Departamento | null>(null);
+  // «Con tus palabras»: el barrio, la vereda, la referencia. Va en la misma
+  // pantalla que el municipio y no en una vuelta aparte.
+  const [conSusPalabras, setConSusPalabras] = useState("");
   const [porResidencia, setPorResidencia] = useState(false);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   // A qué vuelta se vuelve al salir del municipio. Se fija **al entrar**, porque
@@ -128,9 +135,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   useEffect(() => {
     if (!rutear) return;
     setRutear(false);
-    if ((lect?.lugar || candidatos.length) && !municipioPuesto) {
-      setVueltaAlVolver(0); setPaso("municipio"); return;
-    }
+    if (!municipioPuesto) { setVueltaAlVolver(0); setPaso("municipio"); return; }
     setPaso(vueltas.length ? "falta" : "voceria");
     // `vueltas` sale de `lect`, y se quiere el valor recién puesto.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,12 +150,14 @@ export function Afinado({ codigo }: { codigo: string }) {
         setProblema(r.lectura.problema);
         setCandidatos(r.municipios);
         setDetectado(r.departamento);
-        repartir(r.lectura, r.municipios.length > 0);
+        setConSusPalabras(r.lectura.lugar ?? "");
+        repartir(r.lectura);
         // Si contó varias cosas, lo primero es escoger de cuál hablamos: todo lo
         // que viene después —el lugar, a quiénes, la prioridad— es de **un**
         // problema, y mezclarlos hace que ninguno se pueda atender.
         if (r.lectura.otrosProblemas.length > 0) {
           setOtros(r.lectura.otrosProblemas);
+          setHuboEscoger(true);
           setPaso("escoger");
         }
       })
@@ -169,8 +176,16 @@ export function Afinado({ codigo }: { codigo: string }) {
   // lectura, y al aceptar el contexto del aporte anterior.
   const [vueltas, setVueltas] = useState<Preguntable[][]>([]);
 
-  function repartir(l: Lectura, hayCandidatos: boolean) {
-    const faltan = loQueFalta(l).filter((k) => !(k === "lugar" && hayCandidatos));
+  function repartir(l: Lectura) {
+    // **El lugar nunca va en una vuelta.** Se preguntaba dos veces: primero
+    // «¿dónde ocurre?» en texto libre y después departamento y municipio. Para
+    // alguien de una vereda dispersa, que ya escribió dónde vive, la segunda
+    // pregunta es la misma pregunta — y es la pantalla donde más se abandona.
+    //
+    // Ahora el paso del municipio las junta: departamento, municipio y «con tus
+    // palabras» en la misma pantalla. `GEO-01` sigue cumpliéndose, porque el
+    // texto declarado se conserva igual: lo que cambia es que se pide una vez.
+    const faltan = loQueFalta(l).filter((k) => k !== "lugar");
     const trozos: Preguntable[][] = [];
     for (let i = 0; i < faltan.length; i += POR_VUELTA) trozos.push(faltan.slice(i, i + POR_VUELTA));
     setVueltas(trozos);
@@ -183,12 +198,34 @@ export function Afinado({ codigo }: { codigo: string }) {
     if (paso === "municipio" && deptos.length === 0) listarDepartamentos().then(setDeptos);
   }, [paso, deptos.length]);
 
+  // **Lo que escribe con sus palabras busca solo.** Es lo que hace que la
+  // pregunta pueda ser una: escribe «la vereda La Martinita, Rionegro Antioquia»
+  // y debajo aparecen el municipio y el departamento. Antes esa ayuda solo
+  // existía si el municipio venía en el relato.
+  //
+  // Espera a que deje de escribir: buscar en cada tecla manda una consulta por
+  // letra y hace parpadear la lista mientras la persona todavía está pensando.
+  const ultimoBuscado = useRef("");
+  useEffect(() => {
+    if (paso !== "municipio" || porResidencia || elegido) return;
+    const dicho = conSusPalabras.trim();
+    if (dicho === ultimoBuscado.current) return;
+    const t = setTimeout(async () => {
+      ultimoBuscado.current = dicho;
+      const r = await ubicarTexto(dicho);
+      setCandidatos(r.municipios);
+      // El departamento detectado se pone solo si ella no ha escogido ninguno:
+      // pisarle su elección con lo que leímos sería decidir por ella.
+      if (r.departamento && !depto) setDetectado(r.departamento);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [conSusPalabras, paso, porResidencia, elegido, depto]);
+
   // El departamento que la persona nombró llega puesto, con sus municipios
   // cargados. Es lo que convierte «escoge entre 1.122» en «confirma el tuyo».
   useEffect(() => {
     if (paso !== "municipio" || !detectado || depto) return;
     void escogerDepartamento(detectado.codigo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso, detectado, depto]);
 
   useEffect(() => {
@@ -206,8 +243,10 @@ export function Afinado({ codigo }: { codigo: string }) {
     // lugar pero sí había candidatos — así que se quitaba «dónde» de las
     // preguntas *y* se saltaba el paso de confirmarlo. A esa persona no se le
     // preguntó nada de ubicación, con Tunja escrito en su primera línea.
-    if (lect?.lugar || candidatos.length) { setVueltaAlVolver(0); setPaso("municipio"); return; }
-    setPaso(vueltas.length ? "falta" : "voceria");
+    // El lugar se pregunta siempre y **siempre aquí**: es el primer paso
+    // después de confirmar lo que entendimos, y el único que lo pregunta.
+    setVueltaAlVolver(0);
+    setPaso("municipio");
   }, [r1]);
   useEffect(() => {
     if (!r2?.ok) return;
@@ -225,19 +264,10 @@ export function Afinado({ codigo }: { codigo: string }) {
         solucionSugerida: p.solucionSugerida ?? l.solucionSugerida,
       });
     }
-    // Si nombró un sitio y DIVIPOLA encontró candidatos, se le enseñan antes de
-    // seguir: es el único momento en que está la persona que de verdad lo sabe.
-    // **El municipio se pregunta siempre que se haya preguntado el lugar**, haya
-    // candidatos o no. Que la persona escriba «en mi casa» no es una respuesta:
-    // es un sitio que solo ella puede encontrar, y un problema que no se puede
-    // asociar a un territorio no se puede sumar a ningún lado.
-    if (vueltas[vuelta]?.includes("lugar")) {
-      setCandidatos(r2.municipios ?? []);
-      if (r2.departamento) setDetectado(r2.departamento);
-      setVueltaAlVolver(vuelta + 1);
-      setPaso("municipio");
-      return;
-    }
+    // Aquí ya no se ramifica por el lugar: para cuando la persona llega a las
+    // vueltas, el municipio ya se preguntó. Antes esta rama mandaba de vuelta al
+    // selector a mitad de las vueltas, y era la segunda vez que se le preguntaba
+    // dónde ocurre lo mismo.
     setVuelta((v) => {
       const siguiente = v + 1;
       if (siguiente >= vueltas.length) setPaso(haciaElFinal());
@@ -270,10 +300,10 @@ export function Afinado({ codigo }: { codigo: string }) {
     if (!elegido) return;
     if (porResidencia) { setPaso("confirmar-residencia"); return; }
     setGuardandoMun(true);
-    await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "lo_dijo");
+    await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "lo_dijo", municipioPuesto !== null);
     setMunicipioPuesto(elegido);
     setGuardandoMun(false);
-    seguirDespuesDelMunicipio();
+    await seguirDespuesDelMunicipio();
   }
 
   // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
@@ -285,13 +315,54 @@ export function Afinado({ codigo }: { codigo: string }) {
    * condición: fue que había dos caminos hacia el final y solo uno miraba la
    * ubicación. Con una sola puerta, no puede volver a pasar.
    */
+  /**
+   * A dónde lleva «Volver».
+   *
+   * Se podía ir para adelante y no para atrás: quien se daba cuenta en la
+   * vuelta 2 de que había escogido mal el problema, o de que el municipio no
+   * era ese, no tenía más salida que cerrar la página y perder el hilo — con el
+   * aporte ya guardado, pero a medio contar.
+   *
+   * Devuelve `null` cuando de verdad no hay a dónde volver, y entonces el botón
+   * no se dibuja: un «Volver» que no vuelve es peor que no tenerlo.
+   */
+  function atras(): (() => void) | null {
+    if (paso === "entendimos") {
+      return otros.length ? () => setPaso("escoger") : null;
+    }
+    if (paso === "municipio") {
+      if (elegido) return () => setElegido(null);
+      // De «¿dónde vives?» se vuelve a «¿dónde queda?», no dos pantallas atrás.
+      if (porResidencia) return () => { setPorResidencia(false); setDepto(""); setDelDepto([]); };
+      return () => setPaso("entendimos");
+    }
+    if (paso === "confirmar-residencia") return () => { setElegido(null); setPaso("municipio"); };
+    if (paso === "falta") {
+      // A la vuelta anterior; desde la primera, al municipio. Volver al
+      // municipio no repregunta desde cero: lo confirmado sigue puesto y
+      // cambiarlo **corrige** el territorio en vez de agregar otro.
+      if (vuelta > 0) return () => setVuelta(vuelta - 1);
+      return () => { setVueltaAlVolver(0); setPaso("municipio"); };
+    }
+    return null;
+  }
+
   function haciaElFinal(): "municipio" | "voceria" {
     if (municipioPuesto || municipioVisto) return "voceria";
     setVueltaAlVolver(99);
     return "municipio";
   }
 
-  function seguirDespuesDelMunicipio() {
+  /**
+   * La única salida del paso del municipio.
+   *
+   * Guarda **el lugar con sus palabras** antes de seguir: el barrio o la vereda
+   * se preguntan aquí, en la misma pantalla, y no en una vuelta aparte. Si se
+   * perdiera en esta transición, el aporte llegaría a la consola sin una sola
+   * línea de dónde ocurre — que es exactamente lo que se quería arreglar.
+   */
+  async function seguirDespuesDelMunicipio() {
+    await anotarLugar(codigo, conSusPalabras);
     setCandidatos([]);
     setDepto(""); setDelDepto([]); setFiltro(""); setPorResidencia(false); setElegido(null);
     setMunicipioVisto(true);
@@ -447,14 +518,41 @@ export function Afinado({ codigo }: { codigo: string }) {
     );
   }
 
-  const total = 3 + vueltas.length + (candidatos.length ? 1 : 0) + (paso === "escoger" ? 1 : 0);
-  const actual = paso === "entendimos" ? 2 : paso === "municipio" ? 2 + vuelta + 2 : 2 + vuelta + 1;
+  const volver = atras();
+
+  // **Cuántos pasos hay, y que no cambien a mitad.** El total se contaba con
+  // `candidatos.length`, que sube y baja mientras la persona busca su
+  // municipio: el «de 5» se volvía «de 4» sin que ella hubiera hecho nada. Y
+  // escoger problema dejaba de contarse al juntarlos en uno.
+  //
+  // Ahora los pasos son fijos desde el principio: escoger (si contó varias
+  // cosas) · lo que entendimos · el contexto heredado (si viene de otro aporte)
+  // · dónde ocurre · las vueltas de lo que falta · quién habla.
+  const antes = (huboEscoger ? 1 : 0) + (tieneAlgo(heredado) ? 1 : 0);
+  const total = antes + 3 + vueltas.length;
+  const actual =
+    paso === "escoger" ? 1
+    : paso === "entendimos" ? (huboEscoger ? 2 : 1)
+    : paso === "heredado" ? (huboEscoger ? 3 : 2)
+    : paso === "falta" ? antes + 3 + vuelta
+    : antes + 2;
 
   return (
     <section className="pc-section" data-prueba="afinar">
       {/* Decir cuánto falta es lo que impide que alguien abandone creyendo que
           esto no se acaba nunca. */}
-      <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
+      {/* `.pc-topline` existe y hace justo esto: dos cosas en una línea, que se
+          apilan cuando no caben. `.pc-steps` es la lista numerada de la portada
+          y usarla aquí sería inventarle un significado a una clase que ya
+          tiene el suyo. */}
+      <div className="pc-topline">
+        <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
+        {volver && (
+          <button type="button" className="pc-text-action" data-prueba="volver" onClick={volver}>
+            Volver
+          </button>
+        )}
+      </div>
       <Guardado codigo={codigo} />
       {paso !== "entendimos" && paso !== "escoger" && <SobreQue problema={problema} />}
 
@@ -603,12 +701,52 @@ export function Afinado({ codigo }: { codigo: string }) {
 
       {paso === "municipio" && !elegido && (
         <div data-prueba="municipio">
-          {candidatos.length > 0 ? (
-            <>
-              <h2>{candidatos.length === 1 ? "¿Es aquí?" : "¿Cuál de estos es?"}</h2>
-              <p className="pc-help">
-                Lo buscamos en el listado oficial de municipios del DANE por lo que escribiste.
-                {candidatos.length > 1 && <> Hay más de uno con ese nombre, <strong>y solo tú sabes cuál es</strong>.</>}
+          {/* **Una sola pregunta, una sola pantalla, y siempre la misma.**
+              Antes el lugar se preguntaba dos veces —texto libre en una vuelta y
+              municipio en otra— y además esta pantalla se partía en dos ramas
+              que se alternaban solas: con candidatos enseñaba una lista, sin
+              ellos un selector, y escribir hacía saltar de una a otra bajo los
+              dedos.
+
+              Ahora es una: se dice con las palabras de uno, y debajo va lo que
+              encontramos con eso. Si acertamos, es un toque. Si no, el selector
+              está ahí mismo. Nadie tiene que volver atrás para corregir. */}
+          <h2>{porResidencia ? "¿Dónde vives?" : "¿Dónde queda?"}</h2>
+          <p className="pc-help">
+            {porResidencia ? (
+              <>Sirve para acercarnos. Después te preguntamos si el problema ocurre ahí mismo.</>
+            ) : (
+              <>
+                Sin municipio, tu aporte <strong>no se puede sumar al de tus vecinos</strong> ni
+                llegar a quien responde por ese territorio.
+              </>
+            )}
+          </p>
+
+          {!porResidencia && (
+            <div className="pc-field">
+              <label className="pc-label" htmlFor="con-sus-palabras">
+                Dilo con tus palabras
+              </label>
+              <input id="con-sus-palabras" className="pc-input" type="text"
+                     value={conSusPalabras}
+                     onChange={(e) => setConSusPalabras(e.target.value)}
+                     aria-describedby="palabras-ayuda" />
+              <p className="pc-help" id="palabras-ayuda">
+                El barrio, la vereda, el municipio o una referencia: «la vereda El Salado, en
+                Rionegro». <strong>Se guarda tal como lo escribas.</strong>
+              </p>
+            </div>
+          )}
+
+          {/* Lo que encontramos con eso. **No elige nada**: `I2` prohíbe
+              inferir, y si hay dos Rionegro escoge la persona. */}
+          {!porResidencia && candidatos.length > 0 && (
+            <div data-prueba="sugerencias">
+              <p className="pc-note">
+                {candidatos.length === 1
+                  ? <>Por lo que escribiste, puede ser <strong>este</strong>. Tócalo si es.</>
+                  : <>Hay más de uno con ese nombre, <strong>y solo tú sabes cuál es</strong>.</>}
               </p>
               <div className="pc-actions">
                 {candidatos.map((c) => (
@@ -618,107 +756,76 @@ export function Afinado({ codigo }: { codigo: string }) {
                   </button>
                 ))}
               </div>
-              {/* **Rechazar no borra el rastro.** Al decir «ninguno», el
-                  selector arrancaba en blanco y había que empezar de cero
-                  después de haber escrito dónde. Ahora queda el departamento
-                  detectado y el filtro con lo que escribió. */}
-              <button type="button" className="pc-text-action"
-                      onClick={() => { setCandidatos([]); setFiltro(lect?.lugar ?? ""); }}>
-                Ninguno de estos
-              </button>
-            </>
-          ) : (
-            <>
-              {/* **Aquí está el arreglo.** Antes, si lo que escribió no llegaba a
-                  un municipio, la pregunta se daba por contestada y seguíamos.
-                  «En mi casa» pasaba de largo, y el aporte llegaba a la bandeja
-                  sin territorio al que sumarlo — que es como no tenerlo.
+            </div>
+          )}
 
-                  Ahora se insiste, se le explica para qué sirve, y se le da una
-                  segunda vía: dónde vive. Salir sigue siendo posible: `N02` pide
-                  aceptar ubicación incompleta, y exigirla excluiría justo a quien
-                  menos puede precisarla. */}
-              <h2>{porResidencia ? "¿Dónde vives?" : "¿Dónde queda?"}</h2>
-              <p className="pc-help">
-                {porResidencia ? (
-                  <>Sirve para acercarnos. Después te preguntamos si el problema ocurre ahí mismo.</>
-                ) : (
-                  <>
-                    Sin municipio, tu aporte <strong>no se puede sumar al de tus vecinos</strong> ni
-                    llegar a quien responde por ese territorio.
-                  </>
-                )}
+          {/* **De lo macro a lo micro, y con buscador.** Escoger primero el
+              departamento baja la lista de 1.122 a 125 como mucho y quita los
+              nombres repetidos. Pero 125 en un desplegable siguen siendo
+              imposibles de recorrer, así que se filtran escribiendo.
+
+              Está siempre visible, también cuando hay sugerencias: si ninguna
+              es la suya, no hace falta decir «ninguna» ni volver atrás. */}
+          {detectado && !porResidencia && (
+            <p className="pc-note" data-prueba="detectado">
+              Por lo que contaste, parece <strong>{detectado.nombre}</strong>. Ya está puesto —
+              cámbialo si no es.
+            </p>
+          )}
+          <div className="pc-field">
+            <label className="pc-label" htmlFor="departamento">Departamento</label>
+            <select id="departamento" className="pc-input" value={depto}
+                    onChange={(e) => escogerDepartamento(e.target.value)}>
+              <option value="">Escoge uno…</option>
+              {deptos.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
+            </select>
+          </div>
+
+          {depto && (
+            <div className="pc-field">
+              <label className="pc-label" htmlFor="filtro-municipio">Municipio</label>
+              <input id="filtro-municipio" className="pc-input" type="text" value={filtro}
+                     onChange={(e) => setFiltro(e.target.value)}
+                     aria-describedby="filtro-ayuda" />
+              <p className="pc-help" id="filtro-ayuda">
+                {delDepto.length
+                  ? `Escribe las primeras letras. Hay ${delDepto.length} en ${deptos.find((d) => d.codigo === depto)?.nombre ?? "este departamento"}.`
+                  : "Cargando…"}
               </p>
-
-              {/* **De lo macro a lo micro, y con buscador.** Escoger primero
-                  el departamento baja la lista de 1.122 a 125 como mucho y
-                  quita los nombres repetidos. Pero 125 en un desplegable siguen
-                  siendo imposibles de recorrer, así que se filtran escribiendo.
-
-                  Y **no avanza solo**. Escoger era irreversible: un toque en el
-                  municipio equivocado y la persona ya no podía corregirlo.
-                  Ahora dice cuál entendió y espera. */}
-              {detectado && (
-                <p className="pc-note" data-prueba="detectado">
-                  Por lo que contaste, parece <strong>{detectado.nombre}</strong>. Ya está puesto —
-                  cámbialo si no es.
+              <div className="pc-actions">
+                {filtrados.slice(0, 8).map((m) => (
+                  <button key={m.codigo} type="button" className="pc-action"
+                          onClick={() => setElegido(m)}>
+                    {m.nombre}
+                  </button>
+                ))}
+              </div>
+              {filtro.trim() && filtrados.length === 0 && (
+                <p className="pc-note">Ninguno se llama así en ese departamento.</p>
+              )}
+              {!filtro.trim() && delDepto.length > 8 && (
+                <p className="pc-help">
+                  Mostrando los primeros 8 de {delDepto.length}. Escribe para encontrar el tuyo.
                 </p>
               )}
-              <div className="pc-field">
-                <label className="pc-label" htmlFor="departamento">Departamento</label>
-                <select id="departamento" className="pc-input" value={depto}
-                        onChange={(e) => escogerDepartamento(e.target.value)}>
-                  <option value="">Escoge uno…</option>
-                  {deptos.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
-                </select>
-              </div>
-
-              {depto && (
-                <div className="pc-field">
-                  <label className="pc-label" htmlFor="filtro-municipio">Municipio</label>
-                  <input id="filtro-municipio" className="pc-input" type="text" value={filtro}
-                         onChange={(e) => setFiltro(e.target.value)}
-                         aria-describedby="filtro-ayuda" />
-                  <p className="pc-help" id="filtro-ayuda">
-                    {delDepto.length
-                      ? `Escribe las primeras letras. Hay ${delDepto.length} en ${deptos.find((d) => d.codigo === depto)?.nombre ?? "este departamento"}.`
-                      : "Cargando…"}
-                  </p>
-                  <div className="pc-actions">
-                    {filtrados.slice(0, 8).map((m) => (
-                      <button key={m.codigo} type="button" className="pc-action"
-                              onClick={() => setElegido(m)}>
-                        {m.nombre}
-                      </button>
-                    ))}
-                  </div>
-                  {filtro.trim() && filtrados.length === 0 && (
-                    <p className="pc-note">Ninguno se llama así en ese departamento.</p>
-                  )}
-                  {!filtro.trim() && delDepto.length > 8 && (
-                    <p className="pc-help">
-                      Mostrando los primeros 8 de {delDepto.length}. Escribe para encontrar el tuyo.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {!porResidencia ? (
-                <button type="button" className="pc-text-action"
-                        onClick={() => { setPorResidencia(true); setDepto(""); setDelDepto([]); }}>
-                  No sé en qué municipio queda
-                </button>
-              ) : (
-                <button type="button" className="pc-text-action" onClick={seguirDespuesDelMunicipio}>
-                  Prefiero no decirlo
-                </button>
-              )}
-              <p className="pc-help">
-                Lo que escribiste se guarda igual, tal como lo escribiste. Si no llegamos al
-                municipio, alguien lo revisa a mano — <strong>no lo vamos a suponer</strong>.
-              </p>
-            </>
+            </div>
           )}
+
+          {!porResidencia ? (
+            <button type="button" className="pc-text-action"
+                    onClick={() => { setPorResidencia(true); setDepto(""); setDelDepto([]); setFiltro(""); }}>
+              No sé en qué municipio queda
+            </button>
+          ) : (
+            <button type="button" className="pc-text-action"
+                    onClick={() => void seguirDespuesDelMunicipio()}>
+              Prefiero no decirlo
+            </button>
+          )}
+          <p className="pc-help">
+            Lo que escribiste se guarda igual, tal como lo escribiste. Si no llegamos al
+            municipio, alguien lo revisa a mano — <strong>no lo vamos a suponer</strong>.
+          </p>
         </div>
       )}
 
@@ -755,9 +862,10 @@ export function Afinado({ codigo }: { codigo: string }) {
             <button type="button" className="pc-action" disabled={guardandoMun}
                     onClick={async () => {
                       setGuardandoMun(true);
-                      await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "vive_ahi");
+                      await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "vive_ahi",
+                                               municipioPuesto !== null);
                       setGuardandoMun(false);
-                      seguirDespuesDelMunicipio();
+                      await seguirDespuesDelMunicipio();
                     }}>
               Sí, ocurre ahí
             </button>
@@ -800,7 +908,7 @@ export function Afinado({ codigo }: { codigo: string }) {
                           desdeCuando: heredado.desdeCuando ?? lect.desdeCuando,
                         };
                         setLect(nueva);
-                        repartir(nueva, Boolean(heredado.municipio));
+                        repartir(nueva);
                       }
                       setMunicipioPuesto(heredado.municipio);
                       setGrupoPuesto(heredado.colectivo);
@@ -846,7 +954,11 @@ export function Afinado({ codigo }: { codigo: string }) {
             {vueltas[vuelta].map((k) => (
               <div className="pc-field" key={k}>
                 <label className="pc-label" htmlFor={k}>{COMO_SE_PREGUNTA[k].etiqueta}</label>
-                <input id={k} name={k} className="pc-input" type="text" aria-describedby={`${k}-ayuda`} />
+                {/* Lo que ya escribió vuelve puesto. Sin esto, volver atrás y
+                    seguir mandaba el campo vacío y la síntesis perdía lo que
+                    había dicho en esa vuelta. */}
+                <input id={k} name={k} className="pc-input" type="text"
+                       defaultValue={lect[k] ?? ""} aria-describedby={`${k}-ayuda`} />
                 <p className="pc-help" id={`${k}-ayuda`}>{COMO_SE_PREGUNTA[k].ayuda}</p>
               </div>
             ))}
