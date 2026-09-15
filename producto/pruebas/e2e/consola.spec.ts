@@ -13,6 +13,11 @@ import { test, expect, type Page } from "@playwright/test";
 // clic ambiguo se lee como una prueba mal escrita cuando es la pantalla la que
 // está sin estilos.
 async function abrirAporte(page: Page, marca: string) {
+  // **Se busca, no se confía en que esté entre los primeros.** La bandeja
+  // muestra los más antiguos primero y las corridas acumulan: el aporte recién
+  // creado se salía de la lista y la prueba fallaba sin que nada estuviera
+  // roto. Además es como se usa de verdad.
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
   const visibles = page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true });
   await expect(visibles).toHaveCount(1);
   await visibles.click();
@@ -35,7 +40,7 @@ test("la bandeja muestra lo que llega y dice que no ordena por popularidad", asy
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 20_000 });
 
   await page.goto("/consola");
-  await expect(page.locator("h1")).toContainText(/por aclarar/i);
+  await expect(page.locator("h1")).toContainText(/bandeja de revisión/i);
   await expect(page.locator("body")).toContainText(/sin orden por popularidad/i);
   await expect(page.locator(".bo-record-link").filter({ visible: true }).first()).toBeVisible();
 });
@@ -136,4 +141,64 @@ test("todo campo de la consola tiene etiqueta, no placeholder", async ({ page })
       .map((c) => c.getAttribute("name") ?? c.tagName.toLowerCase()),
   );
   expect(sinEtiqueta, "campos sin <label for>: su nombre vive en el placeholder").toEqual([]);
+});
+
+
+test("la bandeja dice qué le falta a cada aporte", async ({ page }) => {
+  // Se diseñó cuando el formulario capturaba tres cosas. Hoy captura diez, y el
+  // revisor seguía viendo relato, lugar y fecha: no había cómo distinguir un
+  // aporte de otro ni saber qué preguntar.
+  const marca = `falta-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: no hay agua`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  // Se busca, y se mira **lo que se ve**: en teléfono la tabla da paso a una
+  // lista con los mismos datos, y los dos tienen que decir lo mismo.
+  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
+  const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
+    .filter({ hasText: marca }).filter({ visible: true }).first();
+  await expect(fila).toBeVisible({ timeout: 15_000 });
+  // Lo que falta se nombra en palabras: el revisor tiene que saber qué
+  // preguntar, no qué columna está vacía.
+  await expect(fila).toContainText(/municipio/);
+  await expect(fila).toContainText(/a quiénes/);
+  await expect(fila).toContainText(/desde cuándo/);
+  // Y quién lo tiene, que hoy no lo tiene nadie.
+  await expect(fila).toContainText(/nadie/);
+});
+
+test("se puede buscar, y el orden no cambia al filtrar", async ({ page }) => {
+  const marca = `buscar-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: se cayó el puente de la vereda`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await page.goto("/consola");
+  await page.fill("#q", marca);
+  await page.getByRole("button", { name: /^filtrar$/i }).click();
+  await expect(page.locator(".bo-record-link").filter({ visible: true })).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator("body")).toContainText(marca);
+
+  // Sin resultados se explica y se ofrece limpiar, en vez de una lista vacía
+  // que parece un error del sistema.
+  await page.fill("#q", "esto-no-existe-en-ningun-relato");
+  await page.getByRole("button", { name: /^filtrar$/i }).click();
+  await expect(page.locator("[data-prueba='sin-resultados']")).toBeVisible();
+  await expect(page.getByRole("link", { name: /ver todos/i })).toBeVisible();
+});
+
+test("«abrir siguiente» abre el más antiguo, no el más grave", async ({ page }) => {
+  // No hay puntuación de prioridad, y no haberla es la decisión (`BI-02`).
+  await page.goto("/participar");
+  await page.fill("#relato", "el primero que llegó, hace rato");
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await page.goto("/consola");
+  const primero = await page.locator(".bo-table-desktop .bo-record-link").first().getAttribute("href");
+  const siguiente = await page.getByRole("link", { name: /abrir siguiente/i }).getAttribute("href");
+  expect(siguiente).toBe(primero);
 });

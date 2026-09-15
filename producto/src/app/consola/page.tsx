@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { porAclarar } from "../../revision/ubicacion.ts";
+import { bandeja, type Filtro } from "../../revision/bandeja.ts";
+import { Filtros, Señales } from "./bandeja.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 
@@ -12,9 +13,20 @@ export const metadata = { title: "Consola de revisión" };
 const fecha = (iso: string) =>
   new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota" });
 
-export default async function Consola() {
+export default async function Consola({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const q = await searchParams;
+  const texto = typeof q.q === "string" ? q.q : "";
+  // Por defecto, lo que hay que trabajar. El revisor entra a resolver, no a
+  // mirar: `backoffice-especificacion.md` dice que «la pantalla inicial
+  // prioriza el trabajo pendiente».
+  const ubicacion = (typeof q.ubicacion === "string" ? q.ubicacion : "por_aclarar") as Filtro["ubicacion"];
+
   const procesoId = await procesoVigente();
-  const pendientes = await porAclarar(procesoId, 50);
+  const filas = await bandeja(procesoId, { texto, ubicacion });
 
   const p = clienteServidor().schema("participacion");
   const { count: total } = await p.from("aporte")
@@ -24,6 +36,11 @@ export default async function Consola() {
     .select("id, descripcion, abierto_en, reabierto_en")
     .eq("proceso_id", procesoId).is("retirado_en", null)
     .order("abierto_en", { ascending: false }).limit(20);
+
+  // «Abrir siguiente» abre **el primero visible por fecha de recepción**, no el
+  // más grave ni el más votado: no hay puntuación de prioridad, y no haberla es
+  // la decisión (`BI-02`).
+  const siguiente = filas[0]?.aporteId ?? null;
 
   return (
     <div className="pc-backoffice">
@@ -45,52 +62,58 @@ export default async function Consola() {
           <header className="bo-topbar">
             <span className="bo-kicker">Bandeja de calidad</span>
             <span className="bo-results-line">
-              {pendientes.length} por aclarar · {total ?? 0} aportes · {exps?.length ?? 0} expedientes
+              {filas.length} en la lista · {total ?? 0} aportes · {exps?.length ?? 0} expedientes
             </span>
           </header>
 
           <main className="bo-main">
             <section className="bo-section-head">
-              <h1>Ubicación por aclarar</h1>
+              <h1>Bandeja de revisión</h1>
               <p className="bo-muted">
                 Los más antiguos primero. <strong>Sin orden por popularidad</strong>: un aporte
-                de una vereda dispersa pesa lo mismo que uno de una avenida.
+                de una vereda dispersa pesa lo mismo que uno de una avenida, y el orden no cambia
+                al filtrar.
               </p>
             </section>
 
-            {pendientes.length === 0 ? (
-              <p className="bo-empty">
-                Nada por aclarar. Si acabas de sembrar la base, manda un aporte desde{" "}
-                <Link className="bo-link" href="/participar">/participar</Link>.
+            <Filtros texto={texto} ubicacion={ubicacion ?? "por_aclarar"} siguiente={siguiente} />
+
+            {filas.length === 0 ? (
+              // Sin resultados: explicación y una acción para limpiar, que es
+              // lo que pide la especificación. Una lista vacía sin decir por
+              // qué parece un error del sistema.
+              <p className="bo-empty" data-prueba="sin-resultados">
+                {texto || ubicacion !== "todos" ? (
+                  <>
+                    Ningún aporte coincide con lo que estás buscando.{" "}
+                    <Link className="bo-link" href="/consola?ubicacion=todos">Ver todos</Link>.
+                  </>
+                ) : (
+                  <>
+                    No ha llegado ningún aporte. Si acabas de sembrar la base, manda uno desde{" "}
+                    <Link className="bo-link" href="/participar">/participar</Link>.
+                  </>
+                )}
               </p>
             ) : (
               <>
               {/* **Las dos estructuras, con los mismos datos.** No es
-                  duplicación: es el contrato del sistema de diseño, que en
-                  `backoffice.css` oculta `.bo-table-desktop` bajo 36rem y
-                  enciende `.bo-card-list`. Exactamente una de las dos se ve, y
-                  `display:none` la saca también del árbol de accesibilidad, así
-                  que un lector de pantalla lee una sola lista.
-
-                  La regla obliga a lo de abajo: **toda lista de esta consola
-                  necesita sus dos formas**. Una sección con solo `.bo-card-list`
-                  no se ve en un escritorio, que es lo que le pasaba a los
-                  expedientes.
-
-                  `backoffice-especificacion.md`: la degradación a lista es «sin
-                  ocultar datos ni bajar de 16px». */}
+                  duplicación: es el contrato del sistema de diseño, que oculta
+                  `.bo-table-desktop` bajo 36rem y enciende `.bo-card-list`.
+                  Exactamente una de las dos se ve. */}
               <ul className="bo-card-list">
-                {pendientes.map((a) => (
-                  <li key={a.aporteId} className="bo-record-card">
-                    <Link className="bo-record-link" href={`/consola/${a.aporteId}`}>
-                      {a.relato.slice(0, 90)}{a.relato.length > 90 ? "…" : ""}
+                {filas.map((f) => (
+                  <li key={f.aporteId} className="bo-record-card">
+                    <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
+                      {f.relato.slice(0, 90)}{f.relato.length > 90 ? "…" : ""}
                     </Link>
-                    <div className="bo-card-meta">
-                      {a.lugarDeclarado
-                        ? <em>«{a.lugarDeclarado}»</em>
-                        : <span>no precisó el lugar</span>}
-                    </div>
-                    <p>{fecha(a.recibidoEn)}</p>
+                    <div className="bo-card-meta"><Señales fila={f} /></div>
+                    {/* **Los mismos datos que la tabla.** El sistema de diseño
+                        lo pide literal: «no se ocultan datos esenciales» al
+                        pasar a lista. Lo que falta y quién lo tiene son la
+                        razón de mirar la bandeja. */}
+                    <p>{f.territorio ?? (f.lugarDeclarado ? `«${f.lugarDeclarado}»` : "sin lugar")} · {fecha(f.recibidoEn)}</p>
+                    <p>Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")} · Lo tiene: {f.responsable ?? "nadie"}</p>
                   </li>
                 ))}
               </ul>
@@ -98,25 +121,34 @@ export default async function Consola() {
               <table className="bo-table bo-table-desktop">
                 <thead>
                   <tr>
-                    <th>Aporte</th>
-                    <th>Dónde dijo que ocurre</th>
-                    <th>Recibido</th>
+                    <th>Aporte</th><th>Territorio</th><th>Qué falta</th><th>Quién lo tiene</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pendientes.map((a) => (
-                    <tr key={a.aporteId}>
+                  {filas.map((f) => (
+                    <tr key={f.aporteId}>
                       <td>
-                        <Link className="bo-record-link" href={`/consola/${a.aporteId}`}>
-                          {a.relato.slice(0, 70)}{a.relato.length > 70 ? "…" : ""}
+                        <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
+                          {f.relato.slice(0, 70)}{f.relato.length > 70 ? "…" : ""}
                         </Link>
+                        <p className="bo-small">{fecha(f.recibidoEn)}</p>
+                        <Señales fila={f} />
                       </td>
                       <td>
-                        {a.lugarDeclarado
-                          ? <em>«{a.lugarDeclarado}»</em>
-                          : <span className="bo-muted">no lo precisó</span>}
+                        {f.territorio
+                          ? <strong>{f.territorio}</strong>
+                          : f.lugarDeclarado
+                            ? <em className="bo-muted">«{f.lugarDeclarado}»</em>
+                            : <span className="bo-muted">no lo dijo</span>}
                       </td>
-                      <td className="bo-small">{fecha(a.recibidoEn)}</td>
+                      <td className="bo-small">
+                        {f.falta.length === 0
+                          ? <span className="bo-muted">nada</span>
+                          : f.falta.join(", ")}
+                      </td>
+                      <td className="bo-small">
+                        {f.responsable ?? <span className="bo-muted">nadie</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

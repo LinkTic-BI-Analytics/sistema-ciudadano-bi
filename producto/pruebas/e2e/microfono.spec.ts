@@ -85,3 +85,28 @@ test("el aporte hablado queda con su grabación y llega a la consola", async ({ 
   await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
 });
+
+test("un aporte hablado se distingue en la bandeja de revisión", async ({ page }) => {
+  // La transcripción puede estar mal y hay audio que oír: el revisor tiene que
+  // saberlo **antes** de abrirlo, no al llegar al final de la ficha.
+  const marca = `voz-bandeja-${Date.now()}`;
+  await page.goto("/participar");
+  await page.getByRole("button", { name: /^hablar$/i }).click();
+  const micro = page.locator("[data-prueba='microfono']");
+  await micro.getByRole("button", { name: /empezar a grabar/i }).click();
+  await expect(micro).toHaveAttribute("data-estado", "grabando", { timeout: 15_000 });
+  await micro.getByRole("button", { name: /terminar y guardar/i }).click();
+  await expect(micro).toHaveAttribute("data-estado", "revisando", { timeout: 30_000 });
+  await micro.getByRole("button", { name: /añadir al relato/i }).click();
+
+  await page.fill("#relato", `${marca}: el agua llega turbia`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
+  const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
+    .filter({ hasText: marca }).filter({ visible: true }).first();
+  await expect(fila).toBeVisible({ timeout: 15_000 });
+  await expect(fila.locator(".bo-badge")).toContainText(/por voz/i);
+  await expect(fila.locator(".bo-badge")).toContainText(/puede estar mal/i);
+});

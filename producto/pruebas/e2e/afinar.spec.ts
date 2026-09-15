@@ -114,7 +114,7 @@ test("lo que precisa después llega al aporte y a la consola", async ({ page }) 
   await hablarPorMi(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
-  await page.goto("/consola");
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
   await page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true }).click();
   await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
   // El relato original intacto, y lo precisado al lado — nunca encima.
@@ -158,7 +158,7 @@ test("si nombra un municipio, se lo ofrecemos para que lo confirme", async ({ pa
   await page.getByRole("button", { name: /consultar/i }).click();
   await expect(page.locator("[data-prueba='relato']")).toContainText(marca, { timeout: 15_000 });
 
-  await page.goto("/consola");
+  await page.goto(`/consola?q=${encodeURIComponent(marca)}`);
   await expect(page.locator(".bo-record-link", { hasText: marca })).toHaveCount(0);
 });
 
@@ -269,7 +269,7 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   await voz.getByRole("button", { name: /^listo$/i }).click();
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
-  await page.goto("/consola");
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
   await page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true })
     .click({ timeout: 15_000 });
   await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
