@@ -337,11 +337,12 @@ export function Afinado({ codigo }: { codigo: string }) {
       return () => setPaso("entendimos");
     }
     if (paso === "confirmar-residencia") return () => { setElegido(null); setPaso("municipio"); };
-    if (paso === "falta") {
+    if (paso === "falta" || paso === "voceria") {
       // A la vuelta anterior; desde la primera, al municipio. Volver al
       // municipio no repregunta desde cero: lo confirmado sigue puesto y
       // cambiarlo **corrige** el territorio en vez de agregar otro.
-      if (vuelta > 0) return () => setVuelta(vuelta - 1);
+      const desde = paso === "voceria" ? vueltas.length : vuelta;
+      if (desde > 0) return () => { setVuelta(desde - 1); setPaso("falta"); };
       return () => { setVueltaAlVolver(0); setPaso("municipio"); };
     }
     return null;
@@ -401,10 +402,22 @@ export function Afinado({ codigo }: { codigo: string }) {
     );
   }
 
+  const volverDeVoceria = atras();
   if (paso === "voceria") {
     return (
       <section className="pc-section" data-prueba="voceria">
-        <p className="pc-help" aria-live="polite">Última pregunta</p>
+        {/* También aquí se puede volver: es la última pantalla antes de
+            terminar, y es justo donde alguien se acuerda de que escribió mal
+            el municipio. */}
+        <div className="pc-topline">
+          <p className="pc-help" aria-live="polite">Última pregunta</p>
+          {volverDeVoceria && (
+            <button type="button" className="pc-text-action" data-prueba="volver"
+                    onClick={volverDeVoceria}>
+              Volver
+            </button>
+          )}
+        </div>
         <Guardado codigo={codigo} />
         <h2>¿Hablas por ti o por un grupo?</h2>
         {!porGrupo ? (
@@ -518,6 +531,14 @@ export function Afinado({ codigo }: { codigo: string }) {
     );
   }
 
+  // **Dos cosas distintas.** Que en su relato ya dijera dónde cambia el tono:
+  // lo suyo viene traído, no se le pregunta de nuevo. Que además hayamos
+  // encontrado municipios cambia la pregunta entera: ahí solo hay que confirmar.
+  //
+  // Escribir «en mi casa» en la caja no es ninguna de las dos: se sigue
+  // preguntando dónde queda, porque eso es un sitio que solo ella encuentra.
+  const traiamosSuLugar = (lect?.lugar ?? "").trim().length > 0;
+  const hayQueConfirmar = candidatos.length > 0;
   const volver = atras();
 
   // **Cuántos pasos hay, y que no cambien a mitad.** El total se contaba con
@@ -711,10 +732,25 @@ export function Afinado({ codigo }: { codigo: string }) {
               Ahora es una: se dice con las palabras de uno, y debajo va lo que
               encontramos con eso. Si acertamos, es un toque. Si no, el selector
               está ahí mismo. Nadie tiene que volver atrás para corregir. */}
-          <h2>{porResidencia ? "¿Dónde vives?" : "¿Dónde queda?"}</h2>
+          {/* **Si ya lo dijo, esto no es una pregunta nueva.** Recorriendo el
+              flujo como una persona se ve el problema que quedaba: la pantalla
+              anterior le muestra «Dónde ocurre: la vereda La Martinita,
+              Rionegro» y la siguiente le pregunta «¿dónde queda?» con eso mismo
+              escrito en la caja. Son dos pantallas, pero se siente como que no
+              la escuchamos.
+
+              Con lo suyo delante, la pantalla **confirma**; sin nada, pregunta. */}
+          <h2>
+            {porResidencia ? "¿Dónde vives?" : hayQueConfirmar ? "¿Es aquí?" : "¿Dónde queda?"}
+          </h2>
           <p className="pc-help">
             {porResidencia ? (
               <>Sirve para acercarnos. Después te preguntamos si el problema ocurre ahí mismo.</>
+            ) : hayQueConfirmar ? (
+              <>
+                Esto es lo que entendimos de dónde ocurre. <strong>Solo falta el municipio</strong>,
+                que es lo que permite sumarlo al de tus vecinos.
+              </>
             ) : (
               <>
                 Sin municipio, tu aporte <strong>no se puede sumar al de tus vecinos</strong> ni
@@ -726,15 +762,24 @@ export function Afinado({ codigo }: { codigo: string }) {
           {!porResidencia && (
             <div className="pc-field">
               <label className="pc-label" htmlFor="con-sus-palabras">
-                Dilo con tus palabras
+                {traiamosSuLugar ? "Dónde ocurre, con tus palabras" : "Dilo con tus palabras"}
               </label>
               <input id="con-sus-palabras" className="pc-input" type="text"
                      value={conSusPalabras}
                      onChange={(e) => setConSusPalabras(e.target.value)}
                      aria-describedby="palabras-ayuda" />
               <p className="pc-help" id="palabras-ayuda">
-                El barrio, la vereda, el municipio o una referencia: «la vereda El Salado, en
-                Rionegro». <strong>Se guarda tal como lo escribas.</strong>
+                {traiamosSuLugar ? (
+                  <>
+                    Lo tomamos de lo que contaste. <strong>Cámbialo si no es exacto</strong> — se
+                    guarda tal como lo escribas.
+                  </>
+                ) : (
+                  <>
+                    El barrio, la vereda, el municipio o una referencia: «la vereda El Salado, en
+                    Rionegro». <strong>Se guarda tal como lo escribas.</strong>
+                  </>
+                )}
               </p>
             </div>
           )}
@@ -777,6 +822,12 @@ export function Afinado({ codigo }: { codigo: string }) {
             <select id="departamento" className="pc-input" value={depto}
                     onChange={(e) => escogerDepartamento(e.target.value)}>
               <option value="">Escoge uno…</option>
+              {/* Mientras cargan los 33, el detectado ya es una opción: si no,
+                  el selector enseñaba «Escoge uno…» justo debajo de un aviso
+                  que decía «ya está puesto». */}
+              {deptos.length === 0 && detectado && (
+                <option value={detectado.codigo}>{detectado.nombre}</option>
+              )}
               {deptos.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
             </select>
           </div>

@@ -822,3 +822,40 @@ test("volver atrás y cambiar el municipio NO deja dos territorios", async ({ pa
   await expect(territorios, "quedó guardado el municipio equivocado")
     .not.toContainText(/BELLO|05088/);
 });
+
+test("desde la última pregunta todavía se puede volver", async ({ page }) => {
+  // Es donde alguien se acuerda de que escribió mal el municipio: la pantalla
+  // dice «última pregunta» y hasta ahí no había forma de corregir nada sin
+  // cerrar la página.
+  await contar(page, "no hay alumbrado en la vía de entrada");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 20_000 });
+  await salirDelMunicipio(page);
+  for (const v of ["vuelta-2", "vuelta-3"]) {
+    await page.locator(`[data-prueba='${v}']`)
+      .getByRole("button", { name: /continuar|listo/i }).first().click({ timeout: 15_000 });
+  }
+
+  const voz = page.locator("[data-prueba='voceria']");
+  await expect(voz).toBeVisible({ timeout: 15_000 });
+  await voz.locator("[data-prueba='volver']").click();
+  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+});
+
+test("si ya dijo dónde, la pantalla del lugar CONFIRMA en vez de repreguntar", async ({ page }) => {
+  // Recorriendo el flujo como una persona: la pantalla anterior le enseña
+  // «Dónde ocurre: la vereda La Martinita, Rionegro» y la siguiente le
+  // preguntaba «¿dónde queda?» con eso mismo escrito en la caja. Son dos
+  // pantallas distintas, pero se sienten como que no la escuchamos.
+  await contar(page, "el agua llega sucia en la vereda la martinita de rionegro antioquia");
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 20_000 });
+  await expect(mun).toContainText(/¿Es aquí\?/i);
+  await expect(mun).toContainText(/lo tomamos de lo que contaste/i);
+  await expect(mun).not.toContainText(/dilo con tus palabras/i);
+  // Y lo suyo viene puesto, no en blanco.
+  await expect(mun.locator("#con-sus-palabras")).toHaveValue(/martinita/i);
+});
