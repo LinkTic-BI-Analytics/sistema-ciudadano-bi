@@ -3,7 +3,10 @@ import { Formulario } from "./formulario.tsx";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Cuéntanos qué necesita mejorar en tu comunidad",
+  // La misma frase que la portada. Decía «en tu comunidad» y la portada «donde
+  // vives»: son la misma promesa dicha de dos formas, y quien llega desde un QR
+  // no tiene por qué comprobar que aterrizó en el sitio correcto.
+  title: "Cuéntanos qué necesita mejorar donde vives",
 };
 
 export default function Participar() {
@@ -15,7 +18,7 @@ export default function Participar() {
         </header>
         <main className="pc-main">
           <p className="pc-eyebrow">Contar una necesidad</p>
-          <h1>Cuéntanos qué necesita mejorar en tu comunidad</h1>
+          <h1>Cuéntanos qué necesita mejorar donde vives</h1>
           <p className="pc-intro">
             Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.
             No necesitas cuenta ni correo.

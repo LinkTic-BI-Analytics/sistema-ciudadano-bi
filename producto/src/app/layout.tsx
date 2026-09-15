@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Participación Ciudadana",
   description:
-    "Cuéntanos qué necesita mejorar en tu comunidad. Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.",
+    "Cuéntanos qué necesita mejorar donde vives. Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
