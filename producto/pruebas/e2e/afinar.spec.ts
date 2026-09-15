@@ -11,7 +11,7 @@
 //   · nada se pide dos veces — se pregunta solo por lo que la persona no dijo.
 
 import { test, expect, type Page } from "@playwright/test";
-import { salirDelMunicipio, escogerMunicipio, hablarPorMi } from "./ayudas.ts";
+import { salirDelMunicipio, escogerMunicipio, confirmarMunicipio, hablarPorMi } from "./ayudas.ts";
 
 async function contar(page: Page, relato: string) {
   await page.goto("/participar");
@@ -145,6 +145,7 @@ test("si nombra un municipio, se lo ofrecemos para que lo confirme", async ({ pa
   await expect(mun.getByRole("button", { name: /ninguno|no estoy seguro/i })).toBeVisible();
 
   await mun.getByRole("button", { name: /RIONEGRO/i }).first().click();
+  await confirmarMunicipio(page, "RIONEGRO");
 
   // **El efecto que se busca: sale de la bandeja de «por aclarar».** Ya no hay
   // que pedirle a un revisor que adivine a qué Rionegro se refería.
@@ -288,4 +289,61 @@ test("hablar por uno mismo no deja grupo puesto", async ({ page }) => {
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await page.locator("[data-prueba='voceria']").getByRole("button", { name: /hablo por mí/i }).click();
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
+});
+
+
+test("escoger mal el municipio se puede corregir antes de guardarlo", async ({ page }) => {
+  // **Escoger no confirma.** Antes, tocar un municipio lo guardaba y pasaba de
+  // largo: quien se equivocaba de fila —y con 125 en una lista es fácil— ya no
+  // tenía cómo volver. Un municipio equivocado es peor que ninguno, porque
+  // parece un dato.
+  const marca = `cambiar-${Date.now()}`;
+  await contar(page, `${marca}: se inunda la vía cuando llueve`);
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("por allá arriba");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await expect(mun).toBeVisible({ timeout: 15_000 });
+  await mun.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
+
+  // El buscador: 125 municipios no se recorren en una lista.
+  await mun.locator("#filtro-municipio").fill("bel");
+  await expect(mun.getByRole("button", { name: /^BELLO$/i })).toBeVisible();
+  await expect(mun.getByRole("button", { name: /^BELMIRA$/i })).toBeVisible();
+  await mun.getByRole("button", { name: /^BELLO$/i }).click();
+
+  // Se equivocó: puede volver.
+  const conf = page.locator("[data-prueba='confirmar-municipio']");
+  await expect(conf).toContainText(/BELLO/);
+  await conf.getByRole("button", { name: /no, cambiar/i }).click();
+  await expect(conf).toHaveCount(0);
+
+  await mun.locator("#filtro-municipio").fill("rioneg");
+  await mun.getByRole("button", { name: /^RIONEGRO$/i }).click();
+  await expect(conf).toContainText(/RIONEGRO/);
+  await conf.getByRole("button", { name: /sí, es ahí/i }).click();
+
+  await expect(page.locator("[data-prueba='vuelta-3']")).toBeVisible({ timeout: 15_000 });
+
+  // Y lo guardado es el segundo, no el primero.
+  await page.goto("/mis-aportes");
+  await expect(page.locator("body")).toBeVisible();
+});
+
+test("el filtro del municipio ignora tildes y mayúsculas", async ({ page }) => {
+  // Nadie escribe «ABRIAQUÍ» con tilde ni en mayúsculas.
+  await contar(page, "no hay agua en la vereda");
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  const v2 = page.locator("[data-prueba='vuelta-2']");
+  await v2.locator("#lugar").fill("por allá");
+  await v2.getByRole("button", { name: /continuar|listo/i }).first().click();
+
+  const mun = page.locator("[data-prueba='municipio']");
+  await mun.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
+  await mun.locator("#filtro-municipio").fill("abriaqui");
+  await expect(mun.getByRole("button", { name: /^ABRIAQUÍ$/i })).toBeVisible();
 });

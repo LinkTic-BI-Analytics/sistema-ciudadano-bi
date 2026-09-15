@@ -56,6 +56,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [deptos, setDeptos] = useState<Departamento[]>([]);
   const [depto, setDepto] = useState("");
   const [delDepto, setDelDepto] = useState<Candidato[]>([]);
+  const [filtro, setFiltro] = useState("");
   const [porResidencia, setPorResidencia] = useState(false);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   // A qué vuelta se vuelve al salir del municipio. Se fija **al entrar**, porque
@@ -124,18 +125,32 @@ export function Afinado({ codigo }: { codigo: string }) {
     });
   }, [r2]);
 
+  const sinTildes = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Nadie escribe «ABRIAQUÍ» con tilde ni en mayúsculas.
+  const filtrados = filtro.trim()
+    ? delDepto.filter((m) => sinTildes(m.nombre).includes(sinTildes(filtro.trim())))
+    : delDepto;
+
   async function escogerDepartamento(codigo: string) {
     setDepto(codigo);
     setDelDepto([]);
+    setFiltro("");
     if (codigo) setDelDepto(await listarMunicipios(codigo));
   }
 
-  async function elegir(c: Candidato, origen: "lo_dijo" | "vive_ahi") {
-    // Si viene de dónde vive, todavía falta lo que `GEO-01` exige: que confirme
-    // que el problema ocurre ahí.
-    if (origen === "vive_ahi") { setElegido(c); setPaso("confirmar-residencia"); return; }
+  /**
+   * Lo único que escribe el municipio. Escoger de la lista solo **propone**.
+   *
+   * Si viene de dónde vive la persona, todavía falta lo que `GEO-01` exige:
+   * que confirme que el problema ocurre ahí, que no siempre es lo mismo.
+   */
+  async function confirmarElegido() {
+    if (!elegido) return;
+    if (porResidencia) { setPaso("confirmar-residencia"); return; }
     setGuardandoMun(true);
-    await confirmarMunicipio(codigo, c.codigo, c.version, origen);
+    await confirmarMunicipio(codigo, elegido.codigo, elegido.version, "lo_dijo");
     setGuardandoMun(false);
     seguirDespuesDelMunicipio();
   }
@@ -143,7 +158,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Al salir del municipio se sigue donde iba, sin repetir la vuelta.
   function seguirDespuesDelMunicipio() {
     setCandidatos([]);
-    setDepto(""); setDelDepto([]); setPorResidencia(false); setElegido(null);
+    setDepto(""); setDelDepto([]); setFiltro(""); setPorResidencia(false); setElegido(null);
     setVuelta(vueltaAlVolver);
     setPaso(vueltaAlVolver >= vueltas.length ? "voceria" : "falta");
   }
@@ -276,8 +291,14 @@ export function Afinado({ codigo }: { codigo: string }) {
               {/* Se le devuelve **lo que dijo**, no una interpretación. La
                   pantalla no dice «creemos entender»: dice esto es lo que nos
                   contaste, porque eso es exactamente lo que hay. */}
-              <blockquote className="pc-context">{problema}</blockquote>
+              {/* **Un solo bloque.** El relato y lo que entendimos estaban en
+                  dos cajas grises separadas por un hueco, y se leían como dos
+                  cosas sin relación. Son lo mismo: lo que contaste, partido. */}
               <dl className="pc-detail-facts">
+                <div>
+                  <dt>Lo que contaste</dt>
+                  <dd>{problema}</dd>
+                </div>
                 {(["lugar", "afectados", "desdeCuando"] as const)
                   .filter((k) => lect[k])
                   .map((k) => (
@@ -331,7 +352,7 @@ export function Afinado({ codigo }: { codigo: string }) {
         </div>
       )}
 
-      {paso === "municipio" && (
+      {paso === "municipio" && !elegido && (
         <div data-prueba="municipio">
           {candidatos.length > 0 ? (
             <>
@@ -343,7 +364,7 @@ export function Afinado({ codigo }: { codigo: string }) {
               <div className="pc-actions">
                 {candidatos.map((c) => (
                   <button key={c.codigo} type="button" className="pc-action" disabled={guardandoMun}
-                          onClick={() => elegir(c, "lo_dijo")}>
+                          onClick={() => setElegido(c)}>
                     {c.nombre}, {c.departamento}
                   </button>
                 ))}
@@ -375,16 +396,14 @@ export function Afinado({ codigo }: { codigo: string }) {
                 )}
               </p>
 
-              {/* **De lo macro a lo micro.** Buscar el municipio por nombre
-                  devolvía ocho «RÍO…» de ocho departamentos distintos, y quien
-                  buscaba el suyo tenía que leerlos todos. Escogiendo primero el
-                  departamento la lista baja de 1.122 a 125 como mucho, y dentro
-                  de un departamento **no hay dos municipios con el mismo
-                  nombre**: escoger vuelve a ser escoger.
+              {/* **De lo macro a lo micro, y con buscador.** Escoger primero
+                  el departamento baja la lista de 1.122 a 125 como mucho y
+                  quita los nombres repetidos. Pero 125 en un desplegable siguen
+                  siendo imposibles de recorrer, así que se filtran escribiendo.
 
-                  Y es el orden en que la gente sabe dónde vive: nadie duda de su
-                  departamento, y mucha gente sí del nombre exacto de su
-                  municipio. */}
+                  Y **no avanza solo**. Escoger era irreversible: un toque en el
+                  municipio equivocado y la persona ya no podía corregirlo.
+                  Ahora dice cuál entendió y espera. */}
               <div className="pc-field">
                 <label className="pc-label" htmlFor="departamento">Departamento</label>
                 <select id="departamento" className="pc-input" value={depto}
@@ -396,17 +415,31 @@ export function Afinado({ codigo }: { codigo: string }) {
 
               {depto && (
                 <div className="pc-field">
-                  <label className="pc-label" htmlFor="municipio">Municipio</label>
-                  <select id="municipio" className="pc-input" defaultValue=""
-                          onChange={(e) => {
-                            const m = delDepto.find((x) => x.codigo === e.target.value);
-                            if (m) elegir(m, porResidencia ? "vive_ahi" : "lo_dijo");
-                          }}>
-                    <option value="">
-                      {delDepto.length ? `Escoge uno de los ${delDepto.length}…` : "Cargando…"}
-                    </option>
-                    {delDepto.map((m) => <option key={m.codigo} value={m.codigo}>{m.nombre}</option>)}
-                  </select>
+                  <label className="pc-label" htmlFor="filtro-municipio">Municipio</label>
+                  <input id="filtro-municipio" className="pc-input" type="text" value={filtro}
+                         onChange={(e) => setFiltro(e.target.value)}
+                         aria-describedby="filtro-ayuda" />
+                  <p className="pc-help" id="filtro-ayuda">
+                    {delDepto.length
+                      ? `Escribe las primeras letras. Hay ${delDepto.length} en ${deptos.find((d) => d.codigo === depto)?.nombre ?? "este departamento"}.`
+                      : "Cargando…"}
+                  </p>
+                  <div className="pc-actions">
+                    {filtrados.slice(0, 8).map((m) => (
+                      <button key={m.codigo} type="button" className="pc-action"
+                              onClick={() => setElegido(m)}>
+                        {m.nombre}
+                      </button>
+                    ))}
+                  </div>
+                  {filtro.trim() && filtrados.length === 0 && (
+                    <p className="pc-note">Ninguno se llama así en ese departamento.</p>
+                  )}
+                  {!filtro.trim() && delDepto.length > 8 && (
+                    <p className="pc-help">
+                      Mostrando los primeros 8 de {delDepto.length}. Escribe para encontrar el tuyo.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -426,6 +459,25 @@ export function Afinado({ codigo }: { codigo: string }) {
               </p>
             </>
           )}
+        </div>
+      )}
+
+      {paso === "municipio" && elegido && (
+        <div data-prueba="confirmar-municipio">
+          {/* **Nada se guarda hasta aquí.** Antes, tocar un municipio lo
+              confirmaba y pasaba de largo: quien se equivocaba de fila no tenía
+              cómo volver. Un municipio equivocado es peor que ninguno, porque
+              parece un dato. */}
+          <h2>¿Es {elegido.nombre}, {elegido.departamento}?</h2>
+          <div className="pc-actions">
+            <button type="button" className="pc-action" disabled={guardandoMun}
+                    onClick={() => confirmarElegido()}>
+              {guardandoMun ? "Guardando…" : "Sí, es ahí"}
+            </button>
+            <button type="button" className="pc-text-action" onClick={() => setElegido(null)}>
+              No, cambiar
+            </button>
+          </div>
         </div>
       )}
 
@@ -450,7 +502,8 @@ export function Afinado({ codigo }: { codigo: string }) {
               Sí, ocurre ahí
             </button>
           </div>
-          <button type="button" className="pc-mode" onClick={() => { setElegido(null); setPaso("municipio"); }}>
+          <button type="button" className="pc-text-action"
+                  onClick={() => { setElegido(null); setPaso("municipio"); }}>
             No, ocurre en otra parte
           </button>
         </div>

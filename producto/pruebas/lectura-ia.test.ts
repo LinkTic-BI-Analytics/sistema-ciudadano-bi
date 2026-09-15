@@ -173,3 +173,22 @@ test("SIN_IA=1 apaga la IA aunque haya llave: no sale ni una llamada", async () 
   } finally { globalThis.fetch = fetchReal; }
   assert.equal(llamadas, 0, "con SIN_IA=1 no puede salir ninguna petición");
 });
+
+test("un pronombre suelto no es una respuesta", async () => {
+  // Salió de una persona probando la pantalla: a «¿a quiénes les pasa?» el
+  // modelo había contestado «nos». Está anclado en el relato —así que el
+  // guardián lo deja pasar— pero no dice a quiénes.
+  //
+  // Enseñárselo es peor que no enseñar nada: la invita a confirmar un dato
+  // vacío, y después un revisor lee «afectados: nos» como si fuera un dato.
+  const l = await conRespuesta({
+    problema: "el agua llega turbia",
+    afectados: "nos",
+    desdeCuando: "tres meses",
+    lugar: "la parte alta",
+  }, () => leerConIA("nos llega el agua turbia desde hace tres meses en la parte alta"));
+  assert.equal(l.afectados, null, "«nos» no contesta a quiénes");
+  // Y lo que sí dice algo se conserva: no se tira la respuesta entera.
+  assert.equal(l.fuente, "ia");
+  assert.equal(l.desdeCuando, "tres meses");
+});

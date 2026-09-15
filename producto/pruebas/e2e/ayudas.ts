@@ -28,8 +28,19 @@ export async function escogerMunicipio(page: Page, departamento: string, municip
   const m = page.locator("[data-prueba='municipio']");
   await expect(m).toBeVisible({ timeout: 20_000 });
   await m.locator("#departamento").selectOption({ label: departamento });
-  await expect(m.locator("#municipio")).toBeVisible();
-  await m.locator("#municipio").selectOption({ label: municipio });
+  // 125 municipios en una lista no se recorren: se filtran.
+  await m.locator("#filtro-municipio").fill(municipio);
+  await m.getByRole("button", { name: new RegExp(`^${municipio}$`, "i") }).click();
+  // **Escoger no confirma.** Hay que decir que sí.
+  await confirmarMunicipio(page, municipio);
+}
+
+/** Confirma el municipio que la pantalla propone, o lo cambia. */
+export async function confirmarMunicipio(page: Page, esperado?: string) {
+  const c = page.locator("[data-prueba='confirmar-municipio']");
+  await expect(c).toBeVisible({ timeout: 15_000 });
+  if (esperado) await expect(c).toContainText(new RegExp(esperado, "i"));
+  await c.getByRole("button", { name: /sí, es ahí/i }).click();
 }
 
 /** Sale del paso de vocería sin declarar grupo. */

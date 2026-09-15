@@ -73,6 +73,7 @@ Reglas absolutas:
 6. Antes de poner null, relee el relato buscando ese dato dentro de otras frases. Solo pon null si de verdad no está.
 7. "afectados" son PERSONAS: quiénes o cuántos. Un sitio NUNCA va en "afectados". "en mi casa", "en el barrio", "en la vereda" son "lugar", no "afectados".
 8. "lugar" incluye el municipio y el departamento si aparecen, aunque estén sueltos al final ("... y rionegro antioquia").
+9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
 Devuelve SOLO un objeto JSON con estas claves:
@@ -88,12 +89,32 @@ Devuelve SOLO un objeto JSON con estas claves:
 type Clave = "problema" | (typeof PREGUNTABLES)[number];
 type Cruda = Partial<Record<Clave, unknown>>;
 
+// Palabras que, solas, no contestan nada. Un modelo que recorta a veces devuelve
+// el pronombre más cercano —«nos», «les», «uno»— y eso está anclado en el relato
+// pero no informa: a la pregunta «¿a quiénes les pasa?», «nos» no dice a quiénes.
+//
+// Mostrárselo a la persona es peor que no mostrar nada: la invita a confirmar un
+// dato vacío, y después un revisor lee «afectados: nos» como si fuera una
+// respuesta.
+const VACÍAS = new Set([
+  "nos", "les", "le", "me", "se", "uno", "una", "todos", "todo", "esto", "eso",
+  "aqui", "alla", "alli", "ahi", "yo", "tu", "el", "ella", "ellos", "ellas",
+  "mi", "mis", "su", "sus", "la", "lo", "los", "las", "un", "hay",
+]);
+
 const texto = (v: unknown): string | null => {
   if (typeof v !== "string") return null;
   const t = v.trim();
   // «null» como cadena es lo que devuelve un modelo que entendió la instrucción
   // a medias. Tratarlo como texto le pondría la palabra «null» en la pantalla.
-  return t && t.toLowerCase() !== "null" ? t : null;
+  if (!t || t.toLowerCase() === "null") return null;
+
+  const palabras = t
+    .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9ñ\s]/gi, " ").split(/\s+/).filter(Boolean);
+  // Si todo lo que devolvió son palabras que no dicen nada, no es una respuesta.
+  if (palabras.length === 0 || palabras.every((w) => VACÍAS.has(w))) return null;
+  return t;
 };
 
 async function preguntar(relato: string): Promise<Cruda | null> {
