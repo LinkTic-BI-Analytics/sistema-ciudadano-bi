@@ -92,3 +92,35 @@ test("el lugar se devuelve tal como lo dijo, o no se devuelve", () => {
   assert.equal(leer("x", "").lugar, null);
   assert.equal(leer("x").lugar, null);
 });
+
+import { QUE_CUBRE, TEMAS, COMO_SE_LLAMA } from "../src/captura/lectura.ts";
+
+test("cada tema dice qué cubre, y en palabras de la gente", () => {
+  // `QUE_CUBRE` no es documentación: va dentro del prompt. Con diecisiete
+  // etiquetas, el nombre solo no alcanza para decidir dónde cae «me toca
+  // caminar dos horas para cobrar el subsidio», y una lista sin fronteras
+  // devuelve `otro` o devuelve cualquier cosa.
+  for (const tema of TEMAS) {
+    assert.ok(QUE_CUBRE[tema], `el tema ${tema} no dice qué cubre`);
+    assert.ok(QUE_CUBRE[tema].length > 12, `lo que cubre ${tema} es demasiado corto para servir`);
+    // Nada de nombres propios ni de encuadre político: son sectores, no
+    // capítulos de un programa. Un PND lo escribe quien gane.
+    assert.doesNotMatch(
+      `${COMO_SE_LLAMA[tema]} ${QUE_CUBRE[tema]}`,
+      /patria|milagro|petro|gobierno|traici|presidente/i,
+      `el tema ${tema} lleva encuadre político en el nombre o en lo que cubre`,
+    );
+  }
+});
+
+test("los temas que faltaban tienen a quién servir", () => {
+  // Cada uno es alguien que hoy caía en «otra cosa»: una mujer que reporta
+  // violencia intrafamiliar, quien dice «aquí no hay trabajo», quien no tiene
+  // qué comer, quien lleva dos años sin que le respondan un trámite.
+  for (const nuevo of ["mujeres", "campo", "empleo", "apoyo", "justicia", "cultura", "animales"]) {
+    assert.ok((TEMAS as readonly string[]).includes(nuevo), `falta el tema ${nuevo}`);
+  }
+  // Y `otro` sigue siendo el último: es la señal de que a la lista le falta
+  // algo, no un cajón donde esconder lo que no se quiso decidir.
+  assert.equal(TEMAS[TEMAS.length - 1], "otro");
+});

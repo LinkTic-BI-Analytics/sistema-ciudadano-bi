@@ -1,4 +1,6 @@
-import { anclado, leer, recortar, PREGUNTABLES, TEMAS, esTema, type Lectura } from "./lectura.ts";
+import {
+  anclado, leer, recortar, PREGUNTABLES, TEMAS, QUE_CUBRE, esTema, type Lectura,
+} from "./lectura.ts";
 
 /**
  * La lectura apoyada por un modelo.
@@ -83,7 +85,11 @@ Reglas absolutas:
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
-11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Escoge la que más se acerque; si ninguna encaja, "otro".
+11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Escoge la que más se acerque; si ninguna encaja, "otro". Esta es la lista y lo que cubre cada una:
+${TEMAS.map((x) => `   - ${x}: ${QUE_CUBRE[x]}`).join("\n")}
+11a. Clasifica por LO QUE LA PERSONA NECESITA, no por la palabra que use. "me toca caminar dos horas para cobrar el subsidio" es "vias" si lo que cuenta es el camino, y "apoyo" si lo que cuenta es el subsidio; si el relato no lo deja claro, escoge por lo que más espacio ocupa en lo que dijo.
+11b. La violencia dentro de la casa y la violencia contra una mujer van en "mujeres", no en "seguridad", aunque las dos sean delitos: llegan a otra ruta de atención.
+11c. No uses "otro" para evitar decidir entre dos que encajan. Úsalo solo cuando ninguna encaja de verdad.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {

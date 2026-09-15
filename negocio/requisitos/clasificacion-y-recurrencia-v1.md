@@ -36,17 +36,46 @@ taxonomía acordada — es un punto de partida que hay que confirmar antes del p
 
 | Tema | Cubre |
 |---|---|
-| `agua` | acueducto, alcantarillado, calidad del agua |
-| `vias` | vías, puentes, andenes, transporte público y escolar |
-| `salud` | puestos y centros de salud, atención, medicamentos |
-| `educacion` | colegios, infraestructura escolar, docentes |
-| `energia` | energía eléctrica y alumbrado público |
-| `residuos` | recolección de basuras, puntos críticos |
-| `conectividad` | internet, telefonía |
-| `vivienda` | vivienda, espacio público, parques |
-| `ambiente` | contaminación, riesgo, gestión ambiental |
-| `seguridad` | convivencia y seguridad |
+| `agua` | acueducto, alcantarillado, pozos, agua que llega sucia o no llega |
+| `vias` | vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo |
+| `salud` | puestos y centros de salud, citas, medicamentos, ambulancias, salud mental |
+| `educacion` | colegios, profesores, alimentación escolar, cupos, internet para estudiar |
+| `energia` | luz, cortes de energía, alumbrado público, gas |
+| `residuos` | recolección de basuras, puntos críticos, reciclaje |
+| `conectividad` | internet, señal de celular, telefonía |
+| `vivienda` | vivienda, mejoramiento, titulación, parques y espacio público |
+| `ambiente` | contaminación, deforestación, minería y su efecto, riesgo de derrumbe o inundación |
+| `seguridad` | delitos, extorsión, grupos armados, convivencia, violencia en el barrio |
+| `mujeres` | violencia contra la mujer, violencia intrafamiliar, cuidado de niños o enfermos, autonomía económica |
+| `campo` | cultivos, tierra, crédito y asistencia técnica, precios, comprar y vender la cosecha |
+| `empleo` | no hay trabajo, informalidad, emprender, capacitación para trabajar |
+| `apoyo` | hambre, subsidios que no llegan, adulto mayor sin pensión, discapacidad, primera infancia |
+| `justicia` | trámites que no avanzan, corrupción, no hay a quién reclamar, denuncias sin respuesta |
+| `cultura` | cultura, deporte, recreación, casas de la cultura, canchas y escenarios |
+| `animales` | animales callejeros, maltrato animal, esterilización |
 | `otro` | lo que no encaja — **y sale en la bandeja como lo que es** |
+
+**Los siete del medio se agregaron el 15 de septiembre de 2026**, leyendo un programa político
+que Miguel trajo como insumo. Lo que se tomó de ahí fue **el inventario de en qué se va a
+gobernar**, no los nombres: los temas se llaman como el sector, no como el capítulo de un
+programa.
+
+La razón no es de estilo. La lista es lo que le ponemos encima a lo que alguien contó, y el
+encuadre de una campaña ahí convierte el relato de una persona en una posición política que ella
+no tomó — justo lo que `N18` prohíbe cuando dice que no se usen *«preferencias políticas
+inferidas»*. Y hay un costo práctico: **el PND lo escribe quien gane**, así que una taxonomía
+amarrada a un programa obliga a reclasificar todo lo capturado el día que cambie el gobierno.
+
+Cada uno de los siete es alguien que antes caía en `otro`: una mujer que reporta violencia
+intrafamiliar, quien dice «aquí no hay trabajo», quien no tiene qué comer, quien lleva dos años
+sin que le respondan un trámite, el que pide una cancha, el que denuncia maltrato animal.
+
+**Lo que cubre cada tema va dentro del prompt**, no solo aquí. Con diecisiete etiquetas el
+nombre no alcanza: «me toca caminar dos horas para cobrar el subsidio» puede ser `vias` o
+`apoyo`, y una lista sin fronteras devuelve `otro` o devuelve cualquier cosa. Dos fronteras se
+dicen explícitas porque se equivocan solas: la violencia dentro de la casa va en `mujeres` y no
+en `seguridad` —llega a otra ruta de atención—, y `otro` no sirve para no decidir entre dos que
+encajan.
 
 **Qué NO hace:** asignar un tema en silencio; obligar a escoger uno para poder enviar; tratar
 `otro` como un cajón que se ignora — un tema que se repite en `otro` es la señal de que a la

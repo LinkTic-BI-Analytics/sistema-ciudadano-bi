@@ -126,9 +126,30 @@ export function loQueFalta(l: Lectura): Preguntable[] {
  * `otro` no es un cajón que se ignora: es la señal de que a la lista le falta
  * algo, y por eso sale marcado en la bandeja en vez de esconderse.
  */
+/**
+ * Los temas con los que se enruta y se agrupa.
+ *
+ * **Son sectores, no capítulos de un programa.** La lista se amplió leyendo un
+ * programa político —que es un buen inventario de en qué se va a gobernar— pero
+ * los nombres salen del sector, no del programa: lo que se le pone encima a lo
+ * que alguien contó no puede llevar el encuadre de nadie. Un PND lo escribe
+ * quien gane, y una taxonomía amarrada a una campaña obliga a reclasificar todo
+ * lo capturado el día que cambie el gobierno.
+ *
+ * Los seis últimos antes de `otro` son los que faltaban, y cada uno es alguien
+ * que hoy no tenía dónde contar lo suyo: una mujer que reporta violencia
+ * intrafamiliar, quien dice «aquí no hay trabajo», quien no tiene qué comer,
+ * quien lleva dos años sin que le respondan un trámite.
+ *
+ * **`otro` no es un cajón que se ignora**: sale marcado en la bandeja, y que un
+ * mismo asunto se repita ahí es la señal de que a esta lista le falta algo
+ * (`Q32`).
+ */
 export const TEMAS = [
   "agua", "vias", "salud", "educacion", "energia", "residuos",
-  "conectividad", "vivienda", "ambiente", "seguridad", "otro",
+  "conectividad", "vivienda", "ambiente", "seguridad",
+  "mujeres", "campo", "empleo", "apoyo", "justicia", "cultura", "animales",
+  "otro",
 ] as const;
 
 export type Tema = (typeof TEMAS)[number];
@@ -144,7 +165,45 @@ export const COMO_SE_LLAMA: Record<Tema, string> = {
   vivienda: "Vivienda y espacio público",
   ambiente: "Ambiente y riesgo",
   seguridad: "Seguridad y convivencia",
+  mujeres: "Mujeres, violencia de género y cuidado",
+  campo: "Campo y producción rural",
+  empleo: "Empleo e ingresos",
+  apoyo: "Alimentación y apoyo social",
+  justicia: "Justicia y acceso al Estado",
+  cultura: "Cultura, deporte y recreación",
+  animales: "Animales",
   otro: "Otra cosa",
+};
+
+/**
+ * Qué cubre cada tema, **en las palabras con las que la gente lo cuenta**.
+ *
+ * No es documentación: va dentro del prompt. Con diecisiete etiquetas, el
+ * nombre solo no alcanza para decidir dónde cae «me toca caminar dos horas para
+ * cobrar el subsidio» —¿transporte, apoyo social o acceso al Estado?—, y una
+ * lista sin fronteras devuelve `otro` o devuelve cualquier cosa.
+ *
+ * Las fronteras dudosas se dicen aquí, no se dejan a la interpretación.
+ */
+export const QUE_CUBRE: Record<Tema, string> = {
+  agua: "acueducto, alcantarillado, pozos, agua que llega sucia o no llega",
+  vias: "vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo",
+  salud: "puestos y centros de salud, citas, medicamentos, ambulancias, salud mental",
+  educacion: "colegios, profesores, alimentación escolar, cupos, internet para estudiar",
+  energia: "luz, cortes de energía, alumbrado público, gas",
+  residuos: "recolección de basuras, puntos críticos, reciclaje",
+  conectividad: "internet, señal de celular, telefonía",
+  vivienda: "vivienda, mejoramiento, titulación, parques y espacio público",
+  ambiente: "contaminación, deforestación, minería y su efecto, riesgo de derrumbe o inundación",
+  seguridad: "delitos, extorsión, grupos armados, convivencia, violencia en el barrio",
+  mujeres: "violencia contra la mujer, violencia intrafamiliar, cuidado de niños o enfermos, autonomía económica de las mujeres",
+  campo: "cultivos, tierra, crédito y asistencia técnica, precios, comprar y vender la cosecha",
+  empleo: "no hay trabajo, informalidad, emprender, capacitación para trabajar",
+  apoyo: "hambre, subsidios que no llegan, adulto mayor sin pensión, discapacidad, primera infancia",
+  justicia: "trámites que no avanzan, corrupción, no hay a quién reclamar, denuncias sin respuesta",
+  cultura: "cultura, deporte, recreación, casas de la cultura, canchas y escenarios",
+  animales: "animales callejeros, maltrato animal, esterilización",
+  otro: "nada de lo anterior encaja",
 };
 
 export function esTema(v: unknown): v is Tema {
