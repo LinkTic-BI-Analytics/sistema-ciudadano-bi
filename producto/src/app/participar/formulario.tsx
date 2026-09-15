@@ -9,7 +9,17 @@ import { Microfono } from "./microfono.tsx";
 import { LLAVE_RELATO } from "../../captura/contexto.ts";
 import { leerContextoEvento, type ContextoEvento } from "../e/contexto.ts";
 
-export function Formulario() {
+export function Formulario({ claveDeReserva }: {
+  /**
+   * La clave que el servidor dibujó en el HTML, para que el formulario se pueda
+   * enviar desde el primer instante y no solo después de hidratar.
+   *
+   * La página es dinámica (`force-dynamic`), así que es distinta en cada visita:
+   * si se cacheara, todo el mundo compartiría la misma y `I1` juntaría aportes
+   * de personas distintas en uno.
+   */
+  claveDeReserva: string;
+}) {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
     enviarAporte, null,
   );
@@ -18,7 +28,12 @@ export function Formulario() {
   // no lo borre — `direccion-visual.md` lo pide, y perder lo escrito al tocar un
   // botón es la forma más rápida de que alguien abandone.
   const [relato, setRelato] = useState("");
-  const [clave, setClave] = useState("");
+  // **Llega dibujada desde el servidor.** Empezaba vacía y se llenaba en el
+  // primer efecto: si alguien enviaba antes de que el navegador hidratara —un
+  // teléfono lento, una red mala— el campo iba vacío, el servidor rechazaba el
+  // aporte y la persona veía «algo falló al preparar el envío». Con una sola
+  // oportunidad de escuchar a alguien (ADR 0012), eso es perderla.
+  const [clave, setClave] = useState(claveDeReserva);
   // La grabación, si habló. Va con el envío: el aporte apunta a ella porque
   // **es el original** (ADR 0013).
   const [grabacion, setGrabacion] = useState("");
@@ -32,7 +47,10 @@ export function Formulario() {
   // llamar. `V13`: la orientación se muestra «sin exigir que termine».
   const indicio = hayIndicio(relato);
 
-  useEffect(() => setClave(claveEnvioVigente()), []);
+  // Se adopta la del servidor si no había ninguna guardada: así la clave no
+  // cambia entre lo que se envió antes de hidratar y lo que se reintenta
+  // después, que es lo que hace que `I1` cuente un solo aporte.
+  useEffect(() => setClave(claveEnvioVigente({ reserva: claveDeReserva })), [claveDeReserva]);
 
   // Si viene de terminar otro aporte donde contó varias cosas, la caja llega con
   // la que quedó pendiente. Va por `sessionStorage` y no por la dirección: un

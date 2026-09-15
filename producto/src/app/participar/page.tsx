@@ -20,7 +20,11 @@ export default function Participar() {
             Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.
             No necesitas cuenta ni correo.
           </p>
-          <Formulario />
+          {/* La clave de envío se dibuja aquí, del lado del servidor: el
+              formulario tiene que poder enviarse antes de que el navegador
+              hidrate. `force-dynamic` arriba es lo que garantiza que sea una por
+              visita y no una compartida. */}
+          <Formulario claveDeReserva={crypto.randomUUID()} />
         </main>
         <footer className="pc-footer">
           <p className="pc-help">

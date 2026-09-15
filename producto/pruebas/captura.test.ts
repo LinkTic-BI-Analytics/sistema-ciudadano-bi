@@ -111,3 +111,41 @@ test("cada aporte recibido deja un asiento en la auditoría", async () => {
   assert.ok(data && data.length >= 1, "tiene que quedar el rastro de quién y cuándo");
   assert.equal(data?.[0]?.accion, "recibir");
 });
+
+import { claveEnvioVigente, nuevaClaveEnvio } from "../src/captura/clave-envio.ts";
+
+/** Un almacén de mentira, para no depender de que haya navegador. */
+function almacenFalso(inicial: Record<string, string> = {}): Storage {
+  const datos = new Map(Object.entries(inicial));
+  return {
+    getItem: (k: string) => datos.get(k) ?? null,
+    setItem: (k: string, v: string) => { datos.set(k, v); },
+    removeItem: (k: string) => { datos.delete(k); },
+    clear: () => datos.clear(),
+    key: () => null,
+    get length() { return datos.size; },
+  } as Storage;
+}
+
+test("la clave del servidor se adopta, no se sustituye por otra", () => {
+  // **Es lo que sostiene `I1` durante la hidratación.** El formulario se puede
+  // enviar antes de que el navegador hidrate, con la clave que el servidor
+  // dibujó. Si al hidratar se inventara otra, un reintento crearía un segundo
+  // aporte de lo mismo — justo lo que `I1` existe para impedir.
+  const almacen = almacenFalso();
+  const reserva = nuevaClaveEnvio();
+  assert.equal(claveEnvioVigente({ almacen, reserva }), reserva);
+  // Y queda guardada: el siguiente reintento usa la misma.
+  assert.equal(claveEnvioVigente({ almacen }), reserva);
+});
+
+test("si ya había una guardada, esa manda sobre la del servidor", () => {
+  // Quien recarga a mitad de escribir sigue siendo el mismo envío.
+  const almacen = almacenFalso({ "pc.clave-envio": "la-de-antes" });
+  assert.equal(claveEnvioVigente({ almacen, reserva: nuevaClaveEnvio() }), "la-de-antes");
+});
+
+test("sin almacén se usa la del servidor antes que inventar una", () => {
+  const reserva = nuevaClaveEnvio();
+  assert.equal(claveEnvioVigente({ reserva }), reserva);
+});

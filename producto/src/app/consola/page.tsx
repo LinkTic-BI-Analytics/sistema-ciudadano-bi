@@ -195,7 +195,7 @@ export default async function Consola({
                         {f.falta.length === 0
                           ? <span className="bo-muted">no le falta nada</span>
                           : f.falta.join(", ")}
-                        <div><Gestion fila={f} /></div>
+                        <br /><Gestion fila={f} />
                       </td>
                     </tr>
                   ))}

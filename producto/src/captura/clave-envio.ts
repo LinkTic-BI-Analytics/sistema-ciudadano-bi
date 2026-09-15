@@ -19,13 +19,28 @@ export function nuevaClaveEnvio(): string {
   return crypto.randomUUID();
 }
 
-/** La clave de este formulario: la que ya había, o una nueva. */
-export function claveEnvioVigente(almacen?: Storage): string {
-  const s = almacen ?? (typeof sessionStorage !== "undefined" ? sessionStorage : undefined);
-  if (!s) return nuevaClaveEnvio();   // sin almacén, cada envío es uno nuevo
+/**
+ * La clave de este formulario: la que ya había, o la que ya venía puesta.
+ *
+ * **`reserva` es la que el servidor dibujó en el HTML**, y existe porque el
+ * formulario se puede enviar antes de que el navegador hidrate. Hasta ahora la
+ * clave se creaba en el primer efecto, así que durante esos milisegundos —o
+ * segundos, en un teléfono lento— el campo iba vacío y el servidor rechazaba el
+ * aporte con «algo falló al preparar el envío». La persona veía un error y
+ * perdía su relato.
+ *
+ * Adoptarla en vez de crear otra es lo que mantiene `I1`: si alguien alcanzó a
+ * enviar con la del servidor y reintenta ya hidratado, las dos son la misma y
+ * hay **un** aporte, no dos.
+ */
+export function claveEnvioVigente(opciones: { almacen?: Storage; reserva?: string } = {}): string {
+  const s = opciones.almacen ?? (typeof sessionStorage !== "undefined" ? sessionStorage : undefined);
+  // Sin almacén, cada envío es uno nuevo — salvo que el servidor ya haya puesto
+  // una, que es mejor que inventarse otra.
+  if (!s) return opciones.reserva ?? nuevaClaveEnvio();
   const guardada = s.getItem(LLAVE);
   if (guardada) return guardada;
-  const nueva = nuevaClaveEnvio();
+  const nueva = opciones.reserva ?? nuevaClaveEnvio();
   s.setItem(LLAVE, nueva);
   return nueva;
 }

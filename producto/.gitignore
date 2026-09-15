@@ -1,5 +1,7 @@
 node_modules/
 .next/
+# La carpeta donde compila `validar.sh`, aparte para no pelearse con el dev.
+.next-validar/
 next-env.d.ts
 .env*.local
 /test-results/

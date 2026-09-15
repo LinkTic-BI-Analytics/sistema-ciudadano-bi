@@ -479,3 +479,42 @@ test("se puede poner el tema desde la consola, y queda quién y por qué", async
   await expect(page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true }))
     .toHaveCount(1, { timeout: 15_000 });
 });
+
+test("ninguna pantalla mete bloques donde no caben", async ({ page }) => {
+  // **El navegador ya lo estaba diciendo y nadie lo escuchaba.** Un `<div>`
+  // dentro de un `<p>` —lo que hacía la celda «Dónde» en la lista de tarjetas—
+  // es HTML inválido: React lo canta como error de hidratación y el navegador
+  // cierra el párrafo por su cuenta, así que lo que se ve no es lo que se
+  // escribió.
+  //
+  // Ninguna prueba lo atrapó porque ninguna miraba la consola del navegador.
+  // Es el mismo fallo que el `<div>` dentro del `<dl>`, por otro camino, y ya
+  // van dos: por eso se vigila la clase entera y no el caso.
+  const quejas: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() !== "error") return;
+    const texto = m.text();
+    if (/cannot be a descendant|hydration|validateDOMNesting/i.test(texto)) quejas.push(texto);
+  });
+
+  // **Con municipio confirmado**, y esto no es un detalle del montaje: la
+  // línea que llevaba el `<div>` es la del departamento, y sin municipio esa
+  // rama no se dibuja. La primera versión de esta prueba pasaba con el fallo
+  // puesto porque su aporte no tenía ubicación — un verde que no vigilaba nada.
+  const marca = `anidado-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: el agua llega turbia`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await page.locator("[data-prueba='vuelta-1']")
+    .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+
+  for (const ruta of ["/consola", `/consola?q=${encodeURIComponent(marca)}`]) {
+    await page.goto(ruta);
+    await expect(page.locator(".bo-main")).toBeVisible({ timeout: 15_000 });
+  }
+  await abrirAporte(page, marca);
+
+  expect(quejas, `el navegador se queja del HTML:\n${quejas.join("\n")}`).toEqual([]);
+});

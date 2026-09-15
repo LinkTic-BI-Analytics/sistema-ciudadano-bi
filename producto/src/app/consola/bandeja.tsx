@@ -38,11 +38,19 @@ export function DeQue({ tema }: { tema: string | null }) {
  * inferencia que `I2` prohíbe.
  */
 export function Donde({ fila }: { fila: FilaBandeja }) {
+  // **Solo contenido de frase, y `<br>` para el salto.** Llevaba un `<div>`, y
+  // en la lista de tarjetas esto va dentro de un `<p>`: HTML inválido, y React
+  // lo canta como error de hidratación. El navegador además cierra el párrafo
+  // por su cuenta, así que lo que se ve no es lo que se escribió.
+  //
+  // Es el mismo fallo que el `<div>` dentro del `<dl>`, por otro camino: un
+  // componente que decide su propia estructura de bloque no sabe dónde lo van a
+  // meter.
   if (fila.territorio) {
     return (
       <>
         <strong>{fila.territorio}</strong>
-        {fila.departamento && <div className="bo-muted">{fila.departamento}</div>}
+        {fila.departamento && <><br /><span className="bo-muted">{fila.departamento}</span></>}
       </>
     );
   }
@@ -50,7 +58,8 @@ export function Donde({ fila }: { fila: FilaBandeja }) {
     return (
       <>
         <span className="bo-muted">sin municipio</span>
-        <div><em className="bo-muted">«{fila.lugarDeclarado}»</em></div>
+        <br />
+        <em className="bo-muted">«{fila.lugarDeclarado}»</em>
       </>
     );
   }

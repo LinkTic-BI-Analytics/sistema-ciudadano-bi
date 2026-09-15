@@ -242,7 +242,11 @@ fi
 # no compilaba —un `<a>` entre páginas y un `export` que Next no admite—, y se
 # supo al ir a levantarlo.
 if [ -d producto ]; then
-  (cd producto && npm run build) >/tmp/bld.$$ 2>&1 \
+  # **En su propia carpeta.** Compartía `.next` con el `npm run dev` que suele
+  # estar abierto mirando la pantalla: el build se lo llevaba por delante —el
+  # servidor empezaba a devolver 500— y a veces fallaba él mismo, dando un rojo
+  # que no era del código. Pasó dos veces antes de mirarlo.
+  (cd producto && DIR_BUILD=.next-validar npm run build) >/tmp/bld.$$ 2>&1 \
     && ok "el producto compila" \
     || { mal "el producto no compila"; grep -A3 'Failed to compile' /tmp/bld.$$ | head -6 | sed 's/^/          /'; }
   rm -f /tmp/bld.$$

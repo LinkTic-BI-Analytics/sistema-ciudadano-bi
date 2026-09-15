@@ -168,3 +168,28 @@ test("la orientación no impide enviar", async ({ page }) => {
   await page.getByRole("button", { name: /continuar/i }).click();
   await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 15_000 });
 });
+
+test("el formulario se puede enviar ANTES de que el navegador hidrate", async ({ browser }) => {
+  // **Era un fallo real, no una prueba inestable.** La clave de envío se creaba
+  // en el primer efecto de React, así que hasta que el navegador hidrataba el
+  // campo iba vacío y el servidor rechazaba el aporte con «algo falló al
+  // preparar el envío». En un teléfono lento eso son segundos, y con una sola
+  // oportunidad de escuchar a alguien (ADR 0012) es perderla.
+  //
+  // Lo destapó una prueba de otro recorrido que fallaba solo en la corrida
+  // completa —con la máquina cargada, la hidratación tarda más— y pasaba al
+  // ejecutarla sola. El síntoma parecía lentitud y era un fallo.
+  //
+  // Se prueba sin JavaScript, que es el caso extremo del mismo problema: si el
+  // HTML del servidor basta para enviar, hidratar tarde deja de importar.
+  const contexto = await browser.newContext({ javaScriptEnabled: false });
+  const pagina = await contexto.newPage();
+  await pagina.goto("/participar");
+
+  // La clave viene dibujada desde el servidor, no en blanco.
+  const clave = await pagina.locator("input[name='clave']").getAttribute("value");
+  expect(clave, "la clave de envío llega vacía: quien envíe antes de hidratar pierde su aporte")
+    .toMatch(/^[0-9a-f-]{36}$/);
+
+  await contexto.close();
+});
