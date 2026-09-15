@@ -15,33 +15,17 @@ import { execFileSync } from "node:child_process";
  * es peor que fallar: una prueba que a veces pasa no dice nada.
  */
 export default async function limpiar() {
-  try {
-    execFileSync("../scripts/limpiar-desarrollo.sh", { stdio: "pipe" });
-  } catch {
-    // Si la base no está levantada, las pruebas van a decirlo con más claridad
-    // que esto.
-  }
-  sembrarAgenda();
+  // **Solo su propio proceso.** Antes llamaba a `limpiar-desarrollo.sh`, que
+  // vacía la base entera: cada corrida se llevaba por delante lo que alguien
+  // hubiera capturado a mano probando la pantalla. Pasó dos veces con datos de
+  // verdad, y la segunda con un aporte que se estaba usando para diagnosticar
+  // un fallo.
+  //
+  // El guion crea el proceso de los recorridos y le siembra su agenda; el
+  // servidor de la suite lo escoge por `PROCESO_VIGENTE`.
+  // La base ya la preparó el arranque del servidor (`playwright.config.ts`):
+  // tiene que existir antes de la primera petición. Aquí solo queda calentar.
   await calentar();
-}
-
-/**
- * Se asegura de que haya convocatoria y encuentros.
- *
- * Los recorridos de la portada los necesitan, y hasta ahora dependían de que
- * alguien hubiera corrido el sembrado a mano: la suite pasaba en esta máquina y
- * habría fallado en cualquier otra, que es la peor forma de fallar.
- *
- * `limpiar-desarrollo.sh` no los borra —como no borra el catálogo territorial—
- * así que sembrar una vez basta; el guion no duplica porque solo inserta cuando
- * no hay ninguna publicada.
- */
-function sembrarAgenda() {
-  try {
-    execFileSync("../scripts/sembrar-agenda.sh", { stdio: "pipe" });
-  } catch {
-    // Si falla, los recorridos de la portada lo dirán con más claridad.
-  }
 }
 
 /**
@@ -82,9 +66,8 @@ async function calentar() {
  */
 export async function recoger() {
   try {
-    execFileSync("../scripts/limpiar-desarrollo.sh", { stdio: "pipe" });
+    execFileSync("../scripts/recorridos-base.sh", ["recoger"], { stdio: "pipe" });
   } catch {
     // Si la base ya no está, no hay nada que recoger.
   }
-  sembrarAgenda();
 }

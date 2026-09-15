@@ -10,14 +10,19 @@
 # a ojo sin tenerlos delante.
 set -euo pipefail
 C=${DB_CONTENEDOR:-supabase_db_participacion}
-docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -qAt <<'SQL'
+docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -qAt \
+  -v nombre="${PROCESO_NOMBRE:-}" <<'SQL'
 begin;
 -- Idempotente: si ya hay una convocatoria publicada, no se siembra otra. Los
 -- recorridos llaman a esto en cada corrida.
 with proc as (
+  -- El proceso al que se le siembra. Por defecto el más antiguo activo —el de
+  -- desarrollo—; con `PROCESO_NOMBRE`, el que se diga: los recorridos tienen el
+  -- suyo y se siembra ahí, no en el de quien esté probando a mano.
   select id from participacion.proceso
   where retirado_en is null
-  order by creado_en limit 1
+    and (:'nombre' = '' or nombre = :'nombre')
+  order by creado_en desc limit 1
 ),
 conv as (
   insert into participacion.convocatoria
@@ -29,8 +34,12 @@ conv as (
     'Que quede registrado no significa que haya un compromiso de obra: significa que alguien lo va a revisar y que vas a poder ver qué pasó con ello.',
     now() - interval '10 days', now() + interval '60 days', 'publicada', now() - interval '10 days'
   from proc
+  -- Idempotente **por proceso**, no en toda la base: si lo fuera en toda,
+  -- sembrar la de los recorridos no haría nada porque ya existe la de
+  -- desarrollo, y la portada de la suite saldría sin agenda.
   where not exists (
-    select 1 from participacion.convocatoria where estado = 'publicada'
+    select 1 from participacion.convocatoria c
+    where c.estado = 'publicada' and c.proceso_id = proc.id
   )
   returning id, proceso_id
 )

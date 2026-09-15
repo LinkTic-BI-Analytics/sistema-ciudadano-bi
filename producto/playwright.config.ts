@@ -50,11 +50,20 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      command: "npm run dev -- --port 3101",
+      // **La base se prepara antes de arrancar, no en `globalSetup`.**
+      // Playwright levanta el servidor primero y solo después corre el setup,
+      // así que el proceso de los recorridos tiene que existir ya: si no, la
+      // primera petición —la comprobación de que el servidor está vivo— falla y
+      // la suite se cae esperando 120 segundos.
+      command: "../scripts/recorridos-base.sh preparar && npm run dev -- --port 3101",
       url: "http://127.0.0.1:3101",
       reuseExistingServer: false,
       timeout: 120_000,
       env: {
+        // **Su propio proceso, no el de desarrollo.** Sin esto la suite escribe
+        // donde escribe quien esté probando a mano, y su limpieza se lleva por
+        // delante lo que esa persona capturó.
+        PROCESO_VIGENTE: "ESCENARIO DE PRUEBA — recorridos de navegador",
         OPENROUTER_API_KEY: "llave-de-los-recorridos",
         IA_URL: "http://127.0.0.1:3199/chat/completions",
         MISTRAL_API_KEY: "",
