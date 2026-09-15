@@ -45,6 +45,24 @@ export type Filtro = {
   texto?: string;
   /** `por_aclarar` · `ubicados` · `todos`. */
   ubicacion?: "por_aclarar" | "ubicados" | "todos";
+  /**
+   * `antiguos` es el orden de trabajo y el que manda por defecto: el que lleva
+   * más esperando se atiende primero. `recientes` es para mirar qué acaba de
+   * entrar, que es otra pregunta.
+   *
+   * Ninguno de los dos es una puntuación. `BI-02` prohíbe ordenar por
+   * popularidad, y el día que llegue un aporte con mil apoyos tiene que seguir
+   * esperando su turno igual que el de una vereda con uno.
+   */
+  orden?: "antiguos" | "recientes";
+};
+
+export type Pagina = {
+  filas: FilaBandeja[];
+  /** Cuántos hay en total con ese filtro. **Se dice siempre.** */
+  total: number;
+  /** Si quedan más sin mostrar. Un corte callado es un dato perdido. */
+  hayMas: boolean;
 };
 
 /**
@@ -67,7 +85,7 @@ const plano = (s: string) =>
 
 export async function bandeja(
   procesoId: string, filtro: Filtro = {}, limite = 50,
-): Promise<FilaBandeja[]> {
+): Promise<Pagina> {
   const p = clienteServidor().schema("participacion");
 
   const { data: aportes, error } = await p.from("aporte")
@@ -75,10 +93,13 @@ export async function bandeja(
             "recibido_en, estado_revision, es_colectivo, colectivo_declarado, evento_confirmado_id")
     .eq("proceso_id", procesoId).is("retirado_en", null)
     .order("recibido_en", { ascending: true })
-    .limit(300);
+    // Se lee de más para poder contar y filtrar en memoria. Cuando esto se
+    // quede corto, el corte volvería a ser callado — y por eso `total` se
+    // compara contra este tope en la pantalla.
+    .limit(2000);
   if (error) throw new Error(`no se pudo leer la bandeja: ${error.message}`);
   const filasCrudas = (aportes ?? []) as unknown as FilaAporte[];
-  if (!filasCrudas.length) return [];
+  if (!filasCrudas.length) return { filas: [], total: 0, hayMas: false };
 
   const ids = filasCrudas.map((a) => a.id);
 
@@ -131,7 +152,7 @@ export async function bandeja(
   });
 
   const texto = filtro.texto?.trim() ? plano(filtro.texto.trim()) : null;
-  return filas
+  const coinciden = filas
     .filter((f) => {
       if (filtro.ubicacion === "por_aclarar" && f.estadoUbicacion === "confirmada") return false;
       if (filtro.ubicacion === "ubicados" && f.estadoUbicacion !== "confirmada") return false;
@@ -139,6 +160,19 @@ export async function bandeja(
       // Relato, lugar y territorio, sin tildes ni mayúsculas, como pide la
       // especificación del backoffice.
       return plano(`${f.relato} ${f.lugarDeclarado ?? ""} ${f.territorio ?? ""}`).includes(texto);
-    })
-    .slice(0, limite);
+    });
+
+  // `antiguos` es como vienen de la base. Para `recientes` se da la vuelta.
+  const ordenadas = filtro.orden === "recientes" ? [...coinciden].reverse() : coinciden;
+
+  // **Se devuelve el total, no solo la página.** Cortar en 50 sin decirlo es
+  // cómo diez aportes recién registrados se volvieron invisibles: estaban en
+  // las posiciones 97 a 106 de 106 y la pantalla no daba ninguna señal de que
+  // hubiera más. Es el mismo defecto que dejó 122 municipios fuera del
+  // buscador.
+  return {
+    filas: ordenadas.slice(0, limite),
+    total: ordenadas.length,
+    hayMas: ordenadas.length > limite,
+  };
 }

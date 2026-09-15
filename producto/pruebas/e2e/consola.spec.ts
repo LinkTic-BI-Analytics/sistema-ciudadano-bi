@@ -221,3 +221,34 @@ test("ningún campo de la consola lleva un ejemplo que parezca el dato", async (
       .map((i) => `${i.name}: ${i.placeholder}`));
   expect(conEjemplo, "un ejemplo dentro del campo se lee como el dato del aporte").toEqual([]);
 });
+
+test("la bandeja dice cuántos hay y cuántos muestra", async ({ page }) => {
+  // Diez aportes recién registrados se volvieron invisibles: estaban en las
+  // posiciones 97 a 106 de 106 y la pantalla cortaba en 50 **sin decir nada**.
+  // Es el mismo defecto silencioso que dejó 122 municipios fuera del buscador:
+  // no falla, no avisa, y el dato simplemente no está.
+  await page.goto("/consola?ubicacion=todos");
+  const cuantos = page.locator("[data-prueba='cuantos']");
+  await expect(cuantos).toBeVisible({ timeout: 15_000 });
+  await expect(cuantos).toContainText(/mostrando \d+ de \d+/i);
+});
+
+test("se puede ver lo último que llegó, sin perder el orden de trabajo", async ({ page }) => {
+  // Son dos preguntas distintas: «qué atiendo ahora» —el que lleva más
+  // esperando— y «qué acaba de entrar». La primera manda por defecto.
+  const marca = `reciente-${Date.now()}`;
+  await page.goto("/participar");
+  await page.fill("#relato", `${marca}: acaba de pasar esto`);
+  await page.getByRole("button", { name: /continuar/i }).click();
+  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
+
+  // Por defecto, el orden de trabajo.
+  await page.goto("/consola?ubicacion=todos");
+  await expect(page.locator("[data-prueba='cuantos']")).toContainText(/llevan más esperando/i);
+
+  // Y el recién llegado se encuentra sin buscarlo, en el otro orden.
+  await page.goto("/consola?ubicacion=todos&orden=recientes");
+  await expect(page.locator("[data-prueba='cuantos']")).toContainText(/últimos que llegaron/i);
+  const primero = page.locator(".bo-record-link").filter({ visible: true }).first();
+  await expect(primero).toContainText(marca, { timeout: 15_000 });
+});

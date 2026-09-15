@@ -24,12 +24,15 @@ export default async function Consola({
   // mirar: `backoffice-especificacion.md` dice que «la pantalla inicial
   // prioriza el trabajo pendiente».
   const ubicacion = (typeof q.ubicacion === "string" ? q.ubicacion : "por_aclarar") as Filtro["ubicacion"];
+  // El orden de trabajo manda por defecto: el que lleva más esperando primero.
+  const orden = (typeof q.orden === "string" ? q.orden : "antiguos") as Filtro["orden"];
+  const limite = Math.min(Number(q.ver) || 50, 500);
 
   const procesoId = await procesoVigente();
-  const filas = await bandeja(procesoId, { texto, ubicacion });
+  const { filas, total, hayMas } = await bandeja(procesoId, { texto, ubicacion, orden }, limite);
 
   const p = clienteServidor().schema("participacion");
-  const { count: total } = await p.from("aporte")
+  const { count: totalAportes } = await p.from("aporte")
     .select("id", { count: "exact", head: true })
     .eq("proceso_id", procesoId).is("retirado_en", null);
   const { data: exps } = await p.from("expediente")
@@ -62,7 +65,7 @@ export default async function Consola({
           <header className="bo-topbar">
             <span className="bo-kicker">Bandeja de calidad</span>
             <span className="bo-results-line">
-              {filas.length} en la lista · {total ?? 0} aportes · {exps?.length ?? 0} expedientes
+              {total} en la lista · {totalAportes ?? 0} aportes · {exps?.length ?? 0} expedientes
             </span>
           </header>
 
@@ -76,7 +79,21 @@ export default async function Consola({
               </p>
             </section>
 
-            <Filtros texto={texto} ubicacion={ubicacion ?? "por_aclarar"} siguiente={siguiente} />
+            <Filtros texto={texto} ubicacion={ubicacion ?? "por_aclarar"}
+                     orden={orden ?? "antiguos"} siguiente={siguiente} />
+
+            {/* **Cuántos hay y cuántos se ven.** Cortar en 50 sin decirlo es
+                cómo diez aportes recién registrados se volvieron invisibles:
+                estaban en las posiciones 97 a 106 de 106 y la pantalla no daba
+                ninguna señal. */}
+            {filas.length > 0 && (
+              <p className="bo-small" data-prueba="cuantos">
+                Mostrando {filas.length} de {total}
+                {orden === "recientes"
+                  ? " · los últimos que llegaron"
+                  : " · los que llevan más esperando"}
+              </p>
+            )}
 
             {filas.length === 0 ? (
               // Sin resultados: explicación y una acción para limpiar, que es
@@ -154,6 +171,17 @@ export default async function Consola({
                 </tbody>
               </table>
               </>
+            )}
+
+            {hayMas && (
+              <p className="bo-small">
+                <Link className="bo-link" href={{ pathname: "/consola", query: { ...q, ver: limite + 50 } }}>
+                  Ver {Math.min(50, total - filas.length)} más
+                </Link>{" "}
+                <span className="bo-muted">
+                  · quedan {total - filas.length} sin mostrar
+                </span>
+              </p>
             )}
 
             <section className="bo-history-section">

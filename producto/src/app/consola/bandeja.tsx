@@ -34,10 +34,11 @@ export function Señales({ fila }: { fila: FilaBandeja }) {
  * que exista una bandeja compartida.
  */
 export function Filtros({
-  texto, ubicacion, siguiente,
+  texto, ubicacion, orden, siguiente,
 }: {
   texto: string;
   ubicacion: string;
+  orden: string;
   siguiente: string | null;
 }) {
   return (
@@ -55,6 +56,17 @@ export function Filtros({
           <option value="por_aclarar">Por aclarar</option>
           <option value="ubicados">Ya ubicados</option>
           <option value="todos">Todos</option>
+        </select>
+      </div>
+      <div className="bo-field">
+        <label className="bo-label-tag" htmlFor="orden">Orden</label>
+        {/* **Ninguno de los dos es una puntuación.** El de trabajo manda por
+            defecto —el que lleva más esperando se atiende primero— y el otro
+            contesta una pregunta distinta: qué acaba de entrar. `BI-02` prohíbe
+            ordenar por popularidad, y eso no cambia. */}
+        <select id="orden" name="orden" defaultValue={orden}>
+          <option value="antiguos">Los que llevan más esperando</option>
+          <option value="recientes">Los últimos que llegaron</option>
         </select>
       </div>
       <div className="bo-field">
