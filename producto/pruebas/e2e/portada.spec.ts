@@ -13,10 +13,10 @@ test("desde la portada se puede contar sin cuenta y sin esperar a un encuentro",
   await expect(page.locator("h1")).toContainText(/necesita mejorar/i);
   // Lo que decide si entra, en el primer pliegue: sin cédula, se puede hablar,
   // y qué es y qué no es registrar algo.
-  const ayuda = page.locator(".pc-hero-help").first();
-  await expect(ayuda).toContainText(/sin cuenta, sin correo y sin cédula/i);
-  await expect(ayuda).toContainText(/hablando/i);
-  await expect(ayuda).toContainText(/no es una promesa de obra/i);
+  const hero = page.locator(".pc-hero");
+  await expect(hero).toContainText(/sin cuenta, sin correo y sin cédula/i);
+  await expect(hero).toContainText(/hablando/i);
+  await expect(hero).toContainText(/no es una promesa de obra/i);
 
   await page.getByRole("link", { name: /contar una necesidad/i }).first().click();
   await expect(page).toHaveURL(/\/participar/);
@@ -122,4 +122,49 @@ test("la portada dice hasta cuándo se puede contar", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("[data-prueba='plazo']"))
     .toContainText(/recibimos aportes hasta el \d{1,2} de [a-z]{3}/i);
+});
+
+test("los pasos se numeran con una marca, no con un dígito suelto", async ({ page }) => {
+  // Suelto sobre el fondo, el número era un dígito pequeño en azul que se leía
+  // como parte del texto de al lado, no como «paso 1 de 3».
+  await page.goto("/");
+  const uno = page.locator(".pc-step-number").first();
+  await expect(uno).toBeVisible();
+  const forma = await uno.evaluate((el) => {
+    const c = getComputedStyle(el);
+    return { radio: c.borderRadius, ancho: el.getBoundingClientRect().width, fondo: c.backgroundColor };
+  });
+  expect(forma.ancho, "el número del paso no tiene una marca detrás").toBeGreaterThanOrEqual(24);
+  expect(forma.radio, "la marca del número no es un círculo").toMatch(/^(999px|50%)/);
+  expect(forma.fondo, "la marca del número no tiene fondo").not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+});
+
+test("el texto de ayuda del hero se lee como un párrafo, no como columnas", async ({ page }) => {
+  // `pc-hero-help` es `display:flex`: está pensada para **un icono y una línea
+  // de texto**. Al meterle un párrafo con `<strong>`, cada trozo se convirtió en
+  // una columna y el texto salió repartido en tres columnas ilegibles.
+  //
+  // Es el mismo error que ya cometimos con `.bo-search-field`: usar como estilo
+  // de texto una clase que es un contenedor. Por eso se vigila la forma de la
+  // clase y no esta frase concreta.
+  await page.goto("/");
+  const ayudas = page.locator(".pc-hero-help");
+  await expect(ayudas.first()).toBeVisible();
+
+  const cuantos = await ayudas.count();
+  for (let i = 0; i < cuantos; i++) {
+    // **Se cuentan los hijos, no los elementos.** La primera versión de esta
+    // prueba contaba solo elementos y pasaba con el fallo puesto: en un
+    // contenedor flex **cada trozo de texto suelto también es una columna**, así
+    // que «Sin cuenta… <strong>…</strong>.» son tres, no uno.
+    const trozos = await ayudas.nth(i).evaluate((el) =>
+      [...el.childNodes].filter((h) =>
+        h.nodeType === Node.ELEMENT_NODE
+          ? (h as Element).tagName.toLowerCase() !== "svg"
+          : (h.textContent ?? "").trim().length > 0,
+      ).length);
+    expect(trozos,
+      "hay más de un trozo dentro de .pc-hero-help: el flex los va a poner en columnas")
+      .toBeLessThanOrEqual(1);
+  }
 });

@@ -32,7 +32,12 @@
 .pc-ui .pc-how .pc-eyebrow {font-size:.75rem;letter-spacing:0;margin-bottom:1.5rem;}
 .pc-ui .pc-steps {list-style:none;padding:0;margin:0;display:grid;gap:1.5rem;}
 .pc-ui .pc-steps li {display:grid;grid-template-columns:1.75rem 1fr;gap:.75rem;}
-.pc-ui .pc-step-number {color:var(--pc-semantic-color-brand-ink);font-size:.875rem;line-height:1.4;font-variant-numeric:tabular-nums;}
+/* El número del paso, en un círculo. Suelto sobre el fondo era un dígito
+   pequeño en azul que no se leía como «paso 1 de 3»: se confundía con el texto
+   de al lado. El círculo usa los mismos tokens que el recuadro de fecha de un
+   encuentro, que ya es la forma que el sistema tiene de decir «esto es una
+   marca, no una palabra». */
+.pc-ui .pc-step-number {display:flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:999px;color:var(--pc-component-event-date);background:var(--pc-component-event-dateBackground);font-size:.875rem;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;}
 .pc-ui .pc-steps strong {display:block;font-weight:500;font-size:.9375rem;line-height:1.4;margin-bottom:.375rem;}
 .pc-ui .pc-steps li div>span {display:block;font-size:.8125rem;color:var(--pc-semantic-color-text-secondary);line-height:1.5;}
 .pc-ui .pc-how-note {padding-top:1.25rem;border-top:1px solid var(--pc-semantic-color-border-subtle);margin:1.5rem 0 0;font-size:.8125rem;line-height:1.5;color:var(--pc-semantic-color-text-secondary);}

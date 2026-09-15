@@ -26,10 +26,15 @@ export const metadata = {
 const DIA = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-/** El día del mes y el mes, en palabras. Para fechas dentro de una frase. */
+// Dentro de una frase el mes va entero: «14 de nov de 2026» se lee como una
+// abreviatura de formulario, no como una fecha que alguien te está diciendo.
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+               "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+/** El día y el mes, en palabras. Para fechas dentro de una frase. */
 function enPalabras(iso: string) {
   const f = new Date(iso);
-  return `${f.getDate()} de ${MES[f.getMonth()]} de ${f.getFullYear()}`;
+  return `${f.getDate()} de ${MESES[f.getMonth()]} de ${f.getFullYear()}`;
 }
 
 function cuando(iso: string, zona: string) {
@@ -165,15 +170,30 @@ export default async function Portada() {
                     Y que se puede hablar en vez de escribir no estaba en
                     ninguna parte de la portada, aunque es el dato que decide si
                     entra alguien a quien le cuesta escribir. */}
+                {/* **Un `<span>` dentro, y no es un capricho.** `pc-hero-help`
+                    es `display:flex` porque está pensada para un icono y una
+                    línea de texto: metiéndole un párrafo con `<strong>`, cada
+                    trozo se vuelve una columna y el texto sale repartido en
+                    tres columnas ilegibles. Con un solo hijo, el texto fluye
+                    como texto.
+
+                    Es el mismo error que ya cometimos con `.bo-search-field`:
+                    usar como estilo de texto una clase que es un contenedor. */}
                 <p className="pc-hero-help">
-                  Sin cuenta, sin correo y sin cédula. Puedes <strong>escribirlo o contarlo
-                  hablando</strong>. Registrarlo no es una promesa de obra: es que alguien lo lea
-                  y tú puedas ver qué pasó.
+                  <span>Sin cuenta, sin correo y sin cédula. Puedes escribirlo o contarlo hablando.</span>
+                </p>
+                <p className="pc-hero-help">
+                  <span>
+                    Registrarlo no es una promesa de obra: es que alguien lo lea y tú puedas ver
+                    qué pasó.
+                  </span>
                 </p>
                 {convocatoria?.cierraEn && abierta && (
                   // **Hasta cuándo.** Es lo que decide si lo hace ahora o
-                  // «después» — y después no vuelve. No estaba en ningún lado.
-                  <p className="pc-hero-help" data-prueba="plazo">
+                  // «después» — y después no vuelve. En `pc-note` y no en
+                  // `pc-hero-help`: una fecha con la que hay que contar días no
+                  // se pone en el gris más pequeño de la pantalla.
+                  <p className="pc-note" data-prueba="plazo">
                     Recibimos aportes hasta el <strong>{enPalabras(convocatoria.cierraEn)}</strong>.
                   </p>
                 )}
