@@ -1,6 +1,11 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { procesoVigente } from "../datos/proceso.ts";
 import { convocatoriaVigente, proximosEncuentros, type Encuentro } from "../convocatoria/agenda.ts";
+import { Cabecera, FranjaInstitucional, Pie, Tricolor } from "../producto/marca.tsx";
+
+/** El retardo de entrada de cada pieza del hero. Entra en cascada, no de golpe. */
+const orden = (n: number) => ({ "--pc-orden": n }) as CSSProperties;
 
 // La portada (`M06`, `RF10`).
 //
@@ -111,10 +116,7 @@ export default async function Portada() {
   return (
     <div className="pc-ui">
       <div className="pc-shell">
-        <div className="pc-institution">
-          <span>Plan Nacional de Desarrollo</span>
-          <span>Participación ciudadana</span>
-        </div>
+        <FranjaInstitucional />
 
         {/* **Sin menú, y es a propósito.** Tenía dos enlaces que llevaban a
             los mismos dos sitios que el botón y el enlace del hero: cuatro
@@ -123,26 +125,30 @@ export default async function Portada() {
             **debajo del pliegue** —lo primero tocable eran dos enlaces grises— y
             la persona que entra una sola vez no llegaba a verlo.
 
-            Las páginas de dentro lo conservan; aquí compite con un botón que
-            dice exactamente lo mismo.
+            Lo único que se le añadió es el botón de tema, que no compite con
+            nada: no lleva a ninguna parte.
 
-            Otro efecto: con la convocatoria cerrada, ese menú seguía ofreciendo
-            «Contar una necesidad» y llevando a un formulario que ya no recibe
-            nada. `RF10` lo prohíbe, y era por este camino. */}
-        <header className="pc-header">
-          <p className="pc-brand">
-            Participación ciudadana
-            <span className="pc-brand-sub">Plan Nacional de Desarrollo</span>
-          </p>
-        </header>
+            Otro efecto del menú viejo: con la convocatoria cerrada seguía
+            ofreciendo «Contar una necesidad» y llevando a un formulario que ya
+            no recibe nada. `RF10` lo prohíbe, y era por este camino. */}
+        <Cabecera volver={false} />
 
         <main className="pc-main" data-layout="home">
           <section className="pc-hero">
-            <p className="pc-eyebrow">{convocatoria?.nombre ?? "Escucha permanente"}</p>
+            <p className="pc-eyebrow pc-entra" style={orden(0)}>
+              <Tricolor />
+              {convocatoria?.nombre ?? "Escucha permanente"}
+            </p>
             <div className="pc-hero-layout">
               <div>
-                <h1>Cuéntanos qué <em>necesita mejorar</em> donde vives</h1>
-                <p className="pc-hero-intro">
+                {/* La entrada va pieza por pieza, y **nunca sobre el botón**:
+                    `translateY` no mueve a los hermanos, pero sí a lo que
+                    envuelve. Un botón que todavía se está acomodando cuando
+                    alguien ya apuntó el dedo es un botón que se falla. */}
+                <h1 className="pc-entra" style={orden(1)}>
+                  Cuéntanos qué <em>necesita mejorar</em> donde vives
+                </h1>
+                <p className="pc-hero-intro pc-entra" style={orden(2)}>
                   {convocatoria?.proposito ??
                     "Lo que cuentes se registra con tus palabras y llega a quien responde por tu territorio."}
                 </p>
@@ -199,7 +205,7 @@ export default async function Portada() {
                 )}
               </div>
 
-              <div className="pc-how">
+              <div className="pc-how pc-entra" style={orden(3)}>
                 <p className="pc-eyebrow">Cómo funciona</p>
                 <ol className="pc-steps">
                   <li>
@@ -238,10 +244,14 @@ export default async function Portada() {
             </div>
           </section>
 
-          <section className="pc-section" data-prueba="agenda">
+          {/* `pc-revela`: lo que entra en cuadro al desplazar. Sin una línea
+              de JavaScript —la línea de tiempo la lleva el propio scroll— y con
+              una guarda `@supports`: donde el navegador no la conoce, la sección
+              sale visible y quieta. */}
+          <section className="pc-section pc-revela" data-prueba="agenda">
             <div className="pc-section-header">
               <div>
-                <p className="pc-eyebrow">Agenda</p>
+                <p className="pc-eyebrow"><Tricolor />Agenda</p>
                 <h2>Próximos encuentros</h2>
               </div>
             </div>
@@ -278,7 +288,8 @@ export default async function Portada() {
             )}
           </section>
 
-          <section className="pc-section">
+          <section className="pc-section pc-revela">
+            <p className="pc-eyebrow"><Tricolor />Después de contarlo</p>
             <h2>Qué pasa con lo que cuentas</h2>
             <p className="pc-note">
               {convocatoria?.alcance ??
@@ -292,21 +303,7 @@ export default async function Portada() {
           </section>
         </main>
 
-        <footer className="pc-footer">
-          {/* **El pie decía una frase para el analista de BI** —«el número de
-              aportes no representa a la población de un territorio»— que leída
-              desde la vereda suena a «lo tuyo no cuenta». Esa advertencia importa,
-              pero le importa a quien lee los datos, no a quien los cuenta: su
-              sitio es la consola y el corte, donde ya está.
-
-              Aquí va lo que esa persona necesita: a dónde llamar si hay peligro
-              ahora. Es lo mismo que dice `/participar`, que sí da el número. */}
-          <p>
-            Participación ciudadana · Plan Nacional de Desarrollo.{" "}
-            <strong>Si hay personas en peligro ahora, llama al 123</strong>: esta página no
-            atiende emergencias.
-          </p>
-        </footer>
+        <Pie />
       </div>
     </div>
   );

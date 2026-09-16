@@ -3,6 +3,7 @@ import { resolverEnlace, utmsLimpias } from "../../../convocatoria/enlaces.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { proximosEncuentros } from "../../../convocatoria/agenda.ts";
 import { Confirmar } from "./confirmar.tsx";
+import { Cabecera, FranjaInstitucional, Pie, Tricolor } from "../../../producto/marca.tsx";
 
 // Lo que pasa cuando alguien escanea el QR (`QR-02`, `QR-04`).
 //
@@ -38,10 +39,16 @@ export default async function PorEnlace({
   const procesoId = await procesoVigente();
   const agenda = await proximosEncuentros(procesoId, 6);
 
+  // La cabecera y el pie son los mismos de la portada. Quien llega aquí
+  // escaneando un QR pegado en una caseta no tiene por qué comprobar que
+  // aterrizó en el sitio correcto: lo tiene que reconocer.
   const Marco = ({ children }: { children: React.ReactNode }) => (
     <div className="pc-ui">
       <div className="pc-shell">
+        <FranjaInstitucional />
+        <Cabecera />
         <main className="pc-main" data-layout="eventDetail">{children}</main>
+        <Pie />
       </div>
     </div>
   );
@@ -77,7 +84,7 @@ export default async function PorEnlace({
 
   return (
     <Marco>
-      <p className="pc-eyebrow">Encuentro</p>
+      <p className="pc-eyebrow"><Tricolor />Encuentro</p>
       <h1>{encuentro.titulo}</h1>
       <dl className="pc-detail-facts">
         <dt>Cuándo</dt>

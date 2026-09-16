@@ -26,7 +26,7 @@ de la máquina, no del proyecto.
 | Hay | Next 15.5 con App Router · React 19.1 · TypeScript estricto con `noUncheckedIndexedAccess` · Tailwind 4 sin archivo de configuración · Supabase local en Docker |
 | **No hay, a propósito** | **Ninguna tabla.** Ver [`supabase/schemas/LEEME.md`](supabase/schemas/LEEME.md) |
 | **No hay, a propósito** | **Ninguna autenticación.** No hay mecanismo de identidad decidido — es la pregunta P4 del pliego |
-| Todavía no | Los tokens del sistema de diseño (T013) y la vista de construcción (T014) |
+| Hay | La línea gráfica **Patria Milagro v1**: 374 tokens en dos modos, Montserrat e Inter servidas desde el propio dominio, y la bandera de fondo en el hero |
 
 ## De cero a andando
 
@@ -43,8 +43,11 @@ supabase start                       # levanta la base y aplica las migraciones
 cp .env.example .env.local           # y pega los valores que imprime:
 supabase status                      # URL, publishable key y secret key
 
-cd .. && ./scripts/sembrar.sh        # el proceso de prueba y el catálogo del DANE
+cd .. && ./scripts/sembrar.sh        # el proceso de prueba, el catálogo del DANE
+                                     # y el depósito de las grabaciones
 ./scripts/sembrar-agenda.sh          # la convocatoria y los encuentros de la portada
+./scripts/tokens.sh                  # los tokens del sistema de diseño
+./scripts/marca.sh                   # la bandera del hero, a producto/public/marca/
 cd producto && npm run dev           # http://localhost:3100
 ```
 
@@ -68,6 +71,9 @@ build, las pruebas de nodo, los recorridos de navegador y una veintena de cheque
 | Un puerto ocupado | El bloque `548xx` y el `3100` se escogieron libres **en esta máquina**. En otra hay que volver a comprobar |
 | Las pruebas fallan al importar un `.ts` | Node viejo. Hace falta 24 o más |
 | La portada sale sin encuentros | Falta `./scripts/sembrar-agenda.sh` |
+| El hero sale sin bandera detrás | Falta `./scripts/marca.sh`: la imagen vive en `negocio/` y se copia a `public/` |
+| «Bucket not found» al hablar | Falta el depósito de grabaciones. Lo crea `./scripts/sembrar.sh`; está declarado en `supabase/config.toml`, pero el CLI solo aplica esa sección al crear el volumen |
+| La pantalla sale en oscuro y se esperaba claro | Es el modo principal de la marca. El botón de la cabecera lo cambia y la elección se guarda (`src/producto/tema.tsx`) |
 
 ## Los guiones
 

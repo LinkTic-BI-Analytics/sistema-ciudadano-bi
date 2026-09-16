@@ -120,6 +120,22 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
+# El depósito de las grabaciones (`src/captura/voz.ts`, ADR 0013).
+#
+# **Estaba creado a mano y se perdió al recrear el contenedor**: seis pruebas se
+# cayeron con «Bucket not found» y ninguna decía que faltaba un depósito, porque
+# el error llega desde el almacenamiento y no desde el esquema. Es exactamente lo
+# que `AGENTS.md` §9 previene para la base — *un cambio que no está en un archivo
+# es un cambio que el siguiente entorno no tiene*— aplicado al almacenamiento.
+#
+# `public = false`: una grabación lleva la voz de quien la hizo, y la voz
+# identifica aunque las palabras no lo hagan. Se sirve por `/consola/audio/[id]`,
+# que pasa por el servidor y comprueba quién pide.
+[storage.buckets.grabaciones]
+public = false
+file_size_limit = "25MiB"
+allowed_mime_types = ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"]
+
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
 # public = false

@@ -1,35 +1,131 @@
-/* Estructura de navegación y vistas. */
-.pc-ui .pc-shell {padding:0;}
-.pc-ui .pc-header {padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:1px solid var(--pc-line);}
-.pc-ui .pc-brand {font-family:var(--pc-semantic-fontFamily-heading);font-size:1rem;font-weight:600;}
-.pc-ui .pc-nav {display:flex;gap:1rem;flex-wrap:wrap;}
-.pc-ui .pc-nav button {font-size:.875rem;min-height:44px;padding:.5rem 0;border:0;background:transparent;color:var(--pc-muted);border-bottom:2px solid transparent;}
-.pc-ui .pc-nav button[aria-pressed=true] {color:var(--pc-ink);border-bottom-color:var(--pc-ink);font-weight:600;}
-.pc-ui .pc-main {max-width:var(--pc-semantic-width-capture);padding:2.5rem 1.5rem;margin:0 auto;}
-.pc-ui .pc-main[data-layout=catalog] {max-width:64rem;}
-.pc-ui .pc-topline {display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem;}
-.pc-ui .pc-topline p {margin:0;}
-.pc-ui .pc-intro {color:var(--pc-muted);max-width:60ch;}
-.pc-ui .pc-voice-trigger {margin:.5rem 0 0;}
-.pc-ui .pc-footer {font-size:.75rem;color:var(--pc-muted);padding:1rem 1.5rem;border-top:1px solid var(--pc-line);}
-.pc-ui .pc-success {font-size:1.5rem;color:var(--pc-semantic-color-feedback-success-foreground);margin-bottom:1rem;}
-.pc-ui .pc-history {list-style:none;margin:1.5rem 0;padding:0;}
-.pc-ui .pc-history li {padding:0 0 1.5rem 1.25rem;margin-left:.25rem;border-left:1px solid var(--pc-line);position:relative;}
-.pc-ui .pc-history li:last-child {border-left:0;padding-bottom:0;}
-.pc-ui .pc-history li::before {content:'';position:absolute;left:-4px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--pc-ink);}
-.pc-ui .pc-history h2 {font-size:1rem;margin-bottom:.25rem;}
-.pc-ui .pc-catalog-grid {display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:2rem 0;}
-.pc-ui .pc-specimen {padding-top:1.5rem;border-top:1px solid var(--pc-line);}
-.pc-ui .pc-specimen .pc-action {margin:.25rem 0;}
-.pc-ui .pc-specimen h2 {font-size:1.125rem;}
-.pc-ui .pc-specimen p {font-size:.875rem;}
-.pc-ui .pc-samples {display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;}
-.pc-ui .pc-key {display:inline-flex;gap:.5rem;align-items:center;margin:0 1rem .5rem 0;font-size:.875rem;}
-.pc-ui .pc-key i {width:16px;height:16px;border-radius:3px;background:var(--pc-blue);display:inline-block;}
-.pc-ui .pc-qa-output {margin-top:1rem;}
-@media(max-width:40rem) {.pc-ui .pc-header {padding:1rem}.pc-ui .pc-main{padding:1.5rem 1rem}.pc-ui .pc-catalog-grid{grid-template-columns:1fr}.pc-ui .pc-nav{gap:1.25rem}.pc-ui .pc-footer{padding:1rem}.pc-ui .pc-topline{margin-bottom:1rem}}
-@media(max-width:24rem) {.pc-ui .pc-nav{width:100%;gap:1rem;justify-content:flex-start}}
+/* El armazón: cascarón, cabecera, navegación, pie y las vistas de seguimiento.
+   `estructura.css` se carga después y pisa lo que la portada necesita. */
 
-.pc-ui .pc-main[data-layout="home"],.pc-ui .pc-main[data-layout="events"],.pc-ui .pc-main[data-layout="eventDetail"]{max-width:var(--pc-component-landing-width)}
-.pc-ui .pc-context details{margin:.25rem 0 0}.pc-ui .pc-context .pc-text-action{padding-block:.25rem}.pc-ui .pc-brand .pc-meta{display:block;font-family:var(--pc-semantic-fontFamily-body);font-weight:400}
+.pc-ui .pc-shell { padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
+.pc-ui .pc-shell > .pc-main { flex: 1; }
 
+/* ── Cabecera ────────────────────────────────────────────────────────────── */
+.pc-ui .pc-header {
+  padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--pc-line);
+}
+.pc-ui .pc-brand { font-family: var(--pc-semantic-fontFamily-heading); font-size: 1rem; font-weight: 800; }
+.pc-ui .pc-nav { display: flex; gap: 1rem; flex-wrap: wrap; }
+.pc-ui .pc-nav button {
+  font-size: .875rem; min-height: 44px; padding: .5rem 0; border: 0; background: transparent;
+  color: var(--pc-muted); border-bottom: 2px solid transparent;
+}
+.pc-ui .pc-nav button[aria-pressed=true] {
+  color: var(--pc-ink); border-bottom-color: var(--pc-semantic-color-brand-accent); font-weight: 700;
+}
+
+.pc-ui .pc-main { max-width: var(--pc-semantic-width-capture); padding: 2.5rem 1.5rem; margin: 0 auto; width: 100%; }
+.pc-ui .pc-main[data-layout=catalog] { max-width: 64rem; }
+.pc-ui .pc-topline { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem; }
+.pc-ui .pc-topline p { margin: 0; }
+.pc-ui .pc-intro { color: var(--pc-muted); max-width: 60ch; }
+.pc-ui .pc-voice-trigger { margin: .5rem 0 0; }
+
+/* ── La tricolor ─────────────────────────────────────────────────────────────
+   Tres guiones amarillo-azul-rojo. Es la firma de la línea gráfica y aparece
+   en la franja institucional, encima de cada titular y en el pie.
+
+   **No lleva el escudo ni la marca del Gobierno**, y es a propósito: esos son
+   activos institucionales y `direccion-visual.md` los condiciona al manual que
+   confirme el cliente, que es la `Q34` de `negocio/vacios.md`. La bandera sí
+   —es un símbolo nacional, y es de donde sale la paleta entera—. */
+.pc-ui .pc-tricolor { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.pc-ui .pc-tricolor i {
+  width: 18px; height: 4px; border-radius: var(--pc-primitive-radius-xs); display: block;
+}
+.pc-ui .pc-tricolor i:nth-child(1) { background: var(--pc-primitive-color-gold-500); }
+.pc-ui .pc-tricolor i:nth-child(2) { background: var(--pc-primitive-color-blue-700); }
+.pc-ui .pc-tricolor i:nth-child(3) { background: var(--pc-primitive-color-red-500); }
+
+/* ── Botón de tema ───────────────────────────────────────────────────────────
+   Dos modos completos, y el oscuro es el principal de la línea gráfica. El
+   botón existe porque este formulario se llena en la calle: quien cuenta que no
+   tiene agua lo hace desde un teléfono barato a pleno sol, y ahí el claro se
+   lee mejor. La elección se guarda; no se adivina del sistema operativo, que
+   diría el modo del teléfono y no el de la marca. */
+.pc-ui .pc-tema {
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 40px; padding: .375rem .875rem;
+  font-size: .8125rem; font-weight: 600; font-family: inherit;
+  color: var(--pc-ink); background: var(--pc-paper);
+  border: 1px solid var(--pc-semantic-color-border-subtle);
+  border-radius: var(--pc-primitive-radius-pill);
+}
+.pc-ui .pc-tema:hover { border-color: var(--pc-semantic-color-border-accent); color: var(--pc-semantic-color-brand-accentText); }
+.pc-ui .pc-tema svg { width: 16px; height: 16px; }
+
+/* ── Pie ─────────────────────────────────────────────────────────────────────
+   Navy en los dos modos. Lo dice la entrega: «el footer no cambia con el tema». */
+.pc-ui .pc-footer {
+  font-size: .8125rem; padding: 2rem 1.5rem;
+  background: var(--pc-semantic-color-surface-navy);
+  color: var(--pc-semantic-color-text-onNavySecondary);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg,
+      var(--pc-primitive-color-gold-500) 0 33.33%,
+      var(--pc-primitive-color-blue-700) 33.33% 66.66%,
+      var(--pc-primitive-color-red-500) 66.66%) 1;
+}
+.pc-ui .pc-footer p { margin: 0; max-width: 70ch; }
+.pc-ui .pc-footer strong { color: var(--pc-semantic-color-text-onNavy); }
+.pc-ui .pc-footer a { color: var(--pc-semantic-color-brand-accent); }
+
+/* ── Seguimiento («mis aportes») ─────────────────────────────────────────── */
+.pc-ui .pc-success {
+  font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;
+  color: var(--pc-semantic-color-feedback-success-foreground);
+  display: flex; align-items: center; gap: .625rem;
+}
+.pc-ui .pc-history { list-style: none; margin: 1.5rem 0; padding: 0; }
+.pc-ui .pc-history li {
+  padding: 0 0 1.5rem 1.25rem; margin-left: .25rem;
+  border-left: 1px solid var(--pc-line); position: relative;
+}
+.pc-ui .pc-history li:last-child { border-left: 0; padding-bottom: 0; }
+.pc-ui .pc-history li::before {
+  content: ''; position: absolute; left: -4px; top: 8px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--pc-semantic-color-brand-marker);
+}
+.pc-ui .pc-history h2 { font-size: 1rem; margin-bottom: .25rem; }
+
+/* ── Muestrario del sistema (no se usa en el producto) ───────────────────── */
+.pc-ui .pc-catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
+.pc-ui .pc-specimen { padding-top: 1.5rem; border-top: 1px solid var(--pc-line); }
+.pc-ui .pc-specimen .pc-action { margin: .25rem 0; }
+.pc-ui .pc-specimen h2 { font-size: 1.125rem; }
+.pc-ui .pc-specimen p { font-size: .875rem; }
+.pc-ui .pc-samples { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+.pc-ui .pc-key { display: inline-flex; gap: .5rem; align-items: center; margin: 0 1rem .5rem 0; font-size: .875rem; }
+.pc-ui .pc-key i { width: 16px; height: 16px; border-radius: 3px; background: var(--pc-blue); display: inline-block; }
+.pc-ui .pc-qa-output { margin-top: 1rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pc-ui .pc-nav button, .pc-ui .pc-tema, .pc-ui .pc-footer a {
+    transition: color var(--pc-semantic-motion-fast) var(--pc-ease),
+                border-color var(--pc-semantic-motion-fast) var(--pc-ease),
+                background-color var(--pc-semantic-motion-fast) var(--pc-ease);
+  }
+}
+@media (max-width: 40rem) {
+  .pc-ui .pc-header { padding: 1rem; }
+  .pc-ui .pc-main { padding: 1.5rem 1rem; }
+  .pc-ui .pc-catalog-grid { grid-template-columns: 1fr; }
+  .pc-ui .pc-nav { gap: 1.25rem; }
+  .pc-ui .pc-footer { padding: 1.5rem 1rem; }
+  .pc-ui .pc-topline { margin-bottom: 1rem; }
+}
+@media (max-width: 24rem) {
+  .pc-ui .pc-nav { width: 100%; gap: 1rem; justify-content: flex-start; }
+}
+
+.pc-ui .pc-main[data-layout="home"],
+.pc-ui .pc-main[data-layout="events"],
+.pc-ui .pc-main[data-layout="eventDetail"] { max-width: var(--pc-component-landing-width); }
+.pc-ui .pc-context details { margin: .25rem 0 0; }
+.pc-ui .pc-context .pc-text-action { padding-block: .25rem; }
+.pc-ui .pc-brand .pc-meta { display: block; font-family: var(--pc-semantic-fontFamily-body); font-weight: 400; }

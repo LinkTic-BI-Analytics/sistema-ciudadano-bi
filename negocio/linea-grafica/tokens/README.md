@@ -43,5 +43,11 @@ puedan derivar cambian de marca.
 
 ## Lo que hay hoy
 
-> ➤ Qué se cargó, de dónde salió y de qué fecha es. Si no llegó nada, dilo así: que no haya
-> marca también es una respuesta.
+| Carpeta | Qué es | Fecha |
+|---|---|---|
+| `sistema-diseno-participacion-v0.5/` | El sistema de tokens con su generador. **Es la fuente**: `scripts/tokens.sh` corre `generar_tokens.py` tal cual y copia el resultado a `producto/src/producto/tokens/`. El JSON manda sobre el CSS, y `scripts/validar.sh` falla si la copia se editó a mano | v0.4 → v0.5, ampliado el 16-sep-2026 con la línea gráfica Patria |
+| `patria-milagro-v1/` | La línea gráfica del ecosistema, **tal como la entregó el equipo de UX y sin tocar**: tokens propios, activos, capturas y una documentación navegable que se abre con doble clic. No la consume el producto — sus valores se trasladaron al JSON de arriba, que es donde vive la compuerta de contraste | 16-sep-2026 |
+
+**Por qué no se cargan las dos.** Dos archivos de tokens activos son dos fuentes, y el día
+que una cambie nadie va a saber cuál se estaba aplicando. Es la misma regla que `AGENTS.md`
+§8 aplica a la lógica: nunca la misma decisión en dos niveles.

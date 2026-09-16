@@ -8,143 +8,182 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9411764705882353,
-              0.9607843137254902,
-              1.0
+              0.9529411764705882,
+              0.9647058823529412,
+              0.984313725490196
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "El azul más claro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "100": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8784313725490196,
-              0.9215686274509803,
-              1.0
+              0.8941176470588236,
+              0.9176470588235294,
+              0.9529411764705882
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Medido en el especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "200": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.788235294117647,
-              0.8549019607843137,
-              0.9803921568627451
+              0.7098039215686275,
+              0.8313725490196079,
+              0.9568627450980393
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Medido en el especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "300": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6313725490196078,
-              0.7372549019607844,
-              0.9294117647058824
+              0.5058823529411764,
+              0.6784313725490196,
+              0.9215686274509803
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Enlaces y texto de estado sobre navy. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "400": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.4549019607843137,
-              0.592156862745098,
-              0.8705882352941177
+              0.3058823529411765,
+              0.5450980392156862,
+              0.8784313725490196
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Series de datos. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "500": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.29411764705882354,
-              0.47843137254901963,
-              0.8313725490196079
+              0.11372549019607843,
+              0.39215686274509803,
+              0.7843137254901961
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Escalón medio de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "600": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.09803921568627451,
-              0.3137254901960784,
-              0.8196078431372549
+              0.0,
+              0.29411764705882354,
+              0.6078431372549019
             ],
             "alpha": 1
           },
-          "$description": "Azul de acción, medido en defensoresdelapatria.com."
+          "$description": "Medido en bancodetalentos.com.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "700": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0784313725490196,
-              0.25882352941176473,
-              0.6588235294117647
+              0.0,
+              0.19215686274509805,
+              0.5372549019607843
             ],
             "alpha": 1
           },
-          "$description": "Escalón entre el azul de acción y el institucional."
+          "$description": "Azul oficial del especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "800": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.054901960784313725,
-              0.19215686274509805,
-              0.5019607843137255
+              0.0,
+              0.11372549019607843,
+              0.32941176470588235
             ],
             "alpha": 1
           },
-          "$description": "Azul institucional, más saturado que el anterior."
+          "$description": "Azul oscuro oficial: bloques navy y texto sobre amarillo. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "900": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0,
-              0.0,
-              0.4
+              0.0392156862745098,
+              0.10196078431372549,
+              0.22745098039215686
             ],
             "alpha": 1
           },
-          "$description": "Azul marino de la línea gráfica de la campaña."
+          "$description": "Superficie elevada: tarjetas y campos en oscuro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "950": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0196078431372549,
-              0.027450980392156862,
-              0.20392156862745098
+              0.023529411764705882,
+              0.0784313725490196,
+              0.16470588235294117
             ],
             "alpha": 1
           },
-          "$description": "El más oscuro: fondo de bloques y tarjetas."
+          "$description": "Fondo base del modo oscuro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "850": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0392156862745098,
+              0.17254901960784313,
+              0.27450980392156865
+            ],
+            "alpha": 1
+          },
+          "$description": "Navy de texto de bancodetalentos.com.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "raised": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.06274509803921569,
+              0.14901960784313725,
+              0.30980392156862746
+            ],
+            "alpha": 1
+          },
+          "$description": "Un escalón de elevación sobre la tarjeta: hover, pista del selector, panel agrupador. La elevación se percibe subiendo el azul, no agrisándolo. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "floating": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.08627450980392157,
+              0.18823529411764706,
+              0.3686274509803922
+            ],
+            "alpha": 1
+          },
+          "$description": "Dos escalones: lo que flota sobre la página —diálogo, popover, aviso—. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         }
       },
       "neutral": {
@@ -159,98 +198,98 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Papel. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "50": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9725490196078431,
-              0.9686274509803922,
-              0.9529411764705882
+              0.9647058823529412,
+              0.9607843137254902,
+              0.9411764705882353
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Crema de bancodetalentos.com.co: fondo claro cálido. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "100": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9450980392156862,
-              0.9411764705882353,
-              0.9215686274509803
+              0.9529411764705882,
+              0.9568627450980393,
+              0.9647058823529412
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Gris niebla del especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "200": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8705882352941177,
-              0.8745098039215686,
-              0.8549019607843137
+              0.8823529411764706,
+              0.8941176470588236,
+              0.9098039215686274
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Divisor sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "300": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7490196078431373,
-              0.7725490196078432,
-              0.7647058823529411
+              0.788235294117647,
+              0.8,
+              0.8196078431372549
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Escalón de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "400": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.5725490196078431,
-              0.611764705882353,
-              0.6235294117647059
+              0.5803921568627451,
+              0.6274509803921569,
+              0.6588235294117647
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Escalón de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "500": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.4117647058823529,
-              0.4588235294117647,
-              0.48627450980392156
+              0.37254901960784315,
+              0.43137254901960786,
+              0.47058823529411764
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Gris azulado de bancodetalentos.com.co: borde de campo. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "600": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.3215686274509804,
-              0.3803921568627451,
-              0.41568627450980394
+              0.2901960784313726,
+              0.2901960784313726,
+              0.2823529411764706
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Gris de texto del especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "700": {
           "$type": "color",
@@ -263,46 +302,59 @@
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Texto de apoyo con más peso. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "800": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.1607843137254902,
-              0.23137254901960785,
-              0.2823529411764706
+              0.1568627450980392,
+              0.21568627450980393,
+              0.27450980392156865
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Medido en bancodetalentos.com.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "900": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.11372549019607843,
-              0.18823529411764706,
-              0.25098039215686274
+              0.10980392156862745,
+              0.10980392156862745,
+              0.10196078431372549
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "Grafito del especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "950": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.08235294117647059,
-              0.1411764705882353,
-              0.18823529411764706
+              0.07058823529411765,
+              0.07450980392156863,
+              0.08627450980392157
             ],
             "alpha": 1
           },
-          "$description": "Color de producto propuesto, no color oficial ni escala literal de Radix."
+          "$description": "El más oscuro de la rampa neutra. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "25": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9294117647058824,
+              0.9450980392156862,
+              0.9686274509803922
+            ],
+            "alpha": 1
+          },
+          "$description": "Blanco azulado. Sobre navy el texto NUNCA es blanco puro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         }
       },
       "gold": {
@@ -317,20 +369,20 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Fondo de acento en modo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "200": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9764705882352941,
-              0.9019607843137255,
-              0.6274509803921569
+              1.0,
+              0.8980392156862745,
+              0.5411764705882353
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Escalón claro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "500": {
           "$type": "color",
@@ -338,12 +390,12 @@
             "colorSpace": "srgb",
             "components": [
               1.0,
-              0.8352941176470589,
+              0.7843137254901961,
               0.0
             ],
             "alpha": 1
           },
-          "$description": "Amarillo de la bandera, saturado. Nunca como texto sobre blanco."
+          "$description": "Amarillo oficial del especial de presidencia.gov.co. Es el CTA. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "900": {
           "$type": "color",
@@ -356,9 +408,87 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "El más oscuro: texto de acento sobre crema. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
-        "$description": "Reserva: marca editorial o análisis futuro. No usar como decoración ni para anunciar IA en la captura v0.2."
+        "$description": "Reserva: marca editorial o análisis futuro. No usar como decoración ni para anunciar IA en la captura v0.2.",
+        "100": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1.0,
+              0.9529411764705882,
+              0.7686274509803922
+            ],
+            "alpha": 1
+          },
+          "$description": "Escalón claro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "300": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9607843137254902,
+              0.8470588235294118,
+              0.47058823529411764
+            ],
+            "alpha": 1
+          },
+          "$description": "Medido en bancodetalentos.com.co: texto de acción secundaria en oscuro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1.0,
+              0.8431372549019608,
+              0.16470588235294117
+            ],
+            "alpha": 1
+          },
+          "$description": "Medido en bancodetalentos.com.co: hover del botón principal. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "600": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8313725490196079,
+              0.6666666666666666,
+              0.27058823529411763
+            ],
+            "alpha": 1
+          },
+          "$description": "Dorado premium de bancodetalentos.com.co: bordes, detalle, pulsado. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6627450980392157,
+              0.4980392156862745,
+              0.17254901960784313
+            ],
+            "alpha": 1
+          },
+          "$description": "Escalón oscuro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.5254901960784314,
+              0.4117647058823529,
+              0.10196078431372549
+            ],
+            "alpha": 1
+          },
+          "$description": "Medido en bancodetalentos.com.co: dorado legible sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        }
       },
       "green": {
         "50": {
@@ -372,7 +502,7 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Fondo de éxito en modo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "700": {
           "$type": "color",
@@ -385,7 +515,33 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Texto de éxito sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.20392156862745098,
+              0.8274509803921568,
+              0.5372549019607843
+            ],
+            "alpha": 1
+          },
+          "$description": "Éxito sobre navy. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "500": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.12156862745098039,
+              0.6627450980392157,
+              0.40784313725490196
+            ],
+            "alpha": 1
+          },
+          "$description": "Éxito sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         }
       },
       "red": {
@@ -400,7 +556,7 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Fondo de error en modo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "700": {
           "$type": "color",
@@ -413,7 +569,59 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Texto de error sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "300": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1.0,
+              0.5019607843137255,
+              0.5843137254901961
+            ],
+            "alpha": 1
+          },
+          "$description": "Escalón claro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1.0,
+              0.30196078431372547,
+              0.41568627450980394
+            ],
+            "alpha": 1
+          },
+          "$description": "Rojo legible sobre navy: el oficial no alcanza contraste ahí. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "500": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8470588235294118,
+              0.0,
+              0.1450980392156863
+            ],
+            "alpha": 1
+          },
+          "$description": "Rojo oficial del especial de presidencia.gov.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "600": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6784313725490196,
+              0.0,
+              0.11764705882352941
+            ],
+            "alpha": 1
+          },
+          "$description": "Escalón oscuro de la rampa. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         }
       },
       "amber": {
@@ -428,7 +636,7 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Fondo de advertencia en modo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         },
         "800": {
           "$type": "color",
@@ -441,7 +649,33 @@
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Texto de advertencia sobre fondo claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1.0,
+              0.6627450980392157,
+              0.30196078431372547
+            ],
+            "alpha": 1
+          },
+          "$description": "Advertencia sobre navy (naranja de la entrega). Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "600": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9098039215686274,
+              0.34901960784313724,
+              0.047058823529411764
+            ],
+            "alpha": 1
+          },
+          "$description": "Advertencia sobre fondo claro (naranja de la entrega). Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
         }
       },
       "violet": {
@@ -472,6 +706,73 @@
           "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
         },
         "$description": "Reserva: marca editorial o análisis futuro. No usar como decoración ni para anunciar IA en la captura v0.2."
+      },
+      "mix": {
+        "infoDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.10588235294117647,
+              0.1843137254901961,
+              0.3254901960784314
+            ],
+            "alpha": 1
+          },
+          "$description": "14–16 % del color de estado resuelto sobre la tarjeta oscura (#0A1A3A). Opaco a propósito: un alfa haría que el chequeo de contraste midiera otro color. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "successDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.06274509803921569,
+              0.20392156862745098,
+              0.27058823529411763
+            ],
+            "alpha": 1
+          },
+          "$description": "14–16 % del color de estado resuelto sobre la tarjeta oscura (#0A1A3A). Opaco a propósito: un alfa haría que el chequeo de contraste midiera otro color. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "warningDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.17254901960784313,
+              0.1803921568627451,
+              0.23921568627450981
+            ],
+            "alpha": 1
+          },
+          "$description": "14–16 % del color de estado resuelto sobre la tarjeta oscura (#0A1A3A). Opaco a propósito: un alfa haría que el chequeo de contraste midiera otro color. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "errorDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.17254901960784313,
+              0.12941176470588237,
+              0.2549019607843137
+            ],
+            "alpha": 1
+          },
+          "$description": "14–16 % del color de estado resuelto sobre la tarjeta oscura (#0A1A3A). Opaco a propósito: un alfa haría que el chequeo de contraste midiera otro color. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        },
+        "goldDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.19215686274509805,
+              0.21176470588235294,
+              0.19215686274509805
+            ],
+            "alpha": 1
+          },
+          "$description": "14–16 % del color de estado resuelto sobre la tarjeta oscura (#0A1A3A). Opaco a propósito: un alfa haría que el chequeo de contraste midiera otro color. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+        }
       }
     },
     "space": {
@@ -552,49 +853,64 @@
         "$value": {
           "value": 0,
           "unit": "px"
-        }
+        },
+        "$description": "Sin radio. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "sm": {
         "$type": "dimension",
         "$value": {
-          "value": 4,
+          "value": 6,
           "unit": "px"
-        }
+        },
+        "$description": "Botones y campos. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "md": {
         "$type": "dimension",
         "$value": {
-          "value": 8,
+          "value": 10,
           "unit": "px"
-        }
+        },
+        "$description": "Popovers y tarjetas pequeñas. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "lg": {
         "$type": "dimension",
         "$value": {
-          "value": 12,
+          "value": 16,
           "unit": "px"
-        }
+        },
+        "$description": "Tarjetas y paneles. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "xl": {
         "$type": "dimension",
         "$value": {
-          "value": 16,
+          "value": 20,
           "unit": "px"
-        }
+        },
+        "$description": "Paneles grandes. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "pill": {
         "$type": "dimension",
         "$value": {
           "value": 999,
           "unit": "px"
-        }
+        },
+        "$description": "Píldoras y avatares. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "panel": {
         "$type": "dimension",
         "$value": {
           "value": 20,
           "unit": "px"
-        }
+        },
+        "$description": "Panel de portada. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "xs": {
+        "$type": "dimension",
+        "$value": {
+          "value": 2,
+          "unit": "px"
+        },
+        "$description": "Herencia institucional: etiquetas y chips. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       }
     },
     "fontSize": {
@@ -666,36 +982,47 @@
       "heading": {
         "$type": "fontFamily",
         "$value": [
-          "Geist",
+          "var(--pc-fuente-display, Montserrat)",
           "Arial",
           "sans-serif"
-        ]
+        ],
+        "$description": "Encabezados de sección. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "body": {
         "$type": "fontFamily",
         "$value": [
-          "Geist",
+          "var(--pc-fuente-cuerpo, Inter)",
           "Arial",
           "sans-serif"
-        ]
+        ],
+        "$description": "Cuerpo, controles y tablas: sus numerales tabulares se leen mejor en listas. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "display": {
         "$type": "fontFamily",
         "$value": [
-          "Newsreader",
-          "Georgia",
-          "serif"
+          "var(--pc-fuente-display, Montserrat)",
+          "Arial",
+          "sans-serif"
         ],
-        "$description": "Titulares editoriales; no usar en controles, formularios o tablas. Propuesta sujeta a aprobación institucional."
+        "$description": "Titulares. Pesos 700–900. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "institutional": {
         "$type": "fontFamily",
         "$value": [
-          "Montserrat",
+          "var(--pc-fuente-display, Montserrat)",
           "Arial",
           "sans-serif"
         ],
-        "$description": "Perfil institucional anterior conservado para adaptación; no se impone como manual vigente."
+        "$description": "Perfil institucional. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": [
+          "var(--pc-fuente-cifra, 'JetBrains Mono')",
+          "ui-monospace",
+          "monospace"
+        ],
+        "$description": "Cifras: códigos de comprobante, conteos, fechas en tabla. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       }
     },
     "fontWeight": {
@@ -714,6 +1041,16 @@
       "bold": {
         "$type": "fontWeight",
         "$value": 700
+      },
+      "extrabold": {
+        "$type": "number",
+        "$value": 800,
+        "$description": "Titulares y botones de display. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "black": {
+        "$type": "number",
+        "$value": 900,
+        "$description": "El titular del hero. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       }
     },
     "lineHeight": {
@@ -745,16 +1082,26 @@
       "fast": {
         "$type": "duration",
         "$value": {
-          "value": 120,
+          "value": 150,
           "unit": "ms"
-        }
+        },
+        "$description": "Color y borde de un control. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "normal": {
         "$type": "duration",
         "$value": {
-          "value": 180,
+          "value": 250,
           "unit": "ms"
-        }
+        },
+        "$description": "Movimiento y elevación de una tarjeta. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": {
+          "value": 450,
+          "unit": "ms"
+        },
+        "$description": "Entradas: lo que aparece al abrir la pantalla o al entrar en cuadro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       }
     },
     "layer": {
@@ -829,16 +1176,75 @@
       "display": {
         "$type": "dimension",
         "$value": {
-          "value": -0.045,
+          "value": -0.03,
           "unit": "em"
-        }
+        },
+        "$description": "Titulares grandes. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
       },
       "heading": {
         "$type": "dimension",
         "$value": {
-          "value": -0.025,
+          "value": -0.02,
           "unit": "em"
-        }
+        },
+        "$description": "Encabezados. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "label": {
+        "$type": "dimension",
+        "$value": {
+          "value": 0.08,
+          "unit": "em"
+        },
+        "$description": "Etiquetas y botones en versalita. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      }
+    },
+    "easing": {
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "$description": "El easing del especial de presidencia.gov.co. Uno solo para todo. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "out": {
+        "$type": "cubicBezier",
+        "$value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "$description": "Salida larga para entradas: arranca rápido y frena. Se usa solo en lo que aparece, nunca en lo que cambia de estado."
+      }
+    },
+    "elevation": {
+      "card": {
+        "$type": "shadow",
+        "$value": "0 12px 32px rgba(0, 0, 0, 0.35)",
+        "$description": "Sombra de tarjeta en oscuro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "deep": {
+        "$type": "shadow",
+        "$value": "0 22px 55px rgba(0, 0, 0, 0.45)",
+        "$description": "Lo que flota sobre la página. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "cardLight": {
+        "$type": "shadow",
+        "$value": "0 8px 24px rgba(10, 26, 58, 0.10)",
+        "$description": "Sombra de tarjeta en claro: azulada, no gris. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "deepLight": {
+        "$type": "shadow",
+        "$value": "0 22px 55px rgba(10, 26, 58, 0.18)",
+        "$description": "Lo que flota, en claro. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "glowGold": {
+        "$type": "shadow",
+        "$value": "0 10px 22px rgba(212, 170, 69, 0.35)",
+        "$description": "El halo dorado del botón principal, de bancodetalentos.com.co. Entrega «Patria Milagro v1» del equipo de UX (negocio/linea-grafica/tokens/patria-milagro-v1)."
+      },
+      "glowGoldSoft": {
+        "$type": "shadow",
+        "$value": "0 6px 14px rgba(212, 170, 69, 0.22)",
+        "$description": "Medio halo: el mismo gesto en un botón pequeño o en reposo."
+      },
+      "none": {
+        "$type": "shadow",
+        "$value": "none",
+        "$description": "Sin sombra. En modo claro la elevación decorativa se apaga: el sistema 0.5 decidió que una sombra no puede ser la única forma de reconocer un campo."
       }
     }
   },
@@ -847,147 +1253,172 @@
       "surface": {
         "canvas": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.50}"
+          "$value": "{primitive.color.blue.950}",
+          "$description": "Lo que hay detrás de todo. En claro es crema, no blanco: lo dice la entrega."
         },
         "base": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.0}"
+          "$value": "{primitive.color.blue.900}",
+          "$description": "Tarjetas, campos y filas."
         },
         "subtle": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.100}"
-        },
-        "inverse": {
-          "$type": "color",
-          "$value": "{primitive.color.blue.950}"
+          "$value": "{primitive.color.blue.raised}",
+          "$description": "Un escalón: hover de fila, pista del selector, aviso de borrador."
         },
         "editorial": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.50}"
+          "$value": "{primitive.color.blue.900}",
+          "$description": "Paneles que agrupan: barra lateral, cabecera de tabla, ficha de datos."
+        },
+        "page": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.950}",
+          "$description": "El fondo de la pantalla del producto. No es `canvas`: en claro la página es papel y el crema queda para los paneles; en oscuro son el mismo navy porque la elevación va hacia arriba, no hacia abajo."
+        },
+        "floating": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.floating}",
+          "$description": "Lo que flota sobre la página. No existía: el sistema 0.5 no tenía capa flotante y eso era la `Q1`. La entrega trae la escala de elevación, así que ya hay con qué."
+        },
+        "navy": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.800}",
+          "$description": "El bloque navy, igual en los dos modos: el hero, la franja institucional y el bloque de «cómo funciona». Se llamaba `inverse`, y el nombre mentía en cuanto hubo un modo oscuro —no es el inverso de nada, es navy siempre—."
         }
       },
       "text": {
         "default": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.900}"
+          "$value": "{primitive.color.neutral.25}"
         },
         "secondary": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.600}"
-        },
-        "inverse": {
-          "$type": "color",
-          "$value": "{primitive.color.neutral.0}"
+          "$value": "{primitive.color.blue.200}"
         },
         "link": {
           "$type": "color",
-          "$value": "{primitive.color.blue.700}"
+          "$value": "{primitive.color.blue.300}"
         },
-        "inverseSecondary": {
+        "onNavy": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.300}",
-          "$description": "Texto secundario sobre superficie oscura. No existía: el sistema no tenía ningún bloque oscuro con texto de apoyo dentro, y al ponerlo el gris de «secondary» quedaba ilegible sobre el azul marino."
+          "$value": "{primitive.color.neutral.25}",
+          "$description": "Texto sobre el bloque navy. Igual en los dos modos, porque el bloque también lo es."
+        },
+        "onNavySecondary": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.200}",
+          "$description": "Apoyo sobre el bloque navy. El gris de `secondary` sobre navy da 3,02:1 y no se lee: por eso son dos tokens y no uno."
         }
       },
       "border": {
         "subtle": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.200}"
+          "$value": "{primitive.color.blue.raised}",
+          "$description": "Divisores y bordes de tarjeta. No identifican un control."
         },
         "control": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.500}"
+          "$value": "{primitive.color.blue.300}",
+          "$description": "El borde que dice dónde se escribe. Pasa 3:1 contra el fondo del campo."
         },
-        "subtleInverse": {
+        "onNavy": {
           "$type": "color",
-          "$value": "{primitive.color.blue.800}",
-          "$description": "Divisor dentro de un bloque oscuro."
+          "$value": "{primitive.color.blue.600}",
+          "$description": "Divisor dentro del bloque navy."
+        },
+        "accent": {
+          "$type": "color",
+          "$value": "{primitive.color.gold.600}",
+          "$description": "El borde dorado: acción secundaria y realce de tarjeta."
         }
       },
       "action": {
         "primary": {
           "default": {
             "$type": "color",
-            "$value": "{primitive.color.blue.600}"
+            "$value": "{primitive.color.gold.500}",
+            "$description": "El botón principal es amarillo con texto navy en los dos modos. La regla de la entrega: el amarillo NUNCA lleva texto blanco encima."
           },
           "hover": {
             "$type": "color",
-            "$value": "{primitive.color.blue.700}"
+            "$value": "{primitive.color.gold.400}"
           },
           "pressed": {
             "$type": "color",
-            "$value": "{primitive.color.blue.800}"
+            "$value": "{primitive.color.gold.600}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.0}"
+            "$value": "{primitive.color.blue.800}"
           }
         },
         "secondary": {
           "default": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.0}"
+            "$value": "{primitive.color.blue.900}"
           },
           "hover": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.100}"
+            "$value": "{primitive.color.blue.raised}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.700}"
+            "$value": "{primitive.color.gold.300}"
           },
           "pressed": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.200}"
+            "$value": "{primitive.color.blue.floating}"
           },
           "border": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.500}"
+            "$value": "{primitive.color.gold.600}"
           }
         },
         "disabled": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.100}"
+            "$value": "{primitive.color.blue.raised}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.600}"
+            "$value": "{primitive.color.blue.200}"
           },
           "border": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.500}"
+            "$value": "{primitive.color.blue.500}"
           }
         },
         "tertiary": {
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.blue.700}"
+            "$value": "{primitive.color.blue.300}"
           },
           "hover": {
             "$type": "color",
-            "$value": "{primitive.color.blue.800}"
+            "$value": "{primitive.color.gold.400}"
           }
         }
       },
       "focus": {
         "ring": {
           "$type": "color",
-          "$value": "{primitive.color.blue.800}"
+          "$value": "{primitive.color.gold.500}",
+          "$description": "En oscuro el anillo es dorado; en claro el dorado sobre papel da 1,6:1 y no se ve, así que ahí es azul. El anillo es un borde: umbral 3:1."
         },
         "gap": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.0}"
+          "$value": "{primitive.color.blue.950}"
         }
       },
       "selection": {
         "background": {
           "$type": "color",
-          "$value": "{primitive.color.blue.100}"
+          "$value": "{primitive.color.blue.700}"
         },
         "foreground": {
           "$type": "color",
-          "$value": "{primitive.color.blue.900}"
+          "$value": "{primitive.color.neutral.25}"
         }
       },
       "brand": {
@@ -1001,91 +1432,93 @@
         },
         "accentText": {
           "$type": "color",
-          "$value": "{primitive.color.gold.900}"
+          "$value": "{primitive.color.gold.400}"
         },
         "accentSurface": {
           "$type": "color",
-          "$value": "{primitive.color.gold.50}"
+          "$value": "{primitive.color.mix.goldDark}"
         },
         "ink": {
           "$type": "color",
-          "$value": "{primitive.color.blue.900}"
+          "$value": "{primitive.color.neutral.25}",
+          "$description": "El color de los titulares. Ya no sirve de fondo de nada: cuando el modo oscuro llegó, «la tinta» y «el bloque navy» dejaron de poder ser el mismo token."
         },
         "marker": {
           "$type": "color",
-          "$value": "{primitive.color.gold.500}"
+          "$value": "{primitive.color.gold.500}",
+          "$description": "El subrayado del titular y el punto del paso."
         }
       },
       "feedback": {
         "info": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.blue.50}"
+            "$value": "{primitive.color.mix.infoDark}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.blue.800}"
+            "$value": "{primitive.color.blue.200}"
           }
         },
         "success": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.green.50}"
+            "$value": "{primitive.color.mix.successDark}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.green.700}"
+            "$value": "{primitive.color.green.400}"
           }
         },
         "warning": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.amber.50}"
+            "$value": "{primitive.color.mix.warningDark}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.amber.800}"
+            "$value": "{primitive.color.amber.400}"
           }
         },
         "error": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.red.50}"
+            "$value": "{primitive.color.mix.errorDark}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.red.700}"
+            "$value": "{primitive.color.red.400}"
           }
         },
         "neutral": {
           "background": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.50}"
+            "$value": "{primitive.color.blue.raised}"
           },
           "foreground": {
             "$type": "color",
-            "$value": "{primitive.color.neutral.700}"
+            "$value": "{primitive.color.blue.200}"
           }
         }
       },
       "assist": {
         "background": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.50}"
+          "$value": "{primitive.color.blue.raised}"
         },
         "foreground": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.700}"
+          "$value": "{primitive.color.blue.200}"
         }
       },
       "data": {
         "noData": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.100}"
+          "$value": "{primitive.color.blue.raised}"
         },
         "low": {
           "$type": "color",
-          "$value": "{primitive.color.blue.100}"
+          "$value": "{primitive.color.blue.600}"
         },
         "medium": {
           "$type": "color",
@@ -1093,51 +1526,51 @@
         },
         "high": {
           "$type": "color",
-          "$value": "{primitive.color.blue.800}"
+          "$value": "{primitive.color.gold.500}"
         }
       },
       "voice": {
         "surface": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.50}"
+          "$value": "{primitive.color.blue.raised}"
         },
         "text": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.700}"
+          "$value": "{primitive.color.neutral.25}"
         },
         "recording": {
           "$type": "color",
-          "$value": "{primitive.color.red.700}"
+          "$value": "{primitive.color.red.400}"
         }
       },
       "navigation": {
         "selected": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.100}"
+          "$value": "{primitive.color.blue.raised}"
         },
         "foreground": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.900}"
+          "$value": "{primitive.color.neutral.25}"
         }
       },
       "event": {
         "dateBackground": {
           "$type": "color",
-          "$value": "{primitive.color.blue.50}"
+          "$value": "{primitive.color.blue.800}"
         },
         "dateForeground": {
           "$type": "color",
-          "$value": "{primitive.color.blue.900}"
+          "$value": "{primitive.color.gold.400}"
         },
         "category": {
           "$type": "color",
-          "$value": "{primitive.color.neutral.600}"
+          "$value": "{primitive.color.blue.200}"
         }
       },
       "internal": {
         "canvas": {
           "$type": "color",
-          "$value": "{semantic.color.surface.base}"
+          "$value": "{semantic.color.surface.page}"
         },
         "sidebar": {
           "$type": "color",
@@ -1157,7 +1590,7 @@
         },
         "rowHover": {
           "$type": "color",
-          "$value": "{semantic.color.surface.canvas}"
+          "$value": "{semantic.color.surface.subtle}"
         },
         "rowSelected": {
           "$type": "color",
@@ -1231,6 +1664,18 @@
           "$type": "color",
           "$value": "{semantic.color.feedback.success.foreground}"
         }
+      },
+      "mode": {
+        "track": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.900}",
+          "$description": "La pista del selector de modo de captura."
+        },
+        "selected": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.floating}",
+          "$description": "Lo elegido dentro del selector: un escalón POR ENCIMA de la pista."
+        }
       }
     },
     "fontFamily": {
@@ -1245,6 +1690,11 @@
       "display": {
         "$type": "fontFamily",
         "$value": "{primitive.fontFamily.display}"
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "{primitive.fontFamily.mono}",
+        "$description": "Cifras que se comparan entre sí: el código del comprobante, los conteos de la consola."
       }
     },
     "width": {
@@ -1444,6 +1894,55 @@
         "$type": "fontFamily",
         "$value": "{semantic.fontFamily.body}"
       }
+    },
+    "motion": {
+      "fast": {
+        "$type": "duration",
+        "$value": "{primitive.duration.fast}",
+        "$description": "Color, borde, opacidad."
+      },
+      "normal": {
+        "$type": "duration",
+        "$value": "{primitive.duration.normal}",
+        "$description": "Elevación y desplazamiento."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "{primitive.duration.slow}",
+        "$description": "Entradas."
+      },
+      "ease": {
+        "$type": "cubicBezier",
+        "$value": "{primitive.easing.standard}",
+        "$description": "El easing de todo lo que cambia de estado."
+      },
+      "easeOut": {
+        "$type": "cubicBezier",
+        "$value": "{primitive.easing.out}",
+        "$description": "El easing de lo que entra."
+      }
+    },
+    "elevation": {
+      "card": {
+        "$type": "shadow",
+        "$value": "{primitive.elevation.card}",
+        "$description": "Tarjeta levantada."
+      },
+      "deep": {
+        "$type": "shadow",
+        "$value": "{primitive.elevation.deep}",
+        "$description": "Capa flotante."
+      },
+      "glow": {
+        "$type": "shadow",
+        "$value": "{primitive.elevation.glowGold}",
+        "$description": "El halo del botón principal."
+      },
+      "glowSoft": {
+        "$type": "shadow",
+        "$value": "{primitive.elevation.glowGoldSoft}",
+        "$description": "Medio halo."
+      }
     }
   },
   "component": {
@@ -1468,7 +1967,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.lg}"
+        "$value": "{primitive.radius.sm}"
       },
       "height": {
         "$type": "dimension",
@@ -1521,8 +2020,9 @@
         }
       },
       "weight": {
-        "$type": "fontWeight",
-        "$value": 600
+        "$type": "number",
+        "$value": 700,
+        "$description": "La entrega pide 700–800 en el botón."
       },
       "paddingInline": {
         "$type": "dimension",
@@ -1548,7 +2048,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.lg}"
+        "$value": "{primitive.radius.sm}"
       },
       "height": {
         "$type": "dimension",
@@ -1577,7 +2077,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.panel}"
+        "$value": "{primitive.radius.lg}"
       },
       "padding": {
         "$type": "dimension",
@@ -1661,7 +2161,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.xl}"
+        "$value": "{primitive.radius.lg}"
       },
       "padding": {
         "$type": "dimension",
@@ -1675,11 +2175,11 @@
       },
       "heroBackground": {
         "$type": "color",
-        "$value": "{semantic.color.surface.editorial}"
+        "$value": "{semantic.color.surface.navy}"
       },
       "heading": {
         "$type": "color",
-        "$value": "{semantic.color.text.default}"
+        "$value": "{semantic.color.brand.ink}"
       },
       "width": {
         "$type": "dimension",
@@ -1703,7 +2203,7 @@
       },
       "panelRadius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.panel}"
+        "$value": "{primitive.radius.lg}"
       },
       "marker": {
         "$type": "color",
@@ -1711,13 +2211,11 @@
       },
       "guideBackground": {
         "$type": "color",
-        "$value": "{semantic.color.surface.inverse}",
-        "$description": "El bloque de «cómo funciona» va en oscuro, como las tarjetas de la línea gráfica de la campaña. Era blanco sobre crema y no se distinguía del hero."
+        "$value": "{semantic.color.surface.navy}"
       },
       "guideForeground": {
         "$type": "color",
-        "$value": "{semantic.color.text.inverse}",
-        "$description": "Texto sobre el bloque oscuro."
+        "$value": "{semantic.color.text.onNavy}"
       }
     },
     "event": {
@@ -1759,7 +2257,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.panel}"
+        "$value": "{primitive.radius.lg}"
       },
       "category": {
         "$type": "color",
@@ -1813,11 +2311,11 @@
     "mode": {
       "background": {
         "$type": "color",
-        "$value": "{semantic.color.surface.subtle}"
+        "$value": "{semantic.color.mode.track}"
       },
       "selected": {
         "$type": "color",
-        "$value": "{semantic.color.surface.base}"
+        "$value": "{semantic.color.mode.selected}"
       },
       "foreground": {
         "$type": "color",
@@ -1825,7 +2323,7 @@
       },
       "radius": {
         "$type": "dimension",
-        "$value": "{primitive.radius.lg}"
+        "$value": "{primitive.radius.md}"
       }
     },
     "backoffice": {
@@ -1836,7 +2334,7 @@
         },
         "background": {
           "$type": "color",
-          "$value": "{semantic.color.internal.sidebar}"
+          "$value": "{semantic.color.surface.editorial}"
         }
       },
       "navigation": {
@@ -1856,7 +2354,7 @@
         },
         "radius": {
           "$type": "dimension",
-          "$value": "{primitive.radius.md}"
+          "$value": "{primitive.radius.sm}"
         }
       },
       "field": {
@@ -1866,7 +2364,7 @@
         },
         "radius": {
           "$type": "dimension",
-          "$value": "{primitive.radius.md}"
+          "$value": "{primitive.radius.sm}"
         }
       },
       "table": {
@@ -1977,6 +2475,329 @@
             "$type": "color",
             "$value": "{semantic.color.internal.validatedText}"
           }
+        }
+      }
+    }
+  },
+  "modo": {
+    "$description": "El modo claro. Solo las hojas que cambian respecto de `semantic`, que es el oscuro. El generador las escribe bajo [data-theme=\"claro\"] y las pasa por el mismo chequeo de contraste, así que los dos modos se comprueban enteros.",
+    "claro": {
+      "color": {
+        "surface": {
+          "canvas": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.50}"
+          },
+          "page": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.0}"
+          },
+          "base": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.0}"
+          },
+          "subtle": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.100}"
+          },
+          "editorial": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.50}"
+          },
+          "floating": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.0}"
+          },
+          "navy": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.800}"
+          }
+        },
+        "text": {
+          "default": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.850}"
+          },
+          "secondary": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.600}"
+          },
+          "link": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.700}"
+          }
+        },
+        "border": {
+          "subtle": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.200}"
+          },
+          "control": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.500}"
+          },
+          "accent": {
+            "$type": "color",
+            "$value": "{primitive.color.gold.600}"
+          }
+        },
+        "action": {
+          "primary": {
+            "default": {
+              "$type": "color",
+              "$value": "{primitive.color.gold.500}"
+            },
+            "hover": {
+              "$type": "color",
+              "$value": "{primitive.color.gold.400}"
+            },
+            "pressed": {
+              "$type": "color",
+              "$value": "{primitive.color.gold.600}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.800}"
+            }
+          },
+          "secondary": {
+            "default": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.0}"
+            },
+            "hover": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.100}"
+            },
+            "pressed": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.200}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.700}"
+            },
+            "border": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.700}"
+            }
+          },
+          "tertiary": {
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.700}"
+            },
+            "hover": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.800}"
+            }
+          },
+          "disabled": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.100}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.600}"
+            },
+            "border": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.500}"
+            }
+          }
+        },
+        "focus": {
+          "ring": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.700}"
+          },
+          "gap": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.0}"
+          }
+        },
+        "selection": {
+          "background": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.100}"
+          },
+          "foreground": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.900}"
+          }
+        },
+        "brand": {
+          "institutional": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.800}"
+          },
+          "accent": {
+            "$type": "color",
+            "$value": "{primitive.color.gold.500}"
+          },
+          "accentText": {
+            "$type": "color",
+            "$value": "{primitive.color.gold.900}"
+          },
+          "accentSurface": {
+            "$type": "color",
+            "$value": "{primitive.color.gold.50}"
+          },
+          "ink": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.850}"
+          },
+          "marker": {
+            "$type": "color",
+            "$value": "{primitive.color.gold.600}"
+          }
+        },
+        "feedback": {
+          "info": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.50}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.blue.800}"
+            }
+          },
+          "success": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.green.50}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.green.700}"
+            }
+          },
+          "warning": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.amber.50}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.amber.800}"
+            }
+          },
+          "error": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.red.50}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.red.700}"
+            }
+          },
+          "neutral": {
+            "background": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.50}"
+            },
+            "foreground": {
+              "$type": "color",
+              "$value": "{primitive.color.neutral.700}"
+            }
+          }
+        },
+        "assist": {
+          "background": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.50}"
+          },
+          "foreground": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.700}"
+          }
+        },
+        "data": {
+          "noData": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.100}"
+          },
+          "low": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.100}"
+          },
+          "medium": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.400}"
+          },
+          "high": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.800}"
+          }
+        },
+        "voice": {
+          "surface": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.50}"
+          },
+          "text": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.700}"
+          },
+          "recording": {
+            "$type": "color",
+            "$value": "{primitive.color.red.700}"
+          }
+        },
+        "navigation": {
+          "selected": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.100}"
+          },
+          "foreground": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.850}"
+          }
+        },
+        "event": {
+          "dateBackground": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.50}"
+          },
+          "dateForeground": {
+            "$type": "color",
+            "$value": "{primitive.color.blue.800}"
+          },
+          "category": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.600}"
+          }
+        },
+        "mode": {
+          "track": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.100}"
+          },
+          "selected": {
+            "$type": "color",
+            "$value": "{primitive.color.neutral.0}"
+          }
+        }
+      },
+      "elevation": {
+        "card": {
+          "$type": "shadow",
+          "$value": "{primitive.elevation.cardLight}"
+        },
+        "deep": {
+          "$type": "shadow",
+          "$value": "{primitive.elevation.deepLight}"
+        },
+        "glow": {
+          "$type": "shadow",
+          "$value": "{primitive.elevation.glowGoldSoft}"
+        },
+        "glowSoft": {
+          "$type": "shadow",
+          "$value": "{primitive.elevation.none}"
         }
       }
     }

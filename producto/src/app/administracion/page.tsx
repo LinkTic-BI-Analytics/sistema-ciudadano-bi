@@ -63,7 +63,10 @@ export default async function Administracion() {
     <div className="pc-backoffice">
       <div className="bo-shell">
         <aside className="bo-sidebar">
-          <div className="bo-brand">Administración</div>
+          <div className="bo-brand">
+            <span className="bo-tricolor" aria-hidden><i /><i /><i /></span>
+            Administración
+          </div>
           <p className="bo-nav-label">Convocatoria</p>
           <Link className="bo-link" href="/administracion">Encuentros y materiales</Link>
           <Link className="bo-link" href="/consola">Bandeja de revisión</Link>

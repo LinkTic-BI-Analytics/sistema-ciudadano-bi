@@ -1,5 +1,26 @@
 # Participación ciudadana · Dirección visual 0.4
 
+> **Estado: vigente en la estructura, superada en la identidad.** El 16 de septiembre de 2026
+> el equipo de UX entregó la línea gráfica del ecosistema «Patria Milagro»
+> ([`../patria-milagro-v1/`](../patria-milagro-v1/LINEA-GRAFICA.md)), y el producto se
+> construyó con ella. Lo que este documento dice sobre **estructura, orden de pantalla,
+> jerarquía de acciones y límites de lo que la interfaz puede prometer sigue mandando, entero**.
+> Cuatro decisiones suyas de *forma* quedaron superadas, y se dicen aquí para que nadie tenga
+> que adivinar cuál de las dos versiones aplica:
+>
+> | Lo que decía la 0.4 | Lo que manda desde la entrega Patria |
+> |---|---|
+> | Titular editorial en **Newsreader** serif, caja baja | **Montserrat 700–900**, y el cuerpo en **Inter**. La entrega unifica tres familias en dos más una de cifras |
+> | Fondo **arena y papel**, sin modo oscuro | **Oscuro por defecto**, claro como modo secundario completo. Los dos pasan la compuerta de contraste enteros |
+> | **Sin elevación decorativa**, ni un token de sombra | Escala de elevación de dos escalones más el halo dorado del botón principal. Eso cerró la `Q1` |
+> | Movimiento: solo 120 ms de color en botones, **«sin entradas animadas»** | Tres gestos: responder al dedo, entrar una vez y decir que algo está pasando. Todos dentro de `prefers-reduced-motion: no-preference` |
+>
+> **Lo que NO cambió, y es lo que más pesa de este documento:** que el estado nunca se
+> comunica solo por color; que el amarillo no lleva texto blanco encima; que el placeholder no
+> sustituye la etiqueta; que nada se mueve de sitio después de ser tocable; y que no se
+> inventa un escudo, un sello ni una entidad receptora real — eso sigue condicionado al manual
+> que confirme el cliente, y es la `Q34` de `negocio/vacios.md`.
+
 Propuesta de producto para Colombia. Investigación consultada el 13 de septiembre de 2026. La dirección visual, las fuentes y los colores ampliados son una propuesta; no constituyen un manual aprobado por la Presidencia.
 
 ## Decisión

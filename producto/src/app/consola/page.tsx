@@ -68,7 +68,10 @@ export default async function Consola({
     <div className="pc-backoffice">
       <div className="bo-shell">
         <aside className="bo-sidebar">
-          <div className="bo-brand">Consola</div>
+          <div className="bo-brand">
+            <span className="bo-tricolor" aria-hidden><i /><i /><i /></span>
+            Consola
+          </div>
           <p className="bo-nav-label">Revisión</p>
           <Link className="bo-link" href="/consola">Por aclarar</Link>
           <div className="bo-sidebar-bottom">

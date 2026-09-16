@@ -12,41 +12,79 @@ import { join } from "node:path";
  * mueve, y nadie se entera hasta que la pieza sale de otro color que la web.
  * Así que se leen de la misma hoja que usa el producto, que `scripts/tokens.sh`
  * mantiene al día con el JSON que es la fuente.
+ *
+ * ## Por qué hay que decir el modo
+ *
+ * Desde la línea gráfica Patria hay dos: el oscuro, que es el de la pantalla, y
+ * el claro. **El papel es claro siempre.** Sin esta separación, un afiche de
+ * carta saldría con el fondo navy del modo oscuro: 816 × 1056 px de tinta en
+ * una impresora de oficina, y un texto pensado para pantalla encima.
+ *
+ * Por eso el modo se pide y no se adivina, y el que trae por defecto es el
+ * claro: el único consumidor de este módulo es la pieza impresa.
  */
 
-let cache: Map<string, string> | null = null;
+export type Modo = "claro" | "oscuro";
 
-function cargar(): Map<string, string> {
-  if (cache) return cache;
+const cache = new Map<Modo, Map<string, string>>();
+
+/** Lee un bloque `selector { … }` de la hoja y devuelve sus declaraciones. */
+function declaraciones(css: string, inicio: string): Map<string, string> {
+  const desde = css.indexOf(inicio);
+  const m = new Map<string, string>();
+  if (desde < 0) return m;
+  const hasta = css.indexOf("}", desde);
+  for (const c of css.slice(desde, hasta).matchAll(/(--pc-[\w-]+):\s*([^;]+);/g)) {
+    const [, nombre, valor] = c;
+    if (nombre && valor) m.set(nombre, valor.trim());
+  }
+  return m;
+}
+
+function cargar(modo: Modo): Map<string, string> {
+  const hecho = cache.get(modo);
+  if (hecho) return hecho;
+
   const css = readFileSync(join(process.cwd(), "src/producto/tokens/participacion.css"), "utf-8");
-  const crudos = new Map<string, string>();
-  for (const coincidencia of css.matchAll(/(--pc-[\w-]+):\s*([^;]+);/g)) {
-    const [, nombre, valor] = coincidencia;
-    if (nombre && valor) crudos.set(nombre, valor.trim());
+  // `:root` trae los 372 tokens; el bloque del claro solo las hojas que cambian.
+  // Se superponen en ese orden, igual que hace el navegador.
+  const crudos = declaraciones(css, "\n:root {");
+  if (modo === "claro") {
+    for (const [k, v] of declaraciones(css, '[data-tema="claro"] {')) crudos.set(k, v);
   }
 
-  // Los alias se resuelven en cadena: `brand-ink` → `blue-900` → `#1B3A6B`.
-  // Con tope, porque un ciclo en los tokens colgaría el servidor — y el
-  // validador del sistema de diseño ya comprueba que no los haya, pero
-  // depender de eso desde aquí sería depender de otro repositorio.
+  // Los alias se resuelven en cadena: `brand-ink` → `blue-850` → `#0A2C46`.
+  //
+  // **Y con su respaldo**, que es lo que necesitan las familias tipográficas:
+  // valen `var(--pc-fuente-display, Montserrat), Arial, sans-serif`, donde la
+  // primera variable la define `next/font` en el navegador y aquí no existe.
+  // Sin leer el respaldo, un afiche se quedaba sin tipografía y este módulo
+  // lanzaba «no resuelve» — que es lo correcto para un color y falso para esto.
+  //
+  // Con tope de diez vueltas, porque un ciclo en los tokens colgaría el
+  // servidor. El validador del sistema de diseño ya comprueba que no los haya,
+  // pero depender de eso desde aquí sería depender de otro repositorio.
   const resuelto = new Map<string, string>();
   for (const [nombre] of crudos) {
     let valor = crudos.get(nombre)!;
-    for (let i = 0; i < 10 && valor.startsWith("var("); i++) {
-      const alias = valor.slice(4, valor.indexOf(")")).trim();
-      valor = crudos.get(alias) ?? valor;
+    for (let i = 0; i < 10 && ALIAS.test(valor); i++) {
+      valor = valor.replace(ALIAS, (_, ref: string, respaldo?: string) =>
+        crudos.get(ref) ?? respaldo?.trim() ?? "");
     }
-    resuelto.set(nombre, valor);
+    resuelto.set(nombre, valor.trim());
   }
-  cache = resuelto;
+  cache.set(modo, resuelto);
   return resuelto;
 }
 
+/** `var(--x)` o `var(--x, respaldo)`. Sin paréntesis anidados: los tokens no los tienen. */
+const ALIAS = /var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*))?\)/;
+
 /** Devuelve el valor literal de un token. Falla si no existe: un color inventado se ve. */
-export function token(nombre: string): string {
-  const v = cargar().get(nombre);
-  if (!v || v.startsWith("var(")) {
-    throw new Error(`el token ${nombre} no existe o no resuelve: la pieza saldría de otro color`);
+export function token(nombre: string, modo: Modo = "claro"): string {
+  const v = cargar(modo).get(nombre);
+  if (!v || v.includes("var(")) {
+    throw new Error(`el token ${nombre} no existe o no resuelve en modo ${modo}: la pieza saldría de otro color`);
   }
   return v;
 }

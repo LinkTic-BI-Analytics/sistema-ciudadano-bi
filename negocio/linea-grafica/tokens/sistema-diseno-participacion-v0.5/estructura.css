@@ -1,167 +1,460 @@
-/* Participación 0.4 · expresión editorial y componentes de producto.
-   Orden: participacion.css, componentes.css, marco.css, estructura.css. */
-.pc-ui {background:var(--pc-semantic-color-surface-base);}
-.pc-ui svg {flex-shrink:0;}
-.pc-ui .pc-institution {display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.625rem 2rem;background:var(--pc-semantic-color-brand-ink);color:var(--pc-semantic-color-text-inverse);font-size:.75rem;line-height:1.5;}
-.pc-ui .pc-institution span:first-child {font-weight:600;}
-.pc-ui .pc-header {padding:1.125rem 2rem;border-bottom:0;}
-.pc-ui .pc-brand {font-size:1.125rem;line-height:1.15;letter-spacing:-.025em;color:var(--pc-semantic-color-brand-ink);}
-.pc-ui .pc-brand-sub {display:block;font-weight:400;font-size:.9375rem;letter-spacing:0;}
-.pc-ui .pc-nav {gap:.25rem;}
-.pc-ui .pc-nav button {display:inline-flex;align-items:center;gap:.25rem;border:0;padding:.625rem .875rem;border-radius:var(--pc-component-navigation-radius);font-size:.875rem;}
-.pc-ui .pc-nav button[aria-pressed=true] {background:var(--pc-component-navigation-selected);color:var(--pc-component-navigation-foreground);font-weight:500;}
-.pc-ui .pc-nav button:hover {background:var(--pc-semantic-color-surface-subtle);}
-.pc-ui .pc-nav svg {width:16px;height:16px;}
-.pc-ui .pc-main {padding:2.5rem 2rem 3rem;}
-.pc-ui .pc-main[data-layout=home] {padding-top:.5rem;}
-.pc-ui .pc-main[data-layout=events],.pc-ui .pc-main[data-layout=eventDetail] {padding-top:2rem;}
-.pc-ui .pc-main[data-layout=events] h1 {font-family:var(--pc-component-landing-titleFamily);font-weight:400;font-size:clamp(2.25rem,4.8vw,3.5rem);line-height:1.12;max-width:22ch;color:var(--pc-semantic-color-brand-ink);}
-.pc-ui .pc-main[data-layout=eventDetail] h1 {font-size:clamp(1.875rem,3.5vw,2.75rem);max-width:25ch;color:var(--pc-semantic-color-brand-ink);margin-top:.5rem;}
-.pc-ui .pc-eyebrow {font-size:.75rem;font-weight:500;letter-spacing:.04em;margin:0 0 1rem;display:flex;align-items:center;gap:.5rem;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-hero {background:var(--pc-component-landing-heroBackground);padding:2.5rem;border-radius:var(--pc-component-landing-panelRadius);}
-.pc-ui .pc-hero>.pc-eyebrow {margin-bottom:2rem;color:var(--pc-semantic-color-brand-ink);}
-.pc-ui .pc-sun {width:.75rem;height:.75rem;border-radius:var(--pc-primitive-radius-pill);background:var(--pc-component-landing-marker);flex-shrink:0;}
-.pc-ui .pc-hero-layout {display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:2.5rem;align-items:center;}
-.pc-ui .pc-hero h1 {font-family:var(--pc-component-landing-titleFamily);font-weight:400;font-size:clamp(var(--pc-component-landing-titleCompact),6vw,var(--pc-component-landing-titleSize));line-height:var(--pc-primitive-lineHeight-display);letter-spacing:var(--pc-primitive-letterSpacing-display);color:var(--pc-component-landing-titleForeground);margin:0 0 1.5rem;max-width:15ch;}
-.pc-ui .pc-hero h1 em {font-style:normal;text-decoration:underline;text-decoration-color:var(--pc-component-landing-marker);text-decoration-thickness:.07em;text-underline-offset:.08em;}
-.pc-ui .pc-hero-intro {font-size:1.0625rem;line-height:1.55;max-width:41ch;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-hero .pc-actions {gap:.5rem 1rem;margin-top:1.5rem;}
-.pc-ui .pc-hero-help {display:flex;align-items:flex-start;gap:.5rem;margin:1rem 0 0;font-size:.8125rem;line-height:1.5;color:var(--pc-semantic-color-text-secondary);max-width:45ch;}
-.pc-ui .pc-hero-help svg {width:16px;height:16px;margin-top:2px;}
-.pc-ui .pc-how {background:var(--pc-component-landing-guideBackground);color:var(--pc-component-landing-guideForeground);padding:1.5rem;border-radius:var(--pc-primitive-radius-xl);}
-.pc-ui .pc-how .pc-eyebrow {font-size:.75rem;letter-spacing:0;margin-bottom:1.5rem;}
-.pc-ui .pc-steps {list-style:none;padding:0;margin:0;display:grid;gap:1.5rem;}
-.pc-ui .pc-steps li {display:grid;grid-template-columns:1.75rem 1fr;gap:.75rem;}
-/* El número del paso, en un círculo. Suelto sobre el fondo era un dígito
-   pequeño en azul que no se leía como «paso 1 de 3»: se confundía con el texto
-   de al lado. El círculo usa los mismos tokens que el recuadro de fecha de un
-   encuentro, que ya es la forma que el sistema tiene de decir «esto es una
-   marca, no una palabra». */
-.pc-ui .pc-step-number {display:flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:999px;color:var(--pc-component-event-date);background:var(--pc-component-event-dateBackground);font-size:.875rem;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;}
-.pc-ui .pc-steps strong {display:block;font-weight:500;font-size:.9375rem;line-height:1.4;margin-bottom:.375rem;}
-.pc-ui .pc-steps li div>span {display:block;font-size:.8125rem;color:var(--pc-semantic-color-text-secondary);line-height:1.5;}
-/* Dentro del bloque oscuro, el texto de apoyo y los divisores cambian de lado.
-   El gris de «secondary» sobre azul marino no se lee: el sistema no tenía
-   ningún bloque oscuro con texto dentro hasta ahora. */
-.pc-ui .pc-how .pc-steps li div>span,
-.pc-ui .pc-how .pc-eyebrow,
-.pc-ui .pc-how-note {color:var(--pc-semantic-color-text-inverseSecondary);}
-.pc-ui .pc-how-note {border-top-color:var(--pc-semantic-color-border-subtleInverse);}
-/* El número del paso, en amarillo sobre el bloque oscuro: es el mismo amarillo
-   que subraya el titular, así que la página tiene un solo acento y no dos. */
-.pc-ui .pc-how .pc-step-number {color:var(--pc-semantic-color-brand-ink);background:var(--pc-semantic-color-brand-accent);}
-.pc-ui .pc-how-note {padding-top:1.25rem;border-top:1px solid var(--pc-semantic-color-border-subtle);margin:1.5rem 0 0;font-size:.8125rem;line-height:1.5;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-section {margin-top:3rem;}
-.pc-ui .pc-section-header {display:flex;justify-content:space-between;gap:1rem;align-items:end;flex-wrap:wrap;margin-bottom:.625rem;}
-.pc-ui .pc-section-header .pc-eyebrow {margin-bottom:.5rem;}
-.pc-ui .pc-section-header h2 {font-size:1.75rem;font-weight:500;letter-spacing:-.035em;margin:0;}
-.pc-ui .pc-event-list {list-style:none;padding:0;margin:1.5rem 0 0;display:grid;gap:1rem;}
-.pc-ui .pc-event-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
-.pc-ui .pc-event-row {display:grid;grid-template-columns:3.25rem minmax(0,1fr);align-items:start;gap:1.125rem;padding:1.5rem;background:var(--pc-component-event-background);border:1px solid var(--pc-component-event-border);border-radius:var(--pc-component-event-radius);}
-.pc-ui .pc-event-row:focus-within {border-color:var(--pc-semantic-color-border-control);}
-.pc-ui .pc-event-date {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.125rem;min-height:4rem;border-radius:var(--pc-primitive-radius-md);padding:.375rem;color:var(--pc-component-event-date);background:var(--pc-component-event-dateBackground);}
-.pc-ui .pc-event-date strong {font-size:1.5rem;line-height:1.1;font-weight:500;font-variant-numeric:tabular-nums;}
-.pc-ui .pc-event-date span {font-size:.6875rem;line-height:1.4;letter-spacing:.05em;}
-.pc-ui .pc-event-category {display:flex;flex-wrap:wrap;gap:.25rem .375rem;align-items:center;color:var(--pc-component-event-category);font-size:.75rem;line-height:1.5;margin:0 0 .5rem;}
-.pc-ui .pc-event-category svg {width:14px;height:14px;}
-.pc-ui .pc-event-row :is(h2,h3) {font-size:1.125rem;font-weight:500;line-height:1.35;letter-spacing:-.015em;margin:0 0 .75rem;}
-.pc-ui .pc-event-title {display:flex;align-items:start;justify-content:space-between;gap:.75rem;width:100%;min-height:44px;padding:0;border:0;background:transparent;color:var(--pc-semantic-color-text-default);text-align:left;font:inherit;}
-.pc-ui .pc-event-title svg {width:18px;height:18px;margin-top:3px;color:var(--pc-semantic-color-text-link);}
-.pc-ui .pc-event-title:hover span {text-decoration:underline;text-underline-offset:4px;}
-.pc-ui .pc-event-row .pc-event-when {font-size:.8125rem;line-height:1.5;margin:0 0 .25rem;color:var(--pc-component-event-meta);}
-.pc-ui .pc-event-row .pc-event-where {font-size:.8125rem;line-height:1.5;margin:0;color:var(--pc-component-event-meta);}
-.pc-ui .pc-event-state {display:inline-block;font-size:.8125rem;font-weight:500;color:var(--pc-component-event-changed);margin-top:.75rem;}
-.pc-ui .pc-event-row[data-status=cancelled] .pc-event-state {color:var(--pc-semantic-color-feedback-error-foreground);}
-.pc-ui .pc-event-row[data-status=ended] .pc-event-state {color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-trust-grid {display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;padding:2rem;border-radius:var(--pc-primitive-radius-xl);background:var(--pc-semantic-color-surface-editorial);}
-.pc-ui .pc-trust-grid>div>svg {width:20px;height:20px;color:var(--pc-semantic-color-brand-ink);margin-bottom:1rem;}
-.pc-ui .pc-trust-grid h2 {font-size:1.0625rem;font-weight:500;letter-spacing:-.015em;margin-bottom:.75rem;}
-.pc-ui .pc-trust-grid p {font-size:.875rem;color:var(--pc-component-trust-foreground);margin:0;line-height:1.6;max-width:46ch;}
-.pc-ui .pc-privacy {border-top:1px solid var(--pc-semantic-color-border-subtle);padding-top:1rem;}
-.pc-ui .pc-filters {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;padding:1.25rem;background:var(--pc-semantic-color-surface-editorial);border-radius:var(--pc-primitive-radius-xl);margin:1.75rem 0 .75rem;}
-.pc-ui .pc-filters .pc-label {font-size:.8125rem;font-weight:500;}
-.pc-ui .pc-filters .pc-input {padding:.625rem;font-size:1rem;}
-.pc-ui .pc-filter-summary {display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap;}
-.pc-ui .pc-draft-notice {background:var(--pc-component-draft-background);color:var(--pc-component-draft-foreground);padding:var(--pc-component-draft-padding);border-radius:var(--pc-primitive-radius-lg);margin:0 0 1.5rem;}
-.pc-ui .pc-draft-notice p {margin:0;}
-.pc-ui .pc-context {padding:.75rem 1rem;margin:0 0 1.5rem;border:0;background:var(--pc-semantic-color-surface-editorial);border-radius:var(--pc-primitive-radius-lg);}
-.pc-ui .pc-context-heading {display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
-.pc-ui .pc-context-heading>p {flex:1;min-width:9rem;}
-.pc-ui .pc-context details[open] p {margin-bottom:.75rem;}
-.pc-ui .pc-context p {margin:0;font-size:.8125rem;}
-.pc-ui .pc-context summary,.pc-ui .pc-context .pc-text-action {font-size:.8125rem;}
-.pc-ui .pc-topline {margin-bottom:1.125rem;}
-.pc-ui .pc-topline .pc-meta {font-size:.8125rem;}
-.pc-ui .pc-modes {display:inline-flex;max-width:100%;padding:.25rem;gap:.25rem;border-radius:var(--pc-component-mode-radius);background:var(--pc-component-mode-background);margin:1rem 0 .75rem;}
-.pc-ui .pc-mode {display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.5rem 1rem;border:0;border-radius:var(--pc-primitive-radius-md);background:transparent;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-mode[aria-pressed=true] {background:var(--pc-component-mode-selected);color:var(--pc-component-mode-foreground);font-weight:500;text-decoration:underline;text-underline-offset:5px;}
-.pc-ui .pc-mode svg {width:18px;height:18px;}
-.pc-ui .pc-mode-hint {font-size:.8125rem;color:var(--pc-semantic-color-text-secondary);margin:0 0 1rem;}
-.pc-ui .pc-detail-grid {display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:2.5rem;margin-top:2rem;}
-.pc-ui .pc-detail-grid h2 {font-size:1.125rem;font-weight:500;margin-top:1.75rem;}
-.pc-ui .pc-detail-grid>div>h2:first-child {margin-top:0;}
-.pc-ui .pc-detail-grid p,.pc-ui .pc-detail-grid li {font-size:.9375rem;line-height:1.6;}
-.pc-ui .pc-detail-facts {padding:1.5rem;margin:0;background:var(--pc-semantic-color-surface-editorial);border-radius:var(--pc-primitive-radius-xl);}
-.pc-ui .pc-detail-facts dt {font-weight:500;font-size:.8125rem;color:var(--pc-semantic-color-text-secondary);margin-top:1.25rem;}
-.pc-ui .pc-detail-facts dt:first-child {margin-top:0;}
-.pc-ui .pc-detail-facts dd {margin:.375rem 0 0;font-size:.9375rem;}
-.pc-ui .pc-callout {border-left:3px solid var(--pc-component-event-changed);padding-left:1rem;margin:1rem 0;}
-.pc-ui .pc-callout p {margin:0;font-size:.875rem;}
-.pc-ui .pc-empty {padding:2rem 0;}
-.pc-ui .pc-review-hint {font-size:.875rem;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-action {transition:background-color var(--pc-primitive-duration-fast) ease;}
-.pc-ui .pc-action svg {width:18px;height:18px;}
-.pc-ui .pc-footer {font-size:.75rem;padding:1.25rem 2rem;}
-.pc-ui .pc-palette {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem;margin:1.5rem 0 2rem;}
-.pc-ui .pc-palette-item>span {display:block;height:4rem;border-radius:var(--pc-primitive-radius-md);margin-bottom:.625rem;border:1px solid var(--pc-semantic-color-border-subtle);}
-.pc-ui .pc-palette-item p {font-size:.8125rem;margin:0;}
-.pc-ui .pc-palette-item code {font-size:.75rem;color:var(--pc-semantic-color-text-secondary);}
-.pc-ui .pc-specimen .pc-display-sample {font-family:var(--pc-semantic-fontFamily-display);font-weight:400;font-size:2.5rem;line-height:1.15;color:var(--pc-semantic-color-brand-ink);}
-@media(max-width:52rem) {
- .pc-ui .pc-hero-layout {grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1.5rem;}
- .pc-ui .pc-hero {padding:2rem;}
- .pc-ui .pc-how {padding:1.25rem;}
- .pc-ui .pc-hero h1 {font-size:3.5rem;}
- .pc-ui .pc-event-grid {grid-template-columns:1fr;}
- .pc-ui .pc-filters {grid-template-columns:1fr 1fr;}
+/* Participación · composición editorial de la experiencia ciudadana.
+   Orden: participacion.css, componentes.css, marco.css, estructura.css.
+
+   Esta hoja pisa a `marco.css` donde la portada lo necesita. Los nombres
+   engañan: `marco` es el armazón y `estructura` la composición. */
+
+/* ── Franja institucional ────────────────────────────────────────────────── */
+.pc-ui .pc-institution {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: .625rem 2rem;
+  background: var(--pc-semantic-color-surface-navy);
+  color: var(--pc-semantic-color-text-onNavy);
+  font-size: .75rem; line-height: 1.5;
+  border-bottom: 1px solid var(--pc-semantic-color-border-onNavy);
 }
-@media(max-width:42rem) {
- .pc-ui .pc-header {padding:1rem;gap:.75rem;}
- .pc-ui .pc-main {padding:1.5rem 1rem 2rem;}
- .pc-ui .pc-institution {padding:.5rem 1rem;font-size:.6875rem;}
- .pc-ui .pc-institution span:last-child {max-width:26ch;text-align:right;}
- .pc-ui .pc-hero-layout {grid-template-columns:1fr;}
- .pc-ui .pc-hero {padding:1.5rem;}
- .pc-ui .pc-hero>.pc-eyebrow {margin-bottom:1.5rem;}
- .pc-ui .pc-hero h1 {font-size:3.125rem;}
- .pc-ui .pc-hero .pc-actions {align-items:stretch;}
- .pc-ui .pc-hero .pc-actions>.pc-action {width:100%;}
- .pc-ui .pc-how {padding:1.25rem;margin-top:.25rem;}
- .pc-ui .pc-how .pc-eyebrow {margin-bottom:1rem;}
- .pc-ui .pc-steps {gap:1.125rem;}
- .pc-ui .pc-how-note {display:none;}
- .pc-ui .pc-section {margin-top:2.25rem;}
- .pc-ui .pc-section-header h2 {font-size:1.5rem;}
- .pc-ui .pc-trust-grid,.pc-ui .pc-detail-grid {grid-template-columns:1fr;gap:1.75rem;}
- .pc-ui .pc-trust-grid {padding:1.5rem;}
- .pc-ui .pc-palette {grid-template-columns:repeat(3,minmax(0,1fr));}
- .pc-ui .pc-footer {padding:1rem;}
+.pc-ui .pc-institution span:first-child {
+  font-weight: 700; letter-spacing: var(--pc-primitive-letterSpacing-label); text-transform: uppercase;
 }
-@media(max-width:30rem) {
- .pc-ui .pc-nav {width:100%;gap:.125rem;justify-content:flex-start;}
- .pc-ui .pc-nav button {padding:.5rem .75rem;font-size:.8125rem;}
- .pc-ui .pc-hero {padding:1.25rem;}
- .pc-ui .pc-hero h1 {font-size:var(--pc-component-landing-titleCompact);}
- .pc-ui .pc-hero-intro {font-size:1rem;}
- .pc-ui .pc-hero .pc-eyebrow {font-size:.6875rem;}
- .pc-ui .pc-event-row {padding:1rem;grid-template-columns:2.75rem minmax(0,1fr);gap:.875rem;}
- .pc-ui .pc-event-row :is(h2,h3) {font-size:1rem;}
- .pc-ui .pc-event-date {min-height:3.5rem;}
- .pc-ui .pc-filters {grid-template-columns:1fr;padding:1rem;}
- .pc-ui .pc-mode {padding:.5rem .875rem;}
+.pc-ui .pc-institution span:last-child { color: var(--pc-semantic-color-text-onNavySecondary); }
+
+/* ── Cabecera ────────────────────────────────────────────────────────────────
+   Pegada arriba con desenfoque detrás, como en la entrega. El desenfoque no es
+   adorno: la cabecera flota sobre el hero navy y sin él el texto se pierde
+   contra la bandera. */
+.pc-ui .pc-header {
+  position: sticky; top: 0; z-index: var(--pc-primitive-layer-sticky);
+  padding: 1rem 2rem; border-bottom: 1px solid var(--pc-line);
+  background: color-mix(in srgb, var(--pc-semantic-color-surface-page) 86%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
-@media(prefers-reduced-motion:reduce) {.pc-ui .pc-action {transition:none;}}
-@media(forced-colors:active) {
- .pc-ui .pc-nav button[aria-pressed=true],.pc-ui .pc-mode[aria-pressed=true] {outline:1px solid ButtonText;}
- .pc-ui .pc-event-title {text-decoration:underline;}
+.pc-ui .pc-brand {
+  font-size: 1rem; line-height: 1.2; font-weight: 800; margin: 0;
+  letter-spacing: var(--pc-primitive-letterSpacing-heading);
+  color: var(--pc-semantic-color-brand-ink);
+  display: flex; flex-direction: column; gap: .125rem;
+}
+.pc-ui .pc-brand-sub {
+  display: block; font-weight: 600; font-size: .6875rem;
+  letter-spacing: var(--pc-primitive-letterSpacing-label); text-transform: uppercase;
+  color: var(--pc-semantic-color-brand-accentText);
+}
+.pc-ui .pc-brand-mark { display: flex; align-items: center; gap: .75rem; }
+.pc-ui .pc-nav { gap: .25rem; }
+.pc-ui .pc-nav button {
+  display: inline-flex; align-items: center; gap: .25rem; border: 0;
+  padding: .625rem .875rem; border-radius: var(--pc-component-navigation-radius);
+  font-size: .875rem; font-weight: 600;
+}
+.pc-ui .pc-nav button[aria-pressed=true] {
+  background: var(--pc-component-navigation-selected);
+  color: var(--pc-component-navigation-foreground);
+}
+.pc-ui .pc-nav button:hover { background: var(--pc-semantic-color-surface-subtle); color: var(--pc-ink); }
+.pc-ui .pc-nav svg { width: 16px; height: 16px; }
+
+.pc-ui .pc-main { padding: 2.5rem 2rem 3rem; }
+.pc-ui .pc-main[data-layout=home] { padding-top: 1.5rem; }
+.pc-ui .pc-main[data-layout=events], .pc-ui .pc-main[data-layout=eventDetail] { padding-top: 2rem; }
+.pc-ui .pc-main[data-layout=events] h1,
+.pc-ui .pc-main[data-layout=eventDetail] h1 {
+  font-family: var(--pc-component-landing-titleFamily); font-weight: 900;
+  letter-spacing: var(--pc-primitive-letterSpacing-display);
+  color: var(--pc-semantic-color-brand-ink);
+}
+.pc-ui .pc-main[data-layout=events] h1 { font-size: clamp(2.25rem,4.8vw,3.25rem); line-height: 1.08; max-width: 20ch; }
+.pc-ui .pc-main[data-layout=eventDetail] h1 { font-size: clamp(1.875rem,3.5vw,2.75rem); line-height: 1.1; max-width: 24ch; margin-top: .5rem; }
+
+/* ── Etiqueta de sección ─────────────────────────────────────────────────── */
+.pc-ui .pc-eyebrow {
+  margin: 0 0 1rem; display: flex; align-items: center; gap: .625rem;
+  color: var(--pc-semantic-color-brand-accentText);
+}
+.pc-ui .pc-sun {
+  width: .75rem; height: .75rem; border-radius: var(--pc-primitive-radius-pill);
+  background: var(--pc-component-landing-marker); flex-shrink: 0;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────────
+   La bandera de fondo con el degradado navy encima. El degradado no es un
+   filtro bonito: sin él el titular cae sobre el amarillo de la bandera y baja
+   de 4,5:1. Va de opaco a la izquierda —donde está el texto— a translúcido a
+   la derecha, que es donde la bandera se ve.
+
+   El archivo lo pone `scripts/marca.sh` en `producto/public/marca/`. */
+.pc-ui .pc-hero {
+  position: relative; overflow: hidden;
+  background:
+    linear-gradient(100deg,
+      color-mix(in srgb, var(--pc-primitive-color-blue-950) 94%, transparent) 0%,
+      color-mix(in srgb, var(--pc-primitive-color-blue-800) 78%, transparent) 52%,
+      color-mix(in srgb, var(--pc-primitive-color-blue-950) 46%, transparent) 100%),
+    url("/marca/fondo-bandera.jpg") center right / cover no-repeat,
+    linear-gradient(135deg, var(--pc-primitive-color-blue-800) 0%, var(--pc-primitive-color-blue-950) 100%);
+  padding: 3.5rem 3rem;
+  border-radius: var(--pc-component-landing-panelRadius);
+  box-shadow: var(--pc-semantic-elevation-deep);
+}
+/* El hero es navy en los dos modos, así que su texto no sigue al tema. */
+.pc-ui .pc-hero, .pc-ui .pc-hero h1 { color: var(--pc-semantic-color-text-onNavy); }
+.pc-ui .pc-hero > .pc-eyebrow { margin-bottom: 1.75rem; color: var(--pc-semantic-color-brand-accent); }
+.pc-ui .pc-hero-layout {
+  display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,1fr);
+  gap: 3rem; align-items: center; position: relative;
+}
+.pc-ui .pc-hero h1 {
+  font-family: var(--pc-component-landing-titleFamily); font-weight: 900;
+  font-size: clamp(var(--pc-component-landing-titleCompact), 6vw, var(--pc-component-landing-titleSize));
+  line-height: var(--pc-primitive-lineHeight-display);
+  letter-spacing: var(--pc-primitive-letterSpacing-display);
+  margin: 0 0 1.5rem; max-width: 15ch;
+}
+/* El subrayado amarillo del titular: el único acento de la pantalla.
+   **Sin `white-space: nowrap`.** Lo tuvo un rato, para que el subrayado no se
+   partiera en dos renglones. En un teléfono de 390 px «necesita mejorar» en
+   Montserrat 900 a 44 px mide más que la pantalla, y como no se podía partir,
+   la portada entera se salía a lo ancho: el titular cortado y el párrafo
+   metiéndose por debajo del borde. Un subrayado bonito no vale una portada que
+   se sale. */
+.pc-ui .pc-hero h1 em {
+  font-style: normal; position: relative;
+  text-decoration: underline;
+  text-decoration-color: var(--pc-component-landing-marker);
+  text-decoration-thickness: .08em; text-underline-offset: .1em;
+}
+.pc-ui .pc-hero-intro {
+  font-size: 1.1875rem; line-height: 1.55; max-width: 42ch;
+  color: var(--pc-semantic-color-text-onNavySecondary);
+}
+.pc-ui .pc-hero .pc-actions { gap: .75rem 1rem; margin-top: 1.75rem; }
+.pc-ui .pc-hero .pc-text-action { color: var(--pc-semantic-color-brand-accent); }
+.pc-ui .pc-hero .pc-note { color: var(--pc-semantic-color-text-onNavySecondary); }
+.pc-ui .pc-hero .pc-note strong { color: var(--pc-semantic-color-text-onNavy); }
+.pc-ui .pc-hero-help {
+  display: flex; align-items: flex-start; gap: .5rem; margin: .875rem 0 0;
+  font-size: .8125rem; line-height: 1.5; max-width: 46ch;
+  color: var(--pc-semantic-color-text-onNavySecondary);
+}
+.pc-ui .pc-hero-help svg { width: 16px; height: 16px; margin-top: 2px; }
+
+/* ── «Cómo funciona» ─────────────────────────────────────────────────────────
+   Bloque navy dentro del hero, un escalón más claro para que se despegue del
+   fondo. El texto de apoyo cambia de token: el gris de `secondary` sobre navy
+   da 3,02:1 y no se lee. */
+/* El fondo es un color sólido, no un `color-mix` con transparencia. Traslúcido
+   se veía mejor sobre la bandera, pero `getComputedStyle` devuelve entonces
+   `color(srgb …)` en vez de `rgb(…)`, y la prueba que vigila que este bloque
+   siga siendo oscuro lee el color con una expresión regular de números. Un
+   estilo que rompe su propia prueba no vale lo que se ve. */
+.pc-ui .pc-how {
+  background: var(--pc-primitive-color-blue-950);
+  color: var(--pc-component-landing-guideForeground);
+  border: 1px solid var(--pc-semantic-color-border-onNavy);
+  padding: 1.75rem; border-radius: var(--pc-primitive-radius-lg);
+}
+.pc-ui .pc-how .pc-eyebrow { margin-bottom: 1.5rem; color: var(--pc-semantic-color-brand-accent); }
+.pc-ui .pc-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.5rem; }
+.pc-ui .pc-steps li { display: grid; grid-template-columns: 1.875rem 1fr; gap: .875rem; }
+/* El número del paso, en un círculo amarillo con la tinta del botón. Suelto
+   sobre el fondo era un dígito pequeño que se leía como parte del texto de al
+   lado, no como «paso 1 de 3». */
+.pc-ui .pc-step-number {
+  display: flex; align-items: center; justify-content: center;
+  width: 1.875rem; height: 1.875rem; border-radius: 999px;
+  color: var(--pc-semantic-color-action-primary-foreground);
+  background: var(--pc-semantic-color-brand-accent);
+  font-size: .875rem; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.pc-ui .pc-steps strong { display: block; font-weight: 700; font-size: .9375rem; line-height: 1.4; margin-bottom: .375rem; }
+.pc-ui .pc-steps li div > span { display: block; font-size: .8125rem; line-height: 1.5; }
+.pc-ui .pc-how .pc-steps li div > span,
+.pc-ui .pc-how-note { color: var(--pc-semantic-color-text-onNavySecondary); }
+.pc-ui .pc-how-note {
+  padding-top: 1.25rem; border-top: 1px solid var(--pc-semantic-color-border-onNavy);
+  margin: 1.5rem 0 0; font-size: .8125rem; line-height: 1.5;
+}
+
+/* ── Secciones ───────────────────────────────────────────────────────────── */
+.pc-ui .pc-section { margin-top: 3.5rem; }
+.pc-ui .pc-section-header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; flex-wrap: wrap; margin-bottom: .625rem; }
+.pc-ui .pc-section-header .pc-eyebrow { margin-bottom: .5rem; }
+.pc-ui .pc-section-header h2,
+.pc-ui .pc-section > h2 {
+  font-family: var(--pc-semantic-fontFamily-heading);
+  font-size: clamp(1.625rem, 3vw, 2.125rem); font-weight: 800;
+  letter-spacing: var(--pc-primitive-letterSpacing-display); margin: 0 0 .75rem;
+}
+
+/* ── Encuentros ──────────────────────────────────────────────────────────── */
+.pc-ui .pc-event-list { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 1rem; }
+.pc-ui .pc-event-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.pc-ui .pc-event-row {
+  position: relative; display: grid; grid-template-columns: 3.5rem minmax(0,1fr);
+  align-items: start; gap: 1.125rem; padding: 1.5rem;
+  background: var(--pc-component-event-background);
+  border: 1px solid var(--pc-component-event-border);
+  border-radius: var(--pc-component-event-radius);
+}
+/* Una fila SIN recuadro de fecha no reparte en dos columnas.
+   La pantalla de «este enlace no corresponde a ningún encuentro» lista los
+   encuentros publicados sin el recuadro del día, y su único hijo caía en la
+   columna de 3,5 rem: el título salía en una tira de cuatro caracteres de ancho
+   —«Mesa / sobre / el / agua»— con dos tercios de la tarjeta en blanco.
+   Estaba así desde antes de esta línea gráfica; sobre navy se ve, sobre blanco
+   se veía menos. */
+.pc-ui .pc-event-row:not(:has(.pc-event-date)) { grid-template-columns: minmax(0,1fr); }
+/* La franja dorada del borde izquierdo aparece al pasar por encima: dice
+   «esta» sin mover nada de sitio. */
+.pc-ui .pc-event-row::before {
+  content: ''; position: absolute; left: 0; top: 1.25rem; bottom: 1.25rem; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--pc-semantic-color-brand-accent);
+  opacity: 0; transform: scaleY(.3); transform-origin: center;
+}
+.pc-ui .pc-event-row:hover::before, .pc-ui .pc-event-row:focus-within::before { opacity: 1; transform: scaleY(1); }
+.pc-ui .pc-event-row:hover { border-color: var(--pc-semantic-color-border-accent); background: var(--pc-semantic-color-surface-subtle); }
+.pc-ui .pc-event-row:focus-within { border-color: var(--pc-semantic-color-border-control); }
+.pc-ui .pc-event-date {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .125rem;
+  min-height: 4rem; border-radius: var(--pc-primitive-radius-md); padding: .5rem;
+  color: var(--pc-component-event-date); background: var(--pc-component-event-dateBackground);
+}
+.pc-ui .pc-event-date strong { font-size: 1.625rem; line-height: 1.05; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pc-ui .pc-event-date span { font-size: .6875rem; line-height: 1.4; font-weight: 700; letter-spacing: var(--pc-primitive-letterSpacing-label); }
+.pc-ui .pc-event-category {
+  display: flex; flex-wrap: wrap; gap: .25rem .5rem; align-items: center;
+  color: var(--pc-component-event-category); font-size: .6875rem; font-weight: 700;
+  letter-spacing: var(--pc-primitive-letterSpacing-label); text-transform: uppercase;
+  line-height: 1.5; margin: 0 0 .5rem;
+}
+.pc-ui .pc-event-category svg { width: 14px; height: 14px; }
+.pc-ui .pc-event-row :is(h2,h3) { font-size: 1.125rem; font-weight: 700; line-height: 1.3; margin: 0 0 .75rem; }
+.pc-ui .pc-event-title {
+  display: flex; align-items: start; justify-content: space-between; gap: .75rem; width: 100%;
+  min-height: 44px; padding: 0; border: 0; background: transparent;
+  color: var(--pc-semantic-color-text-default); text-align: left;
+  font: 700 1.0625rem/1.35 var(--pc-semantic-fontFamily-heading);
+  letter-spacing: var(--pc-primitive-letterSpacing-heading); margin: 0 0 .5rem;
+}
+.pc-ui .pc-event-title svg { width: 18px; height: 18px; margin-top: 3px; color: var(--pc-semantic-color-text-link); }
+.pc-ui .pc-event-title:hover span { text-decoration: underline; text-underline-offset: 4px; }
+.pc-ui .pc-event-row .pc-event-when { font-size: .8125rem; line-height: 1.5; margin: 0 0 .25rem; color: var(--pc-component-event-meta); }
+.pc-ui .pc-event-row .pc-event-where { font-size: .8125rem; line-height: 1.5; margin: 0; color: var(--pc-component-event-meta); }
+.pc-ui .pc-event-state {
+  display: inline-flex; align-items: center; gap: .375rem; font-size: .8125rem; font-weight: 600;
+  color: var(--pc-component-event-changed); margin-top: .75rem;
+  background: var(--pc-semantic-color-feedback-warning-background);
+  border-radius: var(--pc-primitive-radius-xs); padding: .25rem .5rem;
+}
+/* Cancelado no se dice solo con color: la palabra «Cancelado» va en el texto. */
+.pc-ui .pc-event-row[data-status=cancelled] .pc-event-state {
+  color: var(--pc-semantic-color-feedback-error-foreground);
+  background: var(--pc-semantic-color-feedback-error-background);
+}
+.pc-ui .pc-event-row[data-status=cancelled] { opacity: .88; }
+.pc-ui .pc-event-row[data-status=ended] .pc-event-state {
+  color: var(--pc-semantic-color-text-secondary);
+  background: var(--pc-semantic-color-surface-subtle);
+}
+
+/* ── Paneles de información ──────────────────────────────────────────────── */
+.pc-ui .pc-trust-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; padding: 2rem;
+  border-radius: var(--pc-primitive-radius-lg);
+  background: var(--pc-semantic-color-surface-editorial);
+  border: 1px solid var(--pc-line);
+}
+.pc-ui .pc-trust-grid > div > svg { width: 20px; height: 20px; color: var(--pc-semantic-color-brand-accent); margin-bottom: 1rem; }
+.pc-ui .pc-trust-grid h2 { font-size: 1.0625rem; font-weight: 700; margin-bottom: .75rem; }
+.pc-ui .pc-trust-grid p { font-size: .875rem; color: var(--pc-component-trust-foreground); margin: 0; line-height: 1.6; max-width: 46ch; }
+.pc-ui .pc-privacy { border-top: 1px solid var(--pc-line); padding-top: 1rem; color: var(--pc-muted); font-size: .875rem; }
+.pc-ui .pc-privacy strong { color: var(--pc-ink); }
+.pc-ui .pc-empty { padding: 2rem 0; color: var(--pc-muted); }
+
+.pc-ui .pc-filters {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; padding: 1.25rem;
+  background: var(--pc-semantic-color-surface-editorial);
+  border: 1px solid var(--pc-line);
+  border-radius: var(--pc-primitive-radius-lg); margin: 1.75rem 0 .75rem;
+}
+.pc-ui .pc-filters .pc-label { font-size: .8125rem; font-weight: 600; }
+.pc-ui .pc-filters .pc-input { padding: .625rem; font-size: 1rem; }
+.pc-ui .pc-filter-summary { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+
+.pc-ui .pc-draft-notice {
+  background: var(--pc-component-draft-background); color: var(--pc-component-draft-foreground);
+  padding: var(--pc-component-draft-padding); border-radius: var(--pc-primitive-radius-md);
+  border-left: 3px solid var(--pc-semantic-color-brand-accent); margin: 0 0 1.5rem;
+}
+.pc-ui .pc-draft-notice p { margin: 0; }
+.pc-ui .pc-context {
+  padding: .875rem 1rem; margin: 0 0 1.5rem; border: 1px solid var(--pc-line);
+  background: var(--pc-semantic-color-surface-editorial); border-radius: var(--pc-primitive-radius-md);
+}
+.pc-ui .pc-context-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.pc-ui .pc-context-heading > p { flex: 1; min-width: 9rem; }
+.pc-ui .pc-context details[open] p { margin-bottom: .75rem; }
+.pc-ui .pc-context p { margin: 0; font-size: .8125rem; }
+.pc-ui .pc-context summary, .pc-ui .pc-context .pc-text-action { font-size: .8125rem; }
+.pc-ui .pc-topline { margin-bottom: 1.125rem; }
+.pc-ui .pc-topline .pc-meta { font-size: .8125rem; }
+
+/* ── Escribir / hablar ───────────────────────────────────────────────────── */
+.pc-ui .pc-modes {
+  display: inline-flex; max-width: 100%; padding: .25rem; gap: .25rem;
+  border-radius: var(--pc-component-mode-radius);
+  background: var(--pc-component-mode-background);
+  border: 1px solid var(--pc-line); margin: 1rem 0 .75rem;
+}
+.pc-ui .pc-mode {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 44px; padding: .5rem 1.125rem; border: 0;
+  border-radius: var(--pc-primitive-radius-sm); background: transparent;
+  color: var(--pc-semantic-color-text-secondary); font-weight: 600;
+}
+.pc-ui .pc-mode[aria-pressed=true] {
+  background: var(--pc-component-mode-selected); color: var(--pc-component-mode-foreground);
+  font-weight: 700; box-shadow: var(--pc-semantic-elevation-glowSoft);
+}
+.pc-ui .pc-mode svg { width: 18px; height: 18px; }
+.pc-ui .pc-mode-hint { font-size: .8125rem; color: var(--pc-muted); margin: 0 0 1rem; }
+
+/* ── Ficha de encuentro ──────────────────────────────────────────────────── */
+.pc-ui .pc-detail-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 2.5rem; margin-top: 2rem; }
+.pc-ui .pc-detail-grid h2 { font-size: 1.125rem; font-weight: 700; margin-top: 1.75rem; }
+.pc-ui .pc-detail-grid > div > h2:first-child { margin-top: 0; }
+.pc-ui .pc-detail-grid p, .pc-ui .pc-detail-grid li { font-size: .9375rem; line-height: 1.6; }
+.pc-ui .pc-detail-facts {
+  padding: 1.5rem; margin: 0; background: var(--pc-semantic-color-surface-editorial);
+  border: 1px solid var(--pc-line); border-radius: var(--pc-primitive-radius-lg);
+}
+.pc-ui .pc-detail-facts dt {
+  font-weight: 700; font-size: .6875rem; text-transform: uppercase;
+  letter-spacing: var(--pc-primitive-letterSpacing-label);
+  color: var(--pc-semantic-color-text-secondary); margin-top: 1.25rem;
+}
+.pc-ui .pc-detail-facts dt:first-child { margin-top: 0; }
+.pc-ui .pc-detail-facts dd { margin: .375rem 0 0; font-size: .9375rem; }
+.pc-ui .pc-callout {
+  border-left: 3px solid var(--pc-semantic-color-brand-accent);
+  background: var(--pc-semantic-color-surface-subtle);
+  padding: .875rem 1rem; margin: 1rem 0; border-radius: 0 var(--pc-primitive-radius-md) var(--pc-primitive-radius-md) 0;
+}
+.pc-ui .pc-callout p { margin: 0; font-size: .875rem; }
+.pc-ui .pc-review-hint { font-size: .875rem; color: var(--pc-muted); }
+
+/* ── Muestrario (no se usa en el producto) ───────────────────────────────── */
+.pc-ui .pc-palette { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+.pc-ui .pc-palette-item > span { display: block; height: 4rem; border-radius: var(--pc-primitive-radius-md); margin-bottom: .625rem; border: 1px solid var(--pc-line); }
+.pc-ui .pc-palette-item p { font-size: .8125rem; margin: 0; }
+.pc-ui .pc-palette-item code { font-size: .75rem; color: var(--pc-muted); }
+.pc-ui .pc-specimen .pc-display-sample { font-family: var(--pc-semantic-fontFamily-display); font-weight: 900; font-size: 2.5rem; line-height: 1.1; color: var(--pc-semantic-color-brand-ink); }
+
+/* ═══ Movimiento ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: no-preference) {
+  .pc-ui .pc-event-row,
+  .pc-ui .pc-event-row::before,
+  .pc-ui .pc-trust-grid,
+  .pc-ui .pc-context {
+    transition: background-color var(--pc-semantic-motion-normal) var(--pc-ease),
+                border-color var(--pc-semantic-motion-normal) var(--pc-ease),
+                box-shadow var(--pc-semantic-motion-normal) var(--pc-ease),
+                transform var(--pc-semantic-motion-normal) var(--pc-ease),
+                opacity var(--pc-semantic-motion-normal) var(--pc-ease);
+  }
+  .pc-ui .pc-event-row:hover { transform: translateY(-2px); box-shadow: var(--pc-semantic-elevation-card); }
+
+  /* Lo que entra en cuadro al desplazar. Sin una línea de JavaScript: la
+     línea de tiempo la lleva el propio desplazamiento.
+
+     **El `@supports` no es precaución: es el contrato.** Donde el navegador no
+     conoce `view()`, la regla entera se descarta y el contenido sale visible y
+     quieto — que es exactamente lo que tiene que pasar. Sin la guarda, un
+     navegador que entienda `animation` pero no `animation-timeline` dejaría la
+     sección en opacidad 0 para siempre. */
+  @supports (animation-timeline: view()) {
+    .pc-ui .pc-revela {
+      animation: pc-entrada linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 24%;
+    }
+  }
+}
+@media (forced-colors: active) {
+  .pc-ui .pc-nav button[aria-pressed=true], .pc-ui .pc-mode[aria-pressed=true] { outline: 1px solid ButtonText; }
+  .pc-ui .pc-event-title { text-decoration: underline; }
+  .pc-ui .pc-hero { background: Canvas; }
+}
+/* En papel no hay desplazamiento, así que una animación atada al desplazamiento
+   se queda en su primer cuadro: la mitad de la página saldría en blanco. Alguien
+   imprime la agenda para pegarla en una caseta comunal — pasa, y es justo el
+   caso donde una sección invisible cuesta más caro. */
+@media print {
+  .pc-ui .pc-revela, .pc-ui .pc-entra {
+    animation: none !important; opacity: 1 !important; transform: none !important;
+  }
+}
+
+@media (max-width: 52rem) {
+  .pc-ui .pc-hero-layout { grid-template-columns: 1fr; gap: 2rem; }
+  .pc-ui .pc-hero { padding: 2.5rem 2rem; }
+  .pc-ui .pc-hero h1 { font-size: 3.25rem; }
+  .pc-ui .pc-event-grid { grid-template-columns: 1fr; }
+  .pc-ui .pc-filters { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 42rem) {
+  .pc-ui .pc-header { padding: .875rem 1rem; gap: .75rem; }
+  .pc-ui .pc-main { padding: 1.5rem 1rem 2rem; }
+  .pc-ui .pc-institution { padding: .5rem 1rem; font-size: .6875rem; }
+  .pc-ui .pc-institution span:last-child { max-width: 24ch; text-align: right; }
+  .pc-ui .pc-hero { padding: 1.75rem 1.25rem; background-position: center; }
+  .pc-ui .pc-hero > .pc-eyebrow { margin-bottom: 1.25rem; }
+  .pc-ui .pc-hero h1 { font-size: 2.625rem; }
+  .pc-ui .pc-hero .pc-actions { align-items: stretch; }
+  .pc-ui .pc-hero .pc-actions > .pc-action { width: 100%; }
+  .pc-ui .pc-how { padding: 1.25rem; margin-top: .25rem; }
+  .pc-ui .pc-how .pc-eyebrow { margin-bottom: 1rem; }
+  .pc-ui .pc-steps { gap: 1.125rem; }
+  .pc-ui .pc-how-note { display: none; }
+  .pc-ui .pc-section { margin-top: 2.5rem; }
+  .pc-ui .pc-trust-grid, .pc-ui .pc-detail-grid { grid-template-columns: 1fr; gap: 1.75rem; }
+  .pc-ui .pc-trust-grid { padding: 1.5rem; }
+  .pc-ui .pc-palette { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+/* ── Teléfono pequeño: el botón de contar, por encima del pliegue ────────────
+   Es el hallazgo que más ha costado de esta portada y se sigue midiendo en un
+   Android de 360 × 560: **la persona entra una vez, con datos caros, y puede no
+   volver nunca. Si no ve el botón, no cuenta nada.**
+
+   Lo que la línea gráfica nueva añadió arriba —la tricolor, el rótulo de la
+   convocatoria en versalita, el botón de tema— empujó el botón 64 px por debajo
+   del pliegue. Aquí se recupera: la cabecera va en una sola fila, la tricolor
+   se retira de ella —no de la página: sigue en cada rótulo de sección— y todo
+   lo del hero se aprieta un escalón. La prueba de navegador lo vigila. */
+@media (max-width: 30rem) {
+  .pc-ui .pc-nav { width: 100%; gap: .125rem; justify-content: flex-start; }
+  .pc-ui .pc-nav button { padding: .5rem .75rem; font-size: .8125rem; }
+  .pc-ui .pc-header { padding: .625rem 1rem; gap: .5rem; flex-wrap: nowrap; }
+  .pc-ui .pc-header .pc-tricolor { display: none; }
+  .pc-ui .pc-brand { font-size: .875rem; }
+  .pc-ui .pc-brand-sub { font-size: .5625rem; }
+  .pc-ui .pc-tema { padding: .25rem .625rem; font-size: .75rem; }
+  .pc-ui .pc-main[data-layout=home] { padding-top: .75rem; }
+  .pc-ui .pc-hero { padding: 1.25rem 1.125rem; }
+  .pc-ui .pc-hero > .pc-eyebrow { margin-bottom: .875rem; }
+  .pc-ui .pc-hero h1 { font-size: var(--pc-component-landing-titleCompact); margin-bottom: 1rem; }
+  .pc-ui .pc-hero-intro { font-size: .9375rem; line-height: 1.45; }
+  .pc-ui .pc-hero .pc-actions { margin-top: 1.25rem; }
+  .pc-ui .pc-hero .pc-eyebrow { font-size: .625rem; }
+  .pc-ui .pc-event-row { padding: 1.125rem; grid-template-columns: 3rem minmax(0,1fr); gap: .875rem; }
+  .pc-ui .pc-event-row :is(h2,h3) { font-size: 1rem; }
+  .pc-ui .pc-event-date { min-height: 3.5rem; }
+  .pc-ui .pc-filters { grid-template-columns: 1fr; padding: 1rem; }
+  .pc-ui .pc-mode { padding: .5rem .875rem; }
+}
+/* 320 px: el iPhone SE viejo y los Android baratos que siguen en la vereda. A
+   44 px el titular se parte en cuatro renglones y vuelve a empujar el botón. */
+@media (max-width: 22.5rem) {
+  .pc-ui .pc-hero h1 { font-size: 2.125rem; line-height: 1.08; }
+  .pc-ui .pc-hero-intro { font-size: .875rem; }
+  .pc-ui .pc-brand-sub { display: none; }
 }

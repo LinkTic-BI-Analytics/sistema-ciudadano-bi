@@ -4,15 +4,15 @@ Base de tokens compartida para las dos caras: experiencia ciudadana 0.4 y nuevo 
 
 ## Archivos principales
 
-- `participacion.tokens.json`: 319 tokens; incluye los 252 de ciudadanía sin cambiar sus valores y añade 67 para trabajo interno.
-- `generar_tokens.py`: resuelve aliases y genera CSS, tema shadcn y contraste.
-- `participacion.css`: variables compartidas generadas.
+- `participacion.tokens.json`: 374 tokens en `:root` más 67 del modo claro. La estructura es la de 0.5; los valores de color, tipografía, forma, elevación y movimiento salen de la línea gráfica **Patria Milagro v1** (`../patria-milagro-v1/`), que entregó UX el 16-sep-2026.
+- `generar_tokens.py`: resuelve aliases y genera CSS, tema shadcn y contraste. **Comprueba los dos modos enteros**: 54 pares × 2 = 108, con `assert`.
+- `participacion.css`: variables compartidas generadas. `:root` es el modo oscuro —el principal— y `[data-tema="claro"]` lleva solo las hojas que cambian.
 - `backoffice.css`: estilos del perfil interno, bajo `.pc-backoffice`.
 - `backoffice-especificacion.md`: arquitectura, componentes, transiciones y límites de la muestra interna.
 - `aportes-ejemplo.json`: ocho aportes ficticios; no contiene contactos reales.
 - `eventos-ejemplo.json`: cinco convocatorias ficticias compartidas como referencia.
 - `validacion-backoffice.md`: pruebas y observaciones del perfil interno.
-- `contraste.md`: 41 pares de colores comprobados.
+- `contraste.md`: 108 comprobaciones — 54 pares en cada modo.
 
 Para ciudadanía se conservan `componentes.css`, `marco.css`, `estructura.css`, `direccion-visual.md`, `estructura-producto.md` y `validacion-ciudadania-v04.md`. `referencia-institucional.md` conserva la investigación previa y sus límites. `shadcn-theme.css` conecta el tema con la base de color.
 

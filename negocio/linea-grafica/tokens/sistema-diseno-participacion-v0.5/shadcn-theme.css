@@ -1,10 +1,10 @@
-/* Importar después de participacion.css y del tema inicial shadcn. Sólo modo claro. */
+/* Importar después de participacion.css y del tema inicial shadcn. Sigue al modo solo. */
 :root {
-  --background: var(--pc-semantic-color-surface-canvas);
+  --background: var(--pc-semantic-color-surface-page);
   --foreground: var(--pc-semantic-color-text-default);
   --card: var(--pc-semantic-color-surface-base);
   --card-foreground: var(--pc-semantic-color-text-default);
-  --popover: var(--pc-semantic-color-surface-base);
+  --popover: var(--pc-semantic-color-surface-floating);
   --popover-foreground: var(--pc-semantic-color-text-default);
   --primary: var(--pc-semantic-color-action-primary-default);
   --primary-foreground: var(--pc-semantic-color-action-primary-foreground);

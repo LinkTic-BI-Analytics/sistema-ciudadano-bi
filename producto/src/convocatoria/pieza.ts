@@ -113,8 +113,13 @@ export async function piezaSVG(d: DatosPieza, formato: Formato): Promise<string>
   const papel = token("--pc-semantic-color-surface-base");
   const texto = token("--pc-semantic-color-text-default");
   const suave = token("--pc-semantic-color-text-secondary");
-  const inverso = token("--pc-semantic-color-text-inverse");
-  const accion = token("--pc-semantic-color-action-primary-default");
+  const inverso = token("--pc-semantic-color-text-onNavy");
+  const accion = token("--pc-semantic-color-brand-accentText");
+  // La tipografía también sale del sistema: una pieza con otra letra que la
+  // pantalla se lee como de otra campaña. Los nombres de familia van dentro
+  // del SVG porque el archivo se abre fuera del navegador — sin `var()`.
+  const letra = token("--pc-primitive-fontFamily-body");
+  const titular = token("--pc-primitive-fontFamily-display");
 
   const margen = Math.round(ancho * 0.07);
   const util = ancho - margen * 2;
@@ -127,13 +132,16 @@ export async function piezaSVG(d: DatosPieza, formato: Formato): Promise<string>
 
   let y = margen + Math.round(ancho * 0.09);
   const filas: string[] = [];
-  const escribir = (t: string, tam: number, color: string, peso = 400, salto = 1.35) => {
-    filas.push(`<text x="${margen}" y="${y}" font-size="${tam}" fill="${color}" font-weight="${peso}" font-family="Geist, system-ui, sans-serif">${esc(t)}</text>`);
+  const escribir = (t: string, tam: number, color: string, peso = 400, salto = 1.35, familia = letra) => {
+    filas.push(`<text x="${margen}" y="${y}" font-size="${tam}" fill="${color}" font-weight="${peso}" font-family="${familia}"${familia === titular ? ' letter-spacing="-0.02em"' : ""}>${esc(t)}</text>`);
     y += Math.round(tam * salto);
   };
 
-  escribir(d.convocatoria.toUpperCase(), Math.round(tamCuerpo * 0.8), conImagen ? inverso : accion, 500, 2.2);
-  for (const l of tituloLineas) escribir(l, tamTitulo, conImagen ? inverso : tinta, 500, 1.18);
+  // El rótulo de la convocatoria y el titular van en la tipografía de display,
+  // como en la pantalla: es lo que hace que el afiche pegado en la caseta y la
+  // página que abre quien escanea el QR se lean como la misma cosa.
+  escribir(d.convocatoria.toUpperCase(), Math.round(tamCuerpo * 0.8), conImagen ? inverso : accion, 800, 2.2, titular);
+  for (const l of tituloLineas) escribir(l, tamTitulo, conImagen ? inverso : tinta, 900, 1.12, titular);
   y += Math.round(tamCuerpo * 0.8);
   if (d.tema) escribir(d.tema, tamCuerpo, conImagen ? inverso : suave, 400, 1.8);
 
@@ -167,13 +175,13 @@ export async function piezaSVG(d: DatosPieza, formato: Formato): Promise<string>
     <rect x="${-Math.round(qrLado * 0.06)}" y="${-Math.round(qrLado * 0.06)}" width="${qrLado + Math.round(qrLado * 0.12)}" height="${qrLado + Math.round(qrLado * 0.12)}" rx="8" fill="${papel}"/>
     <svg x="0" y="0" width="${qrLado}" height="${qrLado}" viewBox="${qrCaja}">${qrInterno}</svg>
   </g>
-  <text x="${margen + qrLado + Math.round(margen * 0.5)}" y="${qrY + Math.round(qrLado * 0.42)}" font-size="${Math.round(tamCuerpo * 0.85)}" fill="${conImagen ? inverso : suave}" font-family="Geist, system-ui, sans-serif">Cuenta lo tuyo en</text>
-  <text x="${margen + qrLado + Math.round(margen * 0.5)}" y="${qrY + Math.round(qrLado * 0.72)}" font-size="${Math.round(tamCuerpo * 0.95)}" fill="${conImagen ? inverso : texto}" font-weight="500" font-family="Geist, system-ui, sans-serif">${esc(url.replace(/^https?:\/\//, ""))}</text>
+  <text x="${margen + qrLado + Math.round(margen * 0.5)}" y="${qrY + Math.round(qrLado * 0.42)}" font-size="${Math.round(tamCuerpo * 0.85)}" fill="${conImagen ? inverso : suave}" font-family="${letra}">Cuenta lo tuyo en</text>
+  <text x="${margen + qrLado + Math.round(margen * 0.5)}" y="${qrY + Math.round(qrLado * 0.72)}" font-size="${Math.round(tamCuerpo * 0.95)}" fill="${conImagen ? inverso : texto}" font-weight="500" font-family="${letra}">${esc(url.replace(/^https?:\/\//, ""))}</text>
 
   <!-- La frase de límite, obligatoria (PIE-02). Una pieza que no la lleva
        promete por omisión. -->
-  <text x="${margen}" y="${limite - Math.round(tamCuerpo * 1.2)}" font-size="${Math.round(tamCuerpo * 0.78)}" fill="${conImagen ? inverso : suave}" font-family="Geist, system-ui, sans-serif">Puedes contar lo tuyo sin asistir al encuentro.</text>
-  <text x="${margen}" y="${limite}" font-size="${Math.round(tamCuerpo * 0.78)}" fill="${conImagen ? inverso : suave}" font-family="Geist, system-ui, sans-serif">Que quede registrado no es un compromiso de obra.</text>
+  <text x="${margen}" y="${limite - Math.round(tamCuerpo * 1.2)}" font-size="${Math.round(tamCuerpo * 0.78)}" fill="${conImagen ? inverso : suave}" font-family="${letra}">Puedes contar lo tuyo sin asistir al encuentro.</text>
+  <text x="${margen}" y="${limite}" font-size="${Math.round(tamCuerpo * 0.78)}" fill="${conImagen ? inverso : suave}" font-family="${letra}">Que quede registrado no es un compromiso de obra.</text>
 </svg>`;
 }
 

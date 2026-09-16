@@ -7,7 +7,8 @@
  * Ninguno de los tres se edita a mano. Salen de `../producto/tokens/`, que sale
  * de `negocio/linea-grafica/tokens/` con `./scripts/tokens.sh`. Editar la copia
  * la desincroniza del JSON, que es la fuente y es lo que valida que no haya
- * ciclos de alias y que los 41 pares de contraste pasen.
+ * ciclos de alias y que los 104 pares de contraste —los dos modos enteros—
+ * pasen.
  */
 @import "tailwindcss";
 @import "../producto/tokens/participacion.css";
@@ -34,16 +35,22 @@
  */
 @import "../producto/tokens/backoffice.css";
 
-:root {
-  /* Modo claro y nada más: el sistema de diseño no define modo oscuro, y es
-   * una decisión, no un olvido. Declararlo aquí evita que el navegador pinte
-   * un fondo oscuro detrás de una paleta que no lo contempla. */
-  color-scheme: light;
-}
+/* El modo oscuro es el principal de la línea gráfica Patria Milagro, y el claro
+ * se pide con `data-tema="claro"` en el `<html>` (ver `src/producto/tema.tsx`).
+ *
+ * `color-scheme` va aquí y no en la hoja de tokens porque `interfaz.md` I5 pide
+ * que la hoja de tokens declare variables y **nunca reglas**: una regla suelta
+ * se cuela en las vistas del harness y no hay token que la detenga. */
+:root { color-scheme: dark; }
+[data-tema="claro"] { color-scheme: light; }
 
 body {
   margin: 0;
   background: var(--pc-semantic-color-surface-canvas);
   color: var(--pc-semantic-color-text-default);
   font-family: var(--pc-semantic-fontFamily-body);
+  /* El titular de la portada es Montserrat 900 a 76 px. Sin esto, en una
+   * pantalla de 2× los trazos se engordan y la contraforma de las letras se
+   * cierra — que es justo lo que hace ilegible un peso negro. */
+  -webkit-font-smoothing: antialiased;
 }

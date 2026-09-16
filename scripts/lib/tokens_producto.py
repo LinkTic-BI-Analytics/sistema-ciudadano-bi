@@ -17,21 +17,25 @@ shadcn pide ocho variables `--sidebar-*` y el sistema v0.5 no las mapea, pero
 `semantic.color.internal.sidebar`, `.navigationSelected`, `.navigationText`,
 `.rowHover` y `.rowText`. El mapeo apunta a esos. No se inventa ningún color.
 
-## Lo que NO se deriva: las sombras
+## Las sombras: la `Q1`, cerrada
 
-El sistema **no tiene ni un token de sombra**, y es una decisión, no un olvido:
-`referencia-institucional.md` §4 dice *«no usar sombra como única forma de
-reconocer campos… sin elevación decorativa»*.
+Hasta la entrega Patria el sistema **no tenía ni un token de sombra**, y era una
+decisión escrita —*«sin elevación decorativa»*—, así que las ocho de shadcn
+salían en `none` con la pregunta abierta: *¿cómo se distingue una capa que flota,
+sin usar sombra?*
 
-shadcn las necesita para Popover, Dialog y DropdownMenu. Aquí no se inventa un
-valor: `AGENTS.md` §3 lo prohíbe, y una sombra plausible se lee como una decisión
-que alguien tomó. Se emiten en `none` y **queda escrito que eso es un hueco con
-dueño**, porque un panel flotante sin sombra y con borde sutil puede ser difícil
-de distinguir del fondo — y `contraste.md` ya avisa que *«los bordes decorativos
-sutiles no identifican controles»*.
+La línea gráfica Patria Milagro v1 la contesta: trae la escala de elevación
+—`--shadow-card`, `--shadow-deep`— y el patrón de superficie que la acompaña, la
+capa flotante un escalón más clara que la tarjeta. De ahí salen
+`semantic.elevation.card` y `.deep`, y de ahí salen estas ocho.
 
-La pregunta que hay que hacer antes de usar el primer componente flotante:
-**¿cómo se distingue una capa que flota, sin usar sombra?** Va a `vacios.md`.
+**Dos escalones, no ocho.** shadcn nombra un continuo que este sistema no tiene,
+y aquí no se inventa el medio: los cinco nombres pequeños toman la sombra de
+tarjeta y los tres grandes la profunda. Un valor intermedio plausible se leería
+como una decisión que alguien tomó, y nadie la tomó.
+
+En modo claro los dos tokens cambian solos a su versión azulada, porque apuntan a
+un semántico y el semántico sigue al tema.
 """
 
 import sys
@@ -53,6 +57,14 @@ BARRA_LATERAL = {
 }
 
 
+# shadcn nombra ocho escalones; el sistema tiene dos. Se doblan, no se rellenan.
+SOMBRAS = {
+    "shadow-2xs": "card", "shadow-xs": "card", "shadow-sm": "card",
+    "shadow": "card", "shadow-md": "card",
+    "shadow-lg": "deep", "shadow-xl": "deep", "shadow-2xl": "deep",
+}
+
+
 def main():
     lineas = [
         "/* Lo que este proyecto le agrega al tema shadcn de v0.5.",
@@ -63,24 +75,24 @@ def main():
         " * Las ocho de barra lateral apuntan a tokens que el sistema YA tiene",
         " * para el backoffice. No se inventó ningún color.",
         " *",
-        " * Las sombras van en `none` a propósito: el sistema de diseño no tiene",
-        " * ninguna, y eso es una decisión —«sin elevación decorativa»—, no un",
-        " * olvido. Antes de usar el primer Popover o Dialog hay que decidir cómo",
-        " * se distingue una capa que flota sin usar sombra. Está en vacios.md.",
+        " * Las sombras salen de la escala de elevación de la línea gráfica Patria",
+        " * Milagro v1, que es lo que cerró la Q1. Son DOS escalones para ocho",
+        " * nombres de shadcn: el medio no se inventa.",
         " */",
         ":root {",
     ]
     for var, token in BARRA_LATERAL.items():
         lineas.append(f"  --{var}: var(--pc-semantic-color-{token.replace('.', '-')});")
     lineas.append("")
-    lineas.append("  /* HUECO CON DUEÑO — ver vacios.md, no es un valor decidido */")
-    for var in ("shadow-2xs", "shadow-xs", "shadow-sm", "shadow", "shadow-md", "shadow-lg", "shadow-xl", "shadow-2xl"):
-        lineas.append(f"  --{var}: none;")
+    lineas.append("  /* Dos escalones de elevación para ocho nombres de shadcn. El medio no")
+    lineas.append("     se inventa: el sistema tiene dos y son estos. */")
+    for var, token in SOMBRAS.items():
+        lineas.append(f"  --{var}: var(--pc-semantic-elevation-{token});")
     lineas.append("}")
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
     DESTINO.write_text("\n".join(lineas) + "\n", encoding="utf-8")
-    print(f"  {len(BARRA_LATERAL)} variables de barra lateral · 8 sombras en none (hueco con dueño)")
+    print(f"  {len(BARRA_LATERAL)} variables de barra lateral · {len(SOMBRAS)} sombras derivadas de la escala de elevación")
     return 0
 
 

@@ -6,10 +6,9 @@
  * Las ocho de barra lateral apuntan a tokens que el sistema YA tiene
  * para el backoffice. No se inventó ningún color.
  *
- * Las sombras van en `none` a propósito: el sistema de diseño no tiene
- * ninguna, y eso es una decisión —«sin elevación decorativa»—, no un
- * olvido. Antes de usar el primer Popover o Dialog hay que decidir cómo
- * se distingue una capa que flota sin usar sombra. Está en vacios.md.
+ * Las sombras salen de la escala de elevación de la línea gráfica Patria
+ * Milagro v1, que es lo que cerró la Q1. Son DOS escalones para ocho
+ * nombres de shadcn: el medio no se inventa.
  */
 :root {
   --sidebar: var(--pc-semantic-color-internal-sidebar);
@@ -21,13 +20,14 @@
   --sidebar-border: var(--pc-semantic-color-border-subtle);
   --sidebar-ring: var(--pc-semantic-color-focus-ring);
 
-  /* HUECO CON DUEÑO — ver vacios.md, no es un valor decidido */
-  --shadow-2xs: none;
-  --shadow-xs: none;
-  --shadow-sm: none;
-  --shadow: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --shadow-xl: none;
-  --shadow-2xl: none;
+  /* Dos escalones de elevación para ocho nombres de shadcn. El medio no
+     se inventa: el sistema tiene dos y son estos. */
+  --shadow-2xs: var(--pc-semantic-elevation-card);
+  --shadow-xs: var(--pc-semantic-elevation-card);
+  --shadow-sm: var(--pc-semantic-elevation-card);
+  --shadow: var(--pc-semantic-elevation-card);
+  --shadow-md: var(--pc-semantic-elevation-card);
+  --shadow-lg: var(--pc-semantic-elevation-deep);
+  --shadow-xl: var(--pc-semantic-elevation-deep);
+  --shadow-2xl: var(--pc-semantic-elevation-deep);
 }

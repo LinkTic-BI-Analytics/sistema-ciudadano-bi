@@ -62,15 +62,31 @@ sobra. Esto no es una guía de marca: es la entrada de la que se construye.
 
 ## De dónde salió lo que hay hoy
 
-> ➤ Documento por documento, qué aportó. Si no llegó nada, dilo así — que no haya marca
-> también es una respuesta, y cambia qué se puede concluir de lo que la gente comente
-> mirando.
+Han llegado **dos entregas**, y la segunda no reemplaza a la primera: la primera trae la
+estructura del producto y la segunda la identidad.
+
+| Entrega | Qué trae | Qué manda de ella |
+|---|---|---|
+| `tokens/sistema-diseno-participacion-v0.5/` | El sistema de tokens en formato DTCG, su generador con la compuerta de contraste, las hojas de componentes de las dos caras —ciudadanía y perfil interno—, y los documentos de dirección y validación | **La estructura**: qué tokens existen, cómo se llaman, qué clase pinta cada cosa, y que el contraste es una compuerta y no una recomendación |
+| `tokens/patria-milagro-v1/` (16-sep-2026) | La línea gráfica del ecosistema «Patria Milagro»: `tokens.css`, `tokens.json`, tema de Tailwind, once activos de marca, capturas y una documentación navegable. Sale de medir dos sitios en el navegador —bancodetalentos.com.co y el especial de presidencia.gov.co— no de un manual | **La identidad**: la paleta, las tipografías, los radios, la escala de elevación, el movimiento y el modo oscuro como principal |
+
+**Cómo se juntaron.** No se cargaron dos sistemas: los valores de la segunda entraron en el
+JSON de la primera, que sigue siendo la fuente, y el generador volvió a correr. Así la
+compuerta de contraste sigue gobernando —ahora en los dos modos, 108 pares— y ninguna
+pantalla tuvo que cambiar de clase para cambiar de color. Lo que la primera decía sobre
+*forma* y la segunda contradice —el titular serif, que no hubiera sombras, que no hubiera
+modo oscuro— está anotado en la cabecera de `direccion-visual.md`, para que dentro de tres
+meses nadie tenga que adivinar cuál de las dos manda.
 
 ## Qué hay que pedir, y a quién
 
-> ➤ Una sola cosa, y es de quien tenga la marca:
-> ➤ **Si ya existe un sistema de diseño** —Figma, tokens, un `theme` de código—, ese
->   archivo. Es lo más barato: se copia y ya.
-> ➤ **Si no existe pero hay marca** —un logo y unos colores en uso—, el logo en SVG y los
->   colores exactos.
-> ➤ **Si no hay nada todavía**, que lo digan.
+- **El manual institucional que confirme si va el escudo y la marca del Gobierno**, y en qué
+  versión. Es la [`Q34`](../vacios.md) y la [`Q2`](../vacios.md), que son la misma
+  conversación. Sin eso, el producto usa la bandera y la tricolor —que son símbolo nacional
+  y firma gráfica— y **no** el escudo, que afirma una autoría que nadie ha confirmado.
+- **Los logotipos en SVG.** Los once activos llegaron en PNG. Para un logo que se usa en
+  tamaños distintos y sobre fondo claro y oscuro, el PNG se ve mal en cuanto crece.
+- **Confirmar que el modo oscuro es el que va también para la cara ciudadana.** La entrega lo
+  dice del portal y del tablero; este producto además es un formulario que se llena en la
+  calle. Se construyó con los dos modos y un botón para cambiar, así que la respuesta no
+  bloquea nada — pero cuál sale por defecto sí es una decisión de marca.

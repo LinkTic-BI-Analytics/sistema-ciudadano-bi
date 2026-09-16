@@ -1,4 +1,5 @@
 import { Formulario } from "./formulario.tsx";
+import { Cabecera, Tricolor } from "../../producto/marca.tsx";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +14,9 @@ export default function Participar() {
   return (
     <div className="pc-ui">
       <div className="pc-shell">
-        <header className="pc-header">
-          <span className="pc-brand">Participación Ciudadana</span>
-        </header>
+        <Cabecera />
         <main className="pc-main">
-          <p className="pc-eyebrow">Contar una necesidad</p>
+          <p className="pc-eyebrow"><Tricolor />Contar una necesidad</p>
           <h1>Cuéntanos qué necesita mejorar donde vives</h1>
           <p className="pc-intro">
             Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.
