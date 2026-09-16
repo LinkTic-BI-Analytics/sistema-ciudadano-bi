@@ -86,65 +86,65 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.2,
-              0.4,
-              0.8
+              0.09803921568627451,
+              0.3137254901960784,
+              0.8196078431372549
             ],
             "alpha": 1
           },
-          "$description": "Referencia: GOV.CO v4, color. Confirmar versión aplicable."
+          "$description": "Azul de acción, medido en defensoresdelapatria.com."
         },
         "700": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.1568627450980392,
-              0.3215686274509804,
-              0.6392156862745098
+              0.0784313725490196,
+              0.25882352941176473,
+              0.6588235294117647
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Escalón entre el azul de acción y el institucional."
         },
         "800": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0,
-              0.2823529411764706,
-              0.5176470588235295
+              0.054901960784313725,
+              0.19215686274509805,
+              0.5019607843137255
             ],
             "alpha": 1
           },
-          "$description": "Referencia: GOV.CO v4, color. Confirmar versión aplicable."
+          "$description": "Azul institucional, más saturado que el anterior."
         },
         "900": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.08627450980392157,
-              0.20392156862745098,
-              0.3607843137254902
+              0.0,
+              0.0,
+              0.4
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Azul marino de la línea gráfica de la campaña."
         },
         "950": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.06274509803921569,
-              0.13725490196078433,
-              0.24705882352941178
+              0.0196078431372549,
+              0.027450980392156862,
+              0.20392156862745098
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "El más oscuro: fondo de bloques y tarjetas."
         }
       },
       "neutral": {
@@ -337,13 +337,13 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9490196078431372,
-              0.788235294117647,
-              0.2980392156862745
+              1.0,
+              0.8352941176470589,
+              0.0
             ],
             "alpha": 1
           },
-          "$description": "Valor propuesto para el producto; no es color oficial ni copia literal de Radix."
+          "$description": "Amarillo de la bandera, saturado. Nunca como texto sobre blanco."
         },
         "900": {
           "$type": "color",
@@ -882,6 +882,11 @@
         "link": {
           "$type": "color",
           "$value": "{primitive.color.blue.700}"
+        },
+        "inverseSecondary": {
+          "$type": "color",
+          "$value": "{primitive.color.neutral.300}",
+          "$description": "Texto secundario sobre superficie oscura. No existía: el sistema no tenía ningún bloque oscuro con texto de apoyo dentro, y al ponerlo el gris de «secondary» quedaba ilegible sobre el azul marino."
         }
       },
       "border": {
@@ -892,6 +897,11 @@
         "control": {
           "$type": "color",
           "$value": "{primitive.color.neutral.500}"
+        },
+        "subtleInverse": {
+          "$type": "color",
+          "$value": "{primitive.color.blue.800}",
+          "$description": "Divisor dentro de un bloque oscuro."
         }
       },
       "action": {
@@ -1701,11 +1711,13 @@
       },
       "guideBackground": {
         "$type": "color",
-        "$value": "{semantic.color.surface.base}"
+        "$value": "{semantic.color.surface.inverse}",
+        "$description": "El bloque de «cómo funciona» va en oscuro, como las tarjetas de la línea gráfica de la campaña. Era blanco sobre crema y no se distinguía del hero."
       },
       "guideForeground": {
         "$type": "color",
-        "$value": "{semantic.color.text.default}"
+        "$value": "{semantic.color.text.inverse}",
+        "$description": "Texto sobre el bloque oscuro."
       }
     },
     "event": {

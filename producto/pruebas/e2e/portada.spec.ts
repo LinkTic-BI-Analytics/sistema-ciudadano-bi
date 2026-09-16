@@ -168,3 +168,36 @@ test("el texto de ayuda del hero se lee como un párrafo, no como columnas", asy
       .toBeLessThanOrEqual(1);
   }
 });
+
+test("el bloque de «cómo funciona» va en oscuro, y se lee", async ({ page }) => {
+  // Lo que se tomó de la línea gráfica de la campaña: el azul marino profundo y
+  // el amarillo saturado. El bloque oscuro era blanco sobre crema y no se
+  // distinguía del hero.
+  //
+  // Lo que se vigila no es el color exacto —eso lo deciden los tokens— sino que
+  // **el texto de dentro cambie de lado con el fondo**: el gris de «secondary»
+  // sobre azul marino no se lee, y el sistema no tenía ningún bloque oscuro con
+  // texto de apoyo dentro hasta ahora.
+  await page.goto("/");
+  const como = page.locator(".pc-how");
+  await expect(como).toBeVisible();
+
+  const lectura = await como.evaluate((el) => {
+    const lum = (c: string) => {
+      const [r, g, b] = c.match(/\d+/g)!.slice(0, 3).map(Number);
+      const f = (x: number) => (x / 255 <= 0.04045 ? x / 255 / 12.92 : ((x / 255 + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * f(r!) + 0.7152 * f(g!) + 0.0722 * f(b!);
+    };
+    const fondo = getComputedStyle(el).backgroundColor;
+    const apoyo = el.querySelector(".pc-steps li div>span")!;
+    const razon = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    return {
+      fondoOscuro: lum(fondo) < 0.2,
+      contrasteApoyo: razon(lum(fondo), lum(getComputedStyle(apoyo).color)),
+    };
+  });
+
+  expect(lectura.fondoOscuro, "el bloque de «cómo funciona» dejó de ser oscuro").toBe(true);
+  expect(lectura.contrasteApoyo,
+    "el texto de apoyo dentro del bloque oscuro no se lee").toBeGreaterThanOrEqual(4.5);
+});

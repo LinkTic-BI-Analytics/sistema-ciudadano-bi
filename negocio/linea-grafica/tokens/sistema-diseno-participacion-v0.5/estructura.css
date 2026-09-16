@@ -40,6 +40,16 @@
 .pc-ui .pc-step-number {display:flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:999px;color:var(--pc-component-event-date);background:var(--pc-component-event-dateBackground);font-size:.875rem;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;}
 .pc-ui .pc-steps strong {display:block;font-weight:500;font-size:.9375rem;line-height:1.4;margin-bottom:.375rem;}
 .pc-ui .pc-steps li div>span {display:block;font-size:.8125rem;color:var(--pc-semantic-color-text-secondary);line-height:1.5;}
+/* Dentro del bloque oscuro, el texto de apoyo y los divisores cambian de lado.
+   El gris de «secondary» sobre azul marino no se lee: el sistema no tenía
+   ningún bloque oscuro con texto dentro hasta ahora. */
+.pc-ui .pc-how .pc-steps li div>span,
+.pc-ui .pc-how .pc-eyebrow,
+.pc-ui .pc-how-note {color:var(--pc-semantic-color-text-inverseSecondary);}
+.pc-ui .pc-how-note {border-top-color:var(--pc-semantic-color-border-subtleInverse);}
+/* El número del paso, en amarillo sobre el bloque oscuro: es el mismo amarillo
+   que subraya el titular, así que la página tiene un solo acento y no dos. */
+.pc-ui .pc-how .pc-step-number {color:var(--pc-semantic-color-brand-ink);background:var(--pc-semantic-color-brand-accent);}
 .pc-ui .pc-how-note {padding-top:1.25rem;border-top:1px solid var(--pc-semantic-color-border-subtle);margin:1.5rem 0 0;font-size:.8125rem;line-height:1.5;color:var(--pc-semantic-color-text-secondary);}
 .pc-ui .pc-section {margin-top:3rem;}
 .pc-ui .pc-section-header {display:flex;justify-content:space-between;gap:1rem;align-items:end;flex-wrap:wrap;margin-bottom:.625rem;}

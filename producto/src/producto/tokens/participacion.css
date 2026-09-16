@@ -6,11 +6,11 @@
   --pc-primitive-color-blue-300: #A1BCED;
   --pc-primitive-color-blue-400: #7497DE;
   --pc-primitive-color-blue-500: #4B7AD4;
-  --pc-primitive-color-blue-600: #3366CC;
-  --pc-primitive-color-blue-700: #2852A3;
-  --pc-primitive-color-blue-800: #004884;
-  --pc-primitive-color-blue-900: #16345C;
-  --pc-primitive-color-blue-950: #10233F;
+  --pc-primitive-color-blue-600: #1950D1;
+  --pc-primitive-color-blue-700: #1442A8;
+  --pc-primitive-color-blue-800: #0E3180;
+  --pc-primitive-color-blue-900: #000066;
+  --pc-primitive-color-blue-950: #050734;
   --pc-primitive-color-neutral-0: #FFFFFF;
   --pc-primitive-color-neutral-50: #F8F7F3;
   --pc-primitive-color-neutral-100: #F1F0EB;
@@ -25,7 +25,7 @@
   --pc-primitive-color-neutral-950: #152430;
   --pc-primitive-color-gold-50: #FFF9E6;
   --pc-primitive-color-gold-200: #F9E6A0;
-  --pc-primitive-color-gold-500: #F2C94C;
+  --pc-primitive-color-gold-500: #FFD500;
   --pc-primitive-color-gold-900: #6B4F00;
   --pc-primitive-color-green-50: #EDF8F2;
   --pc-primitive-color-green-700: #216E4E;
@@ -98,8 +98,10 @@
   --pc-semantic-color-text-secondary: var(--pc-primitive-color-neutral-600);
   --pc-semantic-color-text-inverse: var(--pc-primitive-color-neutral-0);
   --pc-semantic-color-text-link: var(--pc-primitive-color-blue-700);
+  --pc-semantic-color-text-inverseSecondary: var(--pc-primitive-color-neutral-300);
   --pc-semantic-color-border-subtle: var(--pc-primitive-color-neutral-200);
   --pc-semantic-color-border-control: var(--pc-primitive-color-neutral-500);
+  --pc-semantic-color-border-subtleInverse: var(--pc-primitive-color-blue-800);
   --pc-semantic-color-action-primary-default: var(--pc-primitive-color-blue-600);
   --pc-semantic-color-action-primary-hover: var(--pc-primitive-color-blue-700);
   --pc-semantic-color-action-primary-pressed: var(--pc-primitive-color-blue-800);
@@ -263,8 +265,8 @@
   --pc-component-landing-titleCompact: var(--pc-semantic-fontSize-displayCompact);
   --pc-component-landing-panelRadius: var(--pc-primitive-radius-panel);
   --pc-component-landing-marker: var(--pc-semantic-color-brand-marker);
-  --pc-component-landing-guideBackground: var(--pc-semantic-color-surface-base);
-  --pc-component-landing-guideForeground: var(--pc-semantic-color-text-default);
+  --pc-component-landing-guideBackground: var(--pc-semantic-color-surface-inverse);
+  --pc-component-landing-guideForeground: var(--pc-semantic-color-text-inverse);
   --pc-component-event-background: var(--pc-semantic-color-surface-base);
   --pc-component-event-border: var(--pc-semantic-color-border-subtle);
   --pc-component-event-date: var(--pc-semantic-color-event-dateForeground);
