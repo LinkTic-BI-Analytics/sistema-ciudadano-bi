@@ -28,6 +28,47 @@ de la máquina, no del proyecto.
 | **No hay, a propósito** | **Ninguna autenticación.** No hay mecanismo de identidad decidido — es la pregunta P4 del pliego |
 | Todavía no | Los tokens del sistema de diseño (T013) y la vista de construcción (T014) |
 
+## De cero a andando
+
+Lo que hace falta **antes**, y que no instala ningún guion: **Docker** (para la base),
+la **CLI de Supabase** (`brew install supabase/tap/supabase`) y **Node 24 o más nuevo**
+—el `package.json` lo declara—. Node importa: las pruebas importan archivos `.ts`
+directamente y una versión vieja falla con un error que no habla de eso.
+
+```
+cd producto
+npm ci
+supabase start                       # levanta la base y aplica las migraciones
+
+cp .env.example .env.local           # y pega los valores que imprime:
+supabase status                      # URL, publishable key y secret key
+
+cd .. && ./scripts/sembrar.sh        # el proceso de prueba y el catálogo del DANE
+./scripts/sembrar-agenda.sh          # la convocatoria y los encuentros de la portada
+cd producto && npm run dev           # http://localhost:3100
+```
+
+El catálogo territorial **ya viene en el repositorio** —los `.xlsx` del geoportal del DANE
+y los `.csv` convertidos, con su versión— así que no hay que descargarlo. `divipola.sh
+--bajar` existe para el día que el DANE publique uno nuevo.
+
+**La llave de IA es opcional.** Sin `OPENROUTER_API_KEY` la captura funciona igual: se usa
+la segmentación y se le pregunta a la persona por las cinco partes en vez de solo por las
+que le falten. `IA-01` lo exige —la recepción no puede depender de un tercero— y hay
+pruebas que lo comprueban borrando la llave.
+
+Para comprobar que quedó bien: `./scripts/validar.sh` desde la raíz. Corre los tipos, el
+build, las pruebas de nodo, los recorridos de navegador y una veintena de chequeos más.
+
+### Si algo no arranca
+
+| Síntoma | Qué pasa |
+|---|---|
+| `docker exec` habla con otro contenedor | El `project_id` es `participacion`; un identificador genérico choca por prefijo con los vecinos |
+| Un puerto ocupado | El bloque `548xx` y el `3100` se escogieron libres **en esta máquina**. En otra hay que volver a comprobar |
+| Las pruebas fallan al importar un `.ts` | Node viejo. Hace falta 24 o más |
+| La portada sale sin encuentros | Falta `./scripts/sembrar-agenda.sh` |
+
 ## Los guiones
 
 ```
