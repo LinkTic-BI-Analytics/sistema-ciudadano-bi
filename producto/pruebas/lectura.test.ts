@@ -59,7 +59,7 @@ test("solo se pregunta por lo que la persona NO dijo", () => {
   // castiga por haberlo contado bien, y es exactamente lo que hace que alguien
   // abandone a mitad de camino.
   const completa = {
-    problema: "el agua llega turbia", otrosProblemas: [], tema: "agua" as const, lugar: "la parte alta",
+    problema: "el agua llega turbia", otrosProblemas: [], tema: "vivienda" as const, lugar: "la parte alta",
     afectados: "unas veinte familias", desdeCuando: "hace tres meses",
     resultadoEsperado: "que llegue limpia", solucionSugerida: null,
     fuente: "ia" as const,
@@ -93,11 +93,11 @@ test("el lugar se devuelve tal como lo dijo, o no se devuelve", () => {
   assert.equal(leer("x").lugar, null);
 });
 
-import { QUE_CUBRE, TEMAS, COMO_SE_LLAMA } from "../src/captura/lectura.ts";
+import { QUE_CUBRE, TEMAS, COMO_SE_LLAMA, type Tema } from "../src/captura/lectura.ts";
 
 test("cada tema dice qué cubre, y en palabras de la gente", () => {
-  // `QUE_CUBRE` no es documentación: va dentro del prompt. Con diecisiete
-  // etiquetas, el nombre solo no alcanza para decidir dónde cae «me toca
+  // `QUE_CUBRE` no es documentación: va dentro del prompt. Con veinticuatro
+  // sectores, el nombre solo no alcanza para decidir dónde cae «me toca
   // caminar dos horas para cobrar el subsidio», y una lista sin fronteras
   // devuelve `otro` o devuelve cualquier cosa.
   for (const tema of TEMAS) {
@@ -113,14 +113,38 @@ test("cada tema dice qué cubre, y en palabras de la gente", () => {
   }
 });
 
-test("los temas que faltaban tienen a quién servir", () => {
-  // Cada uno es alguien que hoy caía en «otra cosa»: una mujer que reporta
-  // violencia intrafamiliar, quien dice «aquí no hay trabajo», quien no tiene
-  // qué comer, quien lleva dos años sin que le respondan un trámite.
-  for (const nuevo of ["mujeres", "campo", "empleo", "apoyo", "justicia", "cultura", "animales"]) {
-    assert.ok((TEMAS as readonly string[]).includes(nuevo), `falta el tema ${nuevo}`);
-  }
-  // Y `otro` sigue siendo el último: es la señal de que a la lista le falta
-  // algo, no un cajón donde esconder lo que no se quiso decidir.
+test("están los veinticuatro sectores, y otro al final", () => {
+  // La lista es la de los sectores administrativos del Estado, entregada por el
+  // cliente. Se comprueba entera y en orden: si alguien agrega uno a mitad, el
+  // orden de la pantalla deja de ser el que se acordó.
+  assert.deepEqual([...TEMAS], [
+    "salud", "vivienda", "transporte", "educacion", "ambiente", "defensa",
+    "agricultura", "comercio", "minas", "inclusion", "presidencia", "tic",
+    "deporte", "justicia", "culturas", "interior", "exteriores", "funcion_publica",
+    "hacienda", "ciencia", "planeacion", "trabajo", "estadistica", "inteligencia",
+    "otro",
+  ]);
+  // `otro` va de último, y sigue existiendo aunque con veinticuatro sectores
+  // todo *quepa* en alguno: es la señal de que la lectura no supo clasificar.
+  // Sin él, lo que no se supo se mete a la fuerza en un sector y nadie se
+  // entera (`Q32`).
   assert.equal(TEMAS[TEMAS.length - 1], "otro");
+});
+
+test("lo que la gente cuenta llega al sector que responde", () => {
+  // El costo de nombrar por sector es que nadie habla así: quien cuenta dice
+  // «no llega el agua», no «Vivienda, Ciudad y Territorio». `QUE_CUBRE` es lo
+  // único que traduce una cosa en la otra —va dentro del prompt y sostiene la
+  // pantalla—, así que las traducciones que menos se adivinan se comprueban.
+  const traduce = (palabra: string, tema: Tema) =>
+    assert.match(QUE_CUBRE[tema], new RegExp(palabra, "i"),
+      `«${palabra}» no aparece en lo que cubre ${COMO_SE_LLAMA[tema]}, y nadie va a acertar solo con el nombre`);
+
+  traduce("agua", "vivienda");        // agua potable y saneamiento, no ambiente
+  traduce("basuras", "vivienda");
+  traduce("alumbrado", "minas");
+  traduce("subsidios", "inclusion");
+  traduce("sisbén", "planeacion");
+  traduce("trámites", "funcion_publica");
+  traduce("pensiones", "salud");      // protección social
 });

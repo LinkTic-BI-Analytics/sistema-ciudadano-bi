@@ -8,6 +8,7 @@ import {
   antiguedadDe, alcanceDe, COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE,
 } from "../../../revision/normalizar.ts";
 import { clienteServidor } from "../../../datos/cliente.ts";
+import { todas } from "../../../datos/leer.ts";
 import { procesoVigente } from "../../../datos/proceso.ts";
 import { expedientesDe } from "../../../revision/expediente.ts";
 import { prioridadVigente, historiaDePrioridad } from "../../../priorizacion/prioridad.ts";
@@ -126,11 +127,16 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
         .eq("nivel", "municipio").limit(1).maybeSingle()).data?.nombre ?? null
     : null;
 
-  const { data: mun } = await p.from("territorio")
-    .select("codigo, version, nombre, departamento:padre")
-    .eq("nivel", "municipio").order("nombre").limit(1200);
+  // Los 1.122 municipios, por páginas. `.limit(1200)` no los traía: PostgREST
+  // corta en 1.000 por respuesta y devuelve un `200`, así que los 122 del final
+  // del alfabeto —de Yotoco para abajo— no se podían escoger al confirmar la
+  // ubicación. Es el mismo corte que dejó la periferia fuera del buscador.
+  const mun = await todas<{ codigo: string; version: string; nombre: string; departamento: string | null }>(
+    "el catálogo de municipios", (desde, hasta) =>
+      p.from("territorio").select("codigo, version, nombre, departamento:padre")
+        .eq("nivel", "municipio").order("nombre").range(desde, hasta));
   // El nombre por código, para no enseñar «15001» a quien revisa.
-  const nombreDe = new Map((mun ?? []).map((m) => [m.codigo as string, m.nombre as string]));
+  const nombreDe = new Map(mun.map((m) => [m.codigo, m.nombre]));
 
   const expIds = await expedientesDe(aporteId);
   const exp = expIds[0]
@@ -353,10 +359,10 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     <div className="bo-plegado">
                     <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
                       <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
+                      <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
                       <Opciones id="cor-codigo" name="codigo" etiqueta="Municipio correcto">
                         <option value="">Escoge uno…</option>
-                        {mun?.map((m) => (
+                        {mun.map((m) => (
                           <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
                         ))}
                       </Opciones>
@@ -398,10 +404,10 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   {ubi?.some((u) => u.estado === "por_aclarar") && (
                     <form action={accionResolver}>
                       <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun?.[0]?.version ?? ""} />
+                      <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
                       <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
                         <option value="">Escoge uno…</option>
-                        {mun?.map((m) => (
+                        {mun.map((m) => (
                           <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
                         ))}
                       </Opciones>

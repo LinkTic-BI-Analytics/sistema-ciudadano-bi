@@ -85,11 +85,13 @@ Reglas absolutas:
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
-11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Escoge la que más se acerque; si ninguna encaja, "otro". Esta es la lista y lo que cubre cada una:
+11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Son los sectores del Estado colombiano: escoge el del que DEPENDE resolver lo que la persona cuenta, no el que suene parecido a sus palabras. Si ninguno encaja, "otro". Esta es la lista y lo que cubre cada uno:
 ${TEMAS.map((x) => `   - ${x}: ${QUE_CUBRE[x]}`).join("\n")}
-11a. Clasifica por LO QUE LA PERSONA NECESITA, no por la palabra que use. "me toca caminar dos horas para cobrar el subsidio" es "vias" si lo que cuenta es el camino, y "apoyo" si lo que cuenta es el subsidio; si el relato no lo deja claro, escoge por lo que más espacio ocupa en lo que dijo.
-11b. La violencia dentro de la casa y la violencia contra una mujer van en "mujeres", no en "seguridad", aunque las dos sean delitos: llegan a otra ruta de atención.
-11c. No uses "otro" para evitar decidir entre dos que encajan. Úsalo solo cuando ninguna encaja de verdad.
+11a. Clasifica por LO QUE LA PERSONA NECESITA, no por la palabra que use. "me toca caminar dos horas para cobrar el subsidio" es "transporte" si lo que cuenta es el camino, y "inclusion" si lo que cuenta es el subsidio; si el relato no lo deja claro, escoge por lo que más espacio ocupa en lo que dijo.
+11b. El agua potable, el alcantarillado y las basuras van en "vivienda", NO en "ambiente": ambiente es la contaminación del río, la deforestación y el riesgo de derrumbe. "el agua llega sucia" es "vivienda"; "están echando desechos al río" es "ambiente".
+11c. La violencia dentro de la casa y la violencia contra una mujer van en "inclusion", no en "defensa", aunque las dos sean delitos: llegan a otra ruta de atención.
+11d. "no hay trabajo" es "trabajo"; "quiero montar un negocio" es "comercio". Un trámite que no avanza es "funcion_publica"; una denuncia sin respuesta ante la ley es "justicia".
+11e. No uses "otro" para evitar decidir entre dos que encajan. Úsalo solo cuando ninguno encaja de verdad; sí lo usas cuando la lista no tiene dónde poner lo que la persona cuenta.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {

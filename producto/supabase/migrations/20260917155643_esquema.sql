@@ -1,5 +1,7 @@
 -- GENERADO por scripts/esquema.sh desde supabase/schemas/.
 -- No se edita a mano: se edita el esquema y se vuelve a correr.
+-- El orden es el de `ORDEN` en el guion, no el de los nombres: una
+-- tabla se crea después de las que referencia.
 
 -- ═══ 01_pertenencia.sql ═══
 -- La unidad de pertenencia, y va primero porque es lo único que no se puede
@@ -152,6 +154,143 @@ create table participacion.transcripcion (
 
 create index on participacion.transcripcion (grabacion_id, version desc);
 
+-- ═══ 14_convocatoria.sql ═══
+-- Convocatorias y encuentros (`M06`, `RF10`).
+--
+-- La primera entrega que pide el módulo: *«sección pública permanente
+-- Participa → Convocatorias y agenda, accesible sin cuenta, con próximos
+-- encuentros en portada»*.
+--
+-- Lo que el modelo tiene que hacer imposible está escrito abajo, restricción
+-- por restricción. Lo más importante: **una convocatoria cerrada no puede
+-- prometer recepción**, y **cancelar un encuentro no lo borra**.
+
+create table participacion.convocatoria (
+  id            uuid primary key default gen_random_uuid(),
+  proceso_id    uuid not null references participacion.proceso (id),
+
+  nombre        text not null,
+  -- `RF10`: propósito, alcance, fechas, canales y **efecto de participar**. El
+  -- último no es decorativo: sin decir qué pasa con lo que se aporta, la
+  -- convocatoria promete por omisión.
+  proposito     text not null,
+  alcance       text not null,
+  efecto        text not null,
+
+  -- Una convocatoria puede recibir aportes por internet **sin ninguna
+  -- reunión**, así que la ventana es de la convocatoria y no de los encuentros.
+  abre_en       timestamptz not null,
+  cierra_en     timestamptz,
+
+  estado        text not null default 'borrador'
+                check (estado in ('borrador','publicada','cerrada')),
+  -- El borrador no altera la versión pública: lo que no está publicado no se ve.
+  publicada_en  timestamptz,
+  constraint publicada_con_fecha
+    check ((estado = 'borrador') = (publicada_en is null)),
+  constraint cierra_despues_de_abrir
+    check (cierra_en is null or cierra_en > abre_en)
+);
+
+create table participacion.encuentro (
+  id              uuid primary key default gen_random_uuid(),
+  proceso_id      uuid not null references participacion.proceso (id),
+  convocatoria_id uuid not null references participacion.convocatoria (id),
+
+  titulo          text not null,
+  tema            text,
+  modalidad       text not null check (modalidad in ('presencial','virtual','mixta')),
+
+  -- Con zona horaria siempre. Un encuentro a las 9 no dice nada sin decir
+  -- dónde son las 9, y la gente que se conecta desde otro huso llega tarde.
+  comienza_en     timestamptz not null,
+  zona_horaria    text not null default 'America/Bogota',
+
+  -- Dónde, según la modalidad. Un encuentro presencial sin lugar y uno virtual
+  -- sin sala son fichas que no sirven para ir.
+  lugar           text,
+  sala            text,
+  constraint presencial_con_lugar check (modalidad = 'virtual' or lugar is not null),
+  constraint virtual_con_sala     check (modalidad = 'presencial' or sala is not null),
+
+  -- Las ayudas reales, dichas o no dichas. `null` es «no se dijo»; prometerlas
+  -- sin tenerlas es peor que callarlas.
+  ayudas          text,
+  cupos           integer check (cupos is null or cupos > 0),
+
+  estado          text not null default 'programado'
+                  check (estado in ('programado','reprogramado','cancelado')),
+
+  -- **Reprogramar conserva la ficha y muestra el cambio.** Por eso la fecha
+  -- anterior se guarda: sin ella, quien ya se había organizado no puede saber
+  -- que cambió.
+  comenzaba_en    timestamptz,
+  motivo_cambio   text,
+  constraint reprogramado_dice_desde_cuando
+    check ((estado = 'reprogramado') = (comenzaba_en is not null)),
+  constraint cambio_con_motivo
+    check (estado = 'programado' or motivo_cambio is not null)
+);
+
+create index on participacion.encuentro (proceso_id, comienza_en);
+create index on participacion.convocatoria (proceso_id, estado);
+
+-- ¿Está abierta de verdad ahora mismo?
+--
+-- Una sola función para que la portada, la ficha y cualquier aviso digan lo
+-- mismo. «Publicada» no basta: una convocatoria publicada cuya ventana ya
+-- cerró **no recibe**, y ofrecer participar ahí es la promesa que `RF10`
+-- prohíbe —*«no promete recepción en convocatoria cerrada»*—.
+create or replace function participacion.recibe_aportes(c participacion.convocatoria)
+returns boolean language sql immutable as $$
+  select c.estado = 'publicada'
+     and c.abre_en <= now()
+     and (c.cierra_en is null or c.cierra_en > now());
+$$;
+
+-- ═══ 16_enlace.sql ═══
+-- Enlaces y QR por evento y por pieza (`QR-01` … `QR-04`).
+--
+-- La clave del requerimiento, dicha en su primera página:
+--
+--   > separar **de dónde vino el enlace**, **en qué evento dice participar la
+--   > persona** y **dónde ocurre el problema que está reportando**. Estos datos
+--   > pueden ser distintos y los tres son útiles.
+--
+-- Todo lo de abajo existe para que esos tres no se confundan nunca. El caso que
+-- lo explica: alguien recibe reenviado el QR del evento A mientras está en el
+-- evento B, y cuenta un problema de una vereda del municipio C. **Es un solo
+-- aporte con tres contextos distintos**, y ninguno de ellos es asistencia.
+
+create table participacion.enlace (
+  -- Corto y estable: va impreso en un afiche y se teclea a mano cuando la
+  -- cámara no lee. Por eso es `text` y no un uuid.
+  id            text primary key check (id ~ '^[A-Z0-9]{6,12}$'),
+  proceso_id    uuid not null references participacion.proceso (id),
+  encuentro_id  uuid not null references participacion.encuentro (id),
+
+  -- Afiche y publicación digital del mismo encuentro se distinguen **sin
+  -- dividir el evento**: son piezas, no eventos distintos.
+  pieza         text not null
+                check (pieza in ('afiche','volante','publicacion','radio','otro')),
+
+  -- Las UTMs describen difusión y **no otorgan permisos**. Se guardan las
+  -- configuradas, que es distinto de las recibidas: las de abajo son lo que
+  -- alguien puso en la dirección, y pueden venir manipuladas.
+  utm_source    text,
+  utm_medium    text,
+  utm_campaign  text,
+  utm_content   text,
+
+  -- Retirar un enlace le quita el acceso, pero **no borra los aportes que
+  -- entraron por él** ni su procedencia. Puede seguir explicando qué pasó.
+  estado        text not null default 'activo' check (estado in ('activo','retirado')),
+  creado_por    text not null,
+  creado_en     timestamptz not null default now()
+);
+
+create index on participacion.enlace (encuentro_id);
+
 -- ═══ 03_aporte.sql ═══
 -- El aporte: lo que una persona o un grupo expresa (`V12`, nivel 1 de 3).
 --
@@ -242,6 +381,11 @@ create table participacion.aporte (
   -- que se repite, ni saber a qué entidad compete, ni ver que veinte personas
   -- de un municipio están contando lo mismo.
   --
+  -- **Son los sectores administrativos del Estado**, no las palabras con que la
+  -- gente cuenta su problema: así el tema y la entidad que responde son el
+  -- mismo dato. Lo que traduce «no llega el agua» a «vivienda» es `QUE_CUBRE`,
+  -- en `src/captura/lectura.ts`.
+  --
   -- **La lista es provisional** y así se dice en pantalla: la especificación
   -- dejó las taxonomías sin cerrar (`T018`, `Q32`).
   --
@@ -257,10 +401,12 @@ create table participacion.aporte (
   -- Empleo e ingresos». Nadie se enteraba porque `tema_propuesto` no tiene esta
   -- restricción y sí se guardaba.
   constraint tema_de_la_lista check (
-    tema is null or tema in ('agua','vias','salud','educacion','energia','residuos',
-                             'conectividad','vivienda','ambiente','seguridad',
-                             'mujeres','campo','empleo','apoyo','justicia','cultura',
-                             'animales','otro')
+    tema is null or tema in ('salud','vivienda','transporte','educacion','ambiente',
+                             'defensa','agricultura','comercio','minas','inclusion',
+                             'presidencia','tic','deporte','justicia','culturas',
+                             'interior','exteriores','funcion_publica','hacienda',
+                             'ciencia','planeacion','trabajo','estadistica',
+                             'inteligencia','otro')
   ),
 
   es_colectivo        boolean not null default false,
@@ -1039,143 +1185,6 @@ language sql stable as $$
   from information_schema.columns
   where table_schema = 'participacion' and table_name = p_tabla;
 $$;
-
--- ═══ 14_convocatoria.sql ═══
--- Convocatorias y encuentros (`M06`, `RF10`).
---
--- La primera entrega que pide el módulo: *«sección pública permanente
--- Participa → Convocatorias y agenda, accesible sin cuenta, con próximos
--- encuentros en portada»*.
---
--- Lo que el modelo tiene que hacer imposible está escrito abajo, restricción
--- por restricción. Lo más importante: **una convocatoria cerrada no puede
--- prometer recepción**, y **cancelar un encuentro no lo borra**.
-
-create table participacion.convocatoria (
-  id            uuid primary key default gen_random_uuid(),
-  proceso_id    uuid not null references participacion.proceso (id),
-
-  nombre        text not null,
-  -- `RF10`: propósito, alcance, fechas, canales y **efecto de participar**. El
-  -- último no es decorativo: sin decir qué pasa con lo que se aporta, la
-  -- convocatoria promete por omisión.
-  proposito     text not null,
-  alcance       text not null,
-  efecto        text not null,
-
-  -- Una convocatoria puede recibir aportes por internet **sin ninguna
-  -- reunión**, así que la ventana es de la convocatoria y no de los encuentros.
-  abre_en       timestamptz not null,
-  cierra_en     timestamptz,
-
-  estado        text not null default 'borrador'
-                check (estado in ('borrador','publicada','cerrada')),
-  -- El borrador no altera la versión pública: lo que no está publicado no se ve.
-  publicada_en  timestamptz,
-  constraint publicada_con_fecha
-    check ((estado = 'borrador') = (publicada_en is null)),
-  constraint cierra_despues_de_abrir
-    check (cierra_en is null or cierra_en > abre_en)
-);
-
-create table participacion.encuentro (
-  id              uuid primary key default gen_random_uuid(),
-  proceso_id      uuid not null references participacion.proceso (id),
-  convocatoria_id uuid not null references participacion.convocatoria (id),
-
-  titulo          text not null,
-  tema            text,
-  modalidad       text not null check (modalidad in ('presencial','virtual','mixta')),
-
-  -- Con zona horaria siempre. Un encuentro a las 9 no dice nada sin decir
-  -- dónde son las 9, y la gente que se conecta desde otro huso llega tarde.
-  comienza_en     timestamptz not null,
-  zona_horaria    text not null default 'America/Bogota',
-
-  -- Dónde, según la modalidad. Un encuentro presencial sin lugar y uno virtual
-  -- sin sala son fichas que no sirven para ir.
-  lugar           text,
-  sala            text,
-  constraint presencial_con_lugar check (modalidad = 'virtual' or lugar is not null),
-  constraint virtual_con_sala     check (modalidad = 'presencial' or sala is not null),
-
-  -- Las ayudas reales, dichas o no dichas. `null` es «no se dijo»; prometerlas
-  -- sin tenerlas es peor que callarlas.
-  ayudas          text,
-  cupos           integer check (cupos is null or cupos > 0),
-
-  estado          text not null default 'programado'
-                  check (estado in ('programado','reprogramado','cancelado')),
-
-  -- **Reprogramar conserva la ficha y muestra el cambio.** Por eso la fecha
-  -- anterior se guarda: sin ella, quien ya se había organizado no puede saber
-  -- que cambió.
-  comenzaba_en    timestamptz,
-  motivo_cambio   text,
-  constraint reprogramado_dice_desde_cuando
-    check ((estado = 'reprogramado') = (comenzaba_en is not null)),
-  constraint cambio_con_motivo
-    check (estado = 'programado' or motivo_cambio is not null)
-);
-
-create index on participacion.encuentro (proceso_id, comienza_en);
-create index on participacion.convocatoria (proceso_id, estado);
-
--- ¿Está abierta de verdad ahora mismo?
---
--- Una sola función para que la portada, la ficha y cualquier aviso digan lo
--- mismo. «Publicada» no basta: una convocatoria publicada cuya ventana ya
--- cerró **no recibe**, y ofrecer participar ahí es la promesa que `RF10`
--- prohíbe —*«no promete recepción en convocatoria cerrada»*—.
-create or replace function participacion.recibe_aportes(c participacion.convocatoria)
-returns boolean language sql immutable as $$
-  select c.estado = 'publicada'
-     and c.abre_en <= now()
-     and (c.cierra_en is null or c.cierra_en > now());
-$$;
-
--- ═══ 16_enlace.sql ═══
--- Enlaces y QR por evento y por pieza (`QR-01` … `QR-04`).
---
--- La clave del requerimiento, dicha en su primera página:
---
---   > separar **de dónde vino el enlace**, **en qué evento dice participar la
---   > persona** y **dónde ocurre el problema que está reportando**. Estos datos
---   > pueden ser distintos y los tres son útiles.
---
--- Todo lo de abajo existe para que esos tres no se confundan nunca. El caso que
--- lo explica: alguien recibe reenviado el QR del evento A mientras está en el
--- evento B, y cuenta un problema de una vereda del municipio C. **Es un solo
--- aporte con tres contextos distintos**, y ninguno de ellos es asistencia.
-
-create table participacion.enlace (
-  -- Corto y estable: va impreso en un afiche y se teclea a mano cuando la
-  -- cámara no lee. Por eso es `text` y no un uuid.
-  id            text primary key check (id ~ '^[A-Z0-9]{6,12}$'),
-  proceso_id    uuid not null references participacion.proceso (id),
-  encuentro_id  uuid not null references participacion.encuentro (id),
-
-  -- Afiche y publicación digital del mismo encuentro se distinguen **sin
-  -- dividir el evento**: son piezas, no eventos distintos.
-  pieza         text not null
-                check (pieza in ('afiche','volante','publicacion','radio','otro')),
-
-  -- Las UTMs describen difusión y **no otorgan permisos**. Se guardan las
-  -- configuradas, que es distinto de las recibidas: las de abajo son lo que
-  -- alguien puso en la dirección, y pueden venir manipuladas.
-  utm_source    text,
-  utm_medium    text,
-  utm_campaign  text,
-  utm_content   text,
-
-  -- Retirar un enlace le quita el acceso, pero **no borra los aportes que
-  -- entraron por él** ni su procedencia. Puede seguir explicando qué pasó.
-  estado        text not null default 'activo' check (estado in ('activo','retirado')),
-  creado_por    text not null,
-  creado_en     timestamptz not null default now()
-);
-
-create index on participacion.enlace (encuentro_id);
 
 -- ═══ 99_acceso.sql ═══
 -- El acceso, en su versión mínima: **negar por defecto**.

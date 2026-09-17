@@ -11,7 +11,7 @@ import { piezaSVG, porQueNo, FORMATOS, type DatosPieza, type Formato } from "../
 const base: DatosPieza = {
   convocatoria: "Escucha para el Plan Nacional de Desarrollo",
   titulo: "Mesa sobre el agua en la zona rural",
-  tema: "Agua y saneamiento",
+  tema: "Vivienda, Ciudad y Territorio",
   comienzaEn: "2026-10-20T14:00:00.000Z",
   zonaHoraria: "America/Bogota",
   modalidad: "presencial",

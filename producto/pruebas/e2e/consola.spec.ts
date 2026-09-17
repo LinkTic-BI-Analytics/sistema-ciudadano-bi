@@ -486,14 +486,14 @@ test("se puede poner el tema desde la consola, y queda quién y por qué", async
   await abrirAporte(page, marca);
   const bloque = page.locator("[data-prueba='corregir-tema']");
   await bloque.locator("summary").click();
-  await bloque.locator("#tema-codigo").selectOption("agua");
+  await bloque.locator("#tema-codigo").selectOption("vivienda");
   await bloque.locator("#tema-motivo").fill("habla del acueducto, no de la vía");
   await bloque.getByRole("button", { name: /guardar el tema/i }).click();
 
   // La cabecera lo dice, y la bandeja permite filtrar por él.
   await expect(page.locator("[data-prueba='cabecera']"))
-    .toContainText(/Agua y saneamiento/i, { timeout: 15_000 });
-  await page.goto(`/consola?tema=agua&q=${encodeURIComponent(marca)}`);
+    .toContainText(/Vivienda, Ciudad y Territorio/i, { timeout: 15_000 });
+  await page.goto(`/consola?tema=vivienda&q=${encodeURIComponent(marca)}`);
   await expect(page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true }))
     .toHaveCount(1, { timeout: 15_000 });
 });

@@ -119,90 +119,112 @@ export function loQueFalta(l: Lectura): Preguntable[] {
 }
 
 /**
- * Los temas (`CLA-01`). **Provisional**: la especificación dejó las taxonomías
- * sin cerrar (`T018`, `Q32`), así que esto es un punto de partida y no una
- * clasificación acordada.
+ * Los temas con los que se enruta y se agrupa (`CLA-01`).
  *
- * `otro` no es un cajón que se ignora: es la señal de que a la lista le falta
- * algo, y por eso sale marcado en la bandeja en vez de esconderse.
- */
-/**
- * Los temas con los que se enruta y se agrupa.
+ * **Son los sectores administrativos del Estado, y esa es la decisión.** Antes
+ * eran diecisiete etiquetas escritas desde lo que cuenta la gente («agua»,
+ * «vías», «basuras»). Se leían mejor, y tenían un defecto que no se arregla
+ * escribiéndolas mejor: **no decían a quién le toca**. Un aporte de agua
+ * potable y uno de basuras van los dos a Vivienda, Ciudad y Territorio, y con
+ * la lista anterior había que saberlo de memoria para enrutarlos.
  *
- * **Son sectores, no capítulos de un programa.** La lista se amplió leyendo un
- * programa político —que es un buen inventario de en qué se va a gobernar— pero
- * los nombres salen del sector, no del programa: lo que se le pone encima a lo
- * que alguien contó no puede llevar el encuadre de nadie. Un PND lo escribe
- * quien gane, y una taxonomía amarrada a una campaña obliga a reclasificar todo
- * lo capturado el día que cambie el gobierno.
+ * Con los sectores, el tema y la entidad que responde son lo mismo, que es lo
+ * que `CLA-01` necesita para que agrupar sirva de algo.
  *
- * Los seis últimos antes de `otro` son los que faltaban, y cada uno es alguien
- * que hoy no tenía dónde contar lo suyo: una mujer que reporta violencia
- * intrafamiliar, quien dice «aquí no hay trabajo», quien no tiene qué comer,
- * quien lleva dos años sin que le respondan un trámite.
+ * **Lo que cuesta, y hay que mirarlo en la validación:** quien cuenta no habla
+ * en sectores. Nadie dice «esto es de Vivienda, Ciudad y Territorio»; dice «no
+ * llega el agua». Por eso `QUE_CUBRE` está escrito en las palabras de la gente
+ * y no en las del organigrama: es lo que traduce una cosa en la otra, para la
+ * lectura con IA y para quien escoge en la pantalla.
+ *
+ * Siguen siendo **provisionales** mientras `T018` y `Q32` estén abiertos.
  *
  * **`otro` no es un cajón que se ignora**: sale marcado en la bandeja, y que un
  * mismo asunto se repita ahí es la señal de que a esta lista le falta algo
- * (`Q32`).
+ * (`Q32`). Con veinticuatro sectores todo *cabe* en alguno, y por eso hace más
+ * falta que antes: sin él, la lectura mete a la fuerza en un sector lo que no
+ * supo clasificar, y nadie se entera de que no supo.
+ *
+ * El orden es el que entregó el cliente. No es alfabético ni por frecuencia, y
+ * no se reordena: un orden por cuántos aportes tiene cada uno sería un ranking,
+ * y `BI-02` prohíbe eso.
  */
 export const TEMAS = [
-  "agua", "vias", "salud", "educacion", "energia", "residuos",
-  "conectividad", "vivienda", "ambiente", "seguridad",
-  "mujeres", "campo", "empleo", "apoyo", "justicia", "cultura", "animales",
+  "salud", "vivienda", "transporte", "educacion", "ambiente", "defensa",
+  "agricultura", "comercio", "minas", "inclusion", "presidencia", "tic",
+  "deporte", "justicia", "culturas", "interior", "exteriores", "funcion_publica",
+  "hacienda", "ciencia", "planeacion", "trabajo", "estadistica", "inteligencia",
   "otro",
 ] as const;
 
 export type Tema = (typeof TEMAS)[number];
 
 export const COMO_SE_LLAMA: Record<Tema, string> = {
-  agua: "Agua y saneamiento",
-  vias: "Vías y transporte",
-  salud: "Salud",
+  salud: "Salud y Protección Social",
+  vivienda: "Vivienda, Ciudad y Territorio",
+  transporte: "Transporte",
   educacion: "Educación",
-  energia: "Energía y alumbrado",
-  residuos: "Basuras y residuos",
-  conectividad: "Internet y telefonía",
-  vivienda: "Vivienda y espacio público",
-  ambiente: "Ambiente y riesgo",
-  seguridad: "Seguridad y convivencia",
-  mujeres: "Mujeres, violencia de género y cuidado",
-  campo: "Campo y producción rural",
-  empleo: "Empleo e ingresos",
-  apoyo: "Alimentación y apoyo social",
-  justicia: "Justicia y acceso al Estado",
-  cultura: "Cultura, deporte y recreación",
-  animales: "Animales",
+  ambiente: "Ambiente y Desarrollo Sostenible",
+  defensa: "Defensa",
+  agricultura: "Agricultura y Desarrollo Rural",
+  comercio: "Comercio, Industria y Turismo",
+  minas: "Minas y Energía",
+  inclusion: "Inclusión Social y Reconciliación",
+  presidencia: "Presidencia de la República",
+  tic: "Tecnologías de la Información y la Comunicación",
+  deporte: "Deporte y Recreación",
+  justicia: "Justicia",
+  culturas: "Culturas",
+  interior: "Interior",
+  exteriores: "Relaciones Exteriores",
+  funcion_publica: "Función Pública",
+  hacienda: "Hacienda",
+  ciencia: "Ciencia, Tecnología e Innovación",
+  planeacion: "Planeación",
+  trabajo: "Trabajo",
+  estadistica: "Estadística",
+  inteligencia: "Inteligencia",
   otro: "Otra cosa",
 };
 
 /**
  * Qué cubre cada tema, **en las palabras con las que la gente lo cuenta**.
  *
- * No es documentación: va dentro del prompt. Con diecisiete etiquetas, el
- * nombre solo no alcanza para decidir dónde cae «me toca caminar dos horas para
- * cobrar el subsidio» —¿transporte, apoyo social o acceso al Estado?—, y una
- * lista sin fronteras devuelve `otro` o devuelve cualquier cosa.
+ * No es documentación: va dentro del prompt, y es además lo único que hace
+ * usable una lista de sectores. Nadie cuenta su problema diciendo «esto es de
+ * Vivienda, Ciudad y Territorio»; dice «no llega el agua». Sin esta columna, la
+ * lectura tendría que adivinar el organigrama colombiano, y quien escoge en la
+ * pantalla tendría que conocerlo.
  *
- * Las fronteras dudosas se dicen aquí, no se dejan a la interpretación.
+ * Las fronteras dudosas se dicen aquí, no se dejan a la interpretación: con
+ * veinticuatro sectores hay muchas más que con diecisiete temas, y son las que
+ * deciden dónde cae «me toca caminar dos horas para cobrar el subsidio».
  */
 export const QUE_CUBRE: Record<Tema, string> = {
-  agua: "acueducto, alcantarillado, pozos, agua que llega sucia o no llega",
-  vias: "vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo",
-  salud: "puestos y centros de salud, citas, medicamentos, ambulancias, salud mental",
-  educacion: "colegios, profesores, alimentación escolar, cupos, internet para estudiar",
-  energia: "luz, cortes de energía, alumbrado público, gas",
-  residuos: "recolección de basuras, puntos críticos, reciclaje",
-  conectividad: "internet, señal de celular, telefonía",
-  vivienda: "vivienda, mejoramiento, titulación, parques y espacio público",
-  ambiente: "contaminación, deforestación, minería y su efecto, riesgo de derrumbe o inundación",
-  seguridad: "delitos, extorsión, grupos armados, convivencia, violencia en el barrio",
-  mujeres: "violencia contra la mujer, violencia intrafamiliar, cuidado de niños o enfermos, autonomía económica de las mujeres",
-  campo: "cultivos, tierra, crédito y asistencia técnica, precios, comprar y vender la cosecha",
-  empleo: "no hay trabajo, informalidad, emprender, capacitación para trabajar",
-  apoyo: "hambre, subsidios que no llegan, adulto mayor sin pensión, discapacidad, primera infancia",
-  justicia: "trámites que no avanzan, corrupción, no hay a quién reclamar, denuncias sin respuesta",
-  cultura: "cultura, deporte, recreación, casas de la cultura, canchas y escenarios",
-  animales: "animales callejeros, maltrato animal, esterilización",
+  salud: "puestos y centros de salud, citas, medicamentos, ambulancias, salud mental, la EPS, vacunación, pensiones",
+  vivienda: "la casa —vivienda, mejoramiento, titulación—, el agua que llega sucia o no llega, acueducto, alcantarillado, pozos, basuras y reciclaje, parques y espacio público",
+  transporte: "vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo",
+  educacion: "colegios, profesores, alimentación escolar, cupos, internet para estudiar, universidad",
+  ambiente: "contaminación, deforestación, ríos, efecto de la minería, riesgo de derrumbe o inundación, animales callejeros y maltrato animal",
+  defensa: "delitos, extorsión, grupos armados, presencia de la policía o el ejército, inseguridad en el barrio",
+  agricultura: "cultivos, tierra, riego, crédito y asistencia técnica al campesino, precios, comprar y vender la cosecha",
+  comercio: "negocios y tiendas, turismo, formalizar o montar una empresa, industria",
+  minas: "luz, cortes de energía, alumbrado público, gas, combustible, la minería y quién la hace",
+  inclusion: "hambre, subsidios que no llegan, adulto mayor sin ingresos, discapacidad, primera infancia, víctimas del conflicto, habitante de calle, violencia contra la mujer e intrafamiliar, cuidado de niños o enfermos",
+  presidencia: "atención de emergencias y desastres, derechos humanos, y lo que la persona le dirige a la Presidencia sin que haya un sector que lo reciba",
+  tic: "internet, señal de celular, telefonía, correo, páginas del Estado que no cargan",
+  deporte: "canchas, escenarios deportivos, escuelas de deporte, recreación",
+  justicia: "denuncias sin respuesta, no hay a quién reclamar ante la ley, cárceles, conflictos entre vecinos que nadie resuelve, drogas",
+  culturas: "casas de la cultura, bibliotecas, patrimonio, fiestas y tradiciones, artistas",
+  interior: "convivencia, juntas de acción comunal y participación, líderes amenazados, asuntos étnicos, bomberos",
+  exteriores: "pasaporte, visa, consulados, colombianos que viven afuera, migrantes, la frontera",
+  funcion_publica: "trámites de una entidad que no avanzan, mala atención al ciudadano, empleo público, corrupción de un funcionario",
+  hacienda: "impuestos, predial, acceso a crédito y bancos, plata pública",
+  ciencia: "investigación, innovación, becas de posgrado",
+  planeacion: "el Sisbén y su puntaje, planes de desarrollo, regalías, en qué se invierte",
+  trabajo: "no hay trabajo, informalidad, salarios, capacitación para trabajar, el SENA, riesgos laborales",
+  estadistica: "el censo, encuestas del DANE, cifras oficiales",
+  inteligencia: "inteligencia del Estado",
   otro: "nada de lo anterior encaja",
 };
 
