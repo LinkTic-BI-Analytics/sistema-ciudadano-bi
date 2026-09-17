@@ -87,6 +87,11 @@ create table participacion.aporte (
   -- que se repite, ni saber a qué entidad compete, ni ver que veinte personas
   -- de un municipio están contando lo mismo.
   --
+  -- **Son los sectores administrativos del Estado**, no las palabras con que la
+  -- gente cuenta su problema: así el tema y la entidad que responde son el
+  -- mismo dato. Lo que traduce «no llega el agua» a «vivienda» es `QUE_CUBRE`,
+  -- en `src/captura/lectura.ts`.
+  --
   -- **La lista es provisional** y así se dice en pantalla: la especificación
   -- dejó las taxonomías sin cerrar (`T018`, `Q32`).
   --
@@ -102,10 +107,12 @@ create table participacion.aporte (
   -- Empleo e ingresos». Nadie se enteraba porque `tema_propuesto` no tiene esta
   -- restricción y sí se guardaba.
   constraint tema_de_la_lista check (
-    tema is null or tema in ('agua','vias','salud','educacion','energia','residuos',
-                             'conectividad','vivienda','ambiente','seguridad',
-                             'mujeres','campo','empleo','apoyo','justicia','cultura',
-                             'animales','otro')
+    tema is null or tema in ('salud','vivienda','transporte','educacion','ambiente',
+                             'defensa','agricultura','comercio','minas','inclusion',
+                             'presidencia','tic','deporte','justicia','culturas',
+                             'interior','exteriores','funcion_publica','hacienda',
+                             'ciencia','planeacion','trabajo','estadistica',
+                             'inteligencia','otro')
   ),
 
   es_colectivo        boolean not null default false,

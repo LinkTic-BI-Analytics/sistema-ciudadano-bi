@@ -17,7 +17,7 @@ export function CrearEncuentro() {
     <form action={accion}>
       <Campo id="enc-titulo" name="titulo" etiqueta="Título del encuentro"
              ejemplo="Mesa sobre el agua en la zona rural" />
-      <Campo id="enc-tema" name="tema" etiqueta="Tema" opcional ejemplo="Agua y saneamiento" />
+      <Campo id="enc-tema" name="tema" etiqueta="Tema" opcional ejemplo="Vivienda, Ciudad y Territorio" />
       <Opciones id="enc-modalidad" name="modalidad" etiqueta="Modalidad">
         <option value="presencial">Presencial</option>
         <option value="virtual">Virtual</option>
