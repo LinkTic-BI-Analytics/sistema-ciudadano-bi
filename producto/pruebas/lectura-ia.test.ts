@@ -232,9 +232,9 @@ test("el tema sale de la lista, no del relato", async () => {
   // un fragmento del relato sino una etiqueta de una lista cerrada. Lo que lo
   // controla es la lista.
   const l = await conRespuesta({
-    problema: "el agua llega turbia", tema: "vivienda",
+    problema: "el agua llega turbia", tema: "Vivienda, Ciudad y Territorio",
   }, () => leerConIA("el agua llega turbia"));
-  assert.equal(l.tema, "vivienda");
+  assert.equal(l.tema, "Vivienda, Ciudad y Territorio");
 });
 
 test("un tema que no está en la lista se descarta, no se inventa uno", async () => {

@@ -383,8 +383,14 @@ create table participacion.aporte (
   --
   -- **Son los sectores administrativos del Estado**, no las palabras con que la
   -- gente cuenta su problema: así el tema y la entidad que responde son el
-  -- mismo dato. Lo que traduce «no llega el agua» a «vivienda» es `QUE_CUBRE`,
-  -- en `src/captura/lectura.ts`.
+  -- mismo dato. Lo que traduce «no llega el agua» a «Vivienda, Ciudad y
+  -- Territorio» es `QUE_CUBRE`, en `src/captura/lectura.ts`.
+  --
+  -- **Se guarda el nombre del sector, no una clave corta.** Hubo un día en que
+  -- el código guardaba `vivienda` y la base exigía el nombre largo: guardar un
+  -- tema desde la consola reventaba, y los 831 aportes clasificados se veían
+  -- «sin tema» porque el producto no reconocía lo que él mismo había escrito.
+  -- Dos formas de escribir lo mismo son dos fuentes de verdad.
   --
   -- **La lista es provisional** y así se dice en pantalla: la especificación
   -- dejó las taxonomías sin cerrar (`T018`, `Q32`).
@@ -400,13 +406,35 @@ create table participacion.aporte (
   -- aporte quedaba sin tema mientras la pantalla decía «la lectura propuso
   -- Empleo e ingresos». Nadie se enteraba porque `tema_propuesto` no tiene esta
   -- restricción y sí se guardaba.
+  --
+  -- No hay «otra cosa»: son los veinticuatro sectores y nada más. Lo que la
+  -- lectura no sepa clasificar queda en `null`, que ya es un estado con nombre
+  -- en la pantalla —«sin tema»— y se puede filtrar.
   constraint tema_de_la_lista check (
-    tema is null or tema in ('salud','vivienda','transporte','educacion','ambiente',
-                             'defensa','agricultura','comercio','minas','inclusion',
-                             'presidencia','tic','deporte','justicia','culturas',
-                             'interior','exteriores','funcion_publica','hacienda',
-                             'ciencia','planeacion','trabajo','estadistica',
-                             'inteligencia','otro')
+    tema is null or tema in ('Salud y Protección Social',
+                             'Vivienda, Ciudad y Territorio',
+                             'Transporte',
+                             'Educación',
+                             'Ambiente y Desarrollo Sostenible',
+                             'Defensa',
+                             'Agricultura y Desarrollo Rural',
+                             'Comercio, Industria y Turismo',
+                             'Minas y Energía',
+                             'Inclusión Social y Reconciliación',
+                             'Presidencia de la República',
+                             'Tecnologías de la Información y la Comunicación',
+                             'Deporte y Recreación',
+                             'Justicia',
+                             'Culturas',
+                             'Interior',
+                             'Relaciones Exteriores',
+                             'Función Pública',
+                             'Hacienda',
+                             'Ciencia, Tecnología e Innovación',
+                             'Planeación',
+                             'Trabajo',
+                             'Estadística',
+                             'Inteligencia')
   ),
 
   es_colectivo        boolean not null default false,

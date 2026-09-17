@@ -1,5 +1,5 @@
 import {
-  anclado, leer, recortar, PREGUNTABLES, TEMAS, QUE_CUBRE, esTema, type Lectura,
+  anclado, leer, recortar, PREGUNTABLES, TEMAS, QUE_CUBRE, comoSector, type Lectura,
 } from "./lectura.ts";
 
 /**
@@ -85,19 +85,19 @@ Reglas absolutas:
 9b. Cada valor tiene que decir algo por sí solo. NUNCA devuelvas un pronombre suelto ("nos", "les", "uno", "todos") ni una palabra vacía: si el relato no nombra a quiénes, devuelve null.
 9. "lugar" tiene que ser un sitio que OTRA persona pueda encontrar: un barrio, una vereda, un municipio, un departamento, una vía, un punto conocido. "en mi casa", "aquí", "acá", "en mi barrio", "donde vivo" NO son lugares: devuelve null.
 
-11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Son los sectores del Estado colombiano: escoge el del que DEPENDE resolver lo que la persona cuenta, no el que suene parecido a sus palabras. Si ninguno encaja, "otro". Esta es la lista y lo que cubre cada uno:
+11. "tema" NO es un fragmento del relato: es una etiqueta de la lista. Son los sectores del Estado colombiano: escoge el del que DEPENDE resolver lo que la persona cuenta, no el que suene parecido a sus palabras. Cópialo EXACTO, con sus tildes y sus comas. Si ninguno encaja, devuelve null: NO inventes un sector que no esté en la lista. Esta es la lista y lo que cubre cada uno:
 ${TEMAS.map((x) => `   - ${x}: ${QUE_CUBRE[x]}`).join("\n")}
-11a. Clasifica por LO QUE LA PERSONA NECESITA, no por la palabra que use. "me toca caminar dos horas para cobrar el subsidio" es "transporte" si lo que cuenta es el camino, y "inclusion" si lo que cuenta es el subsidio; si el relato no lo deja claro, escoge por lo que más espacio ocupa en lo que dijo.
-11b. El agua potable, el alcantarillado y las basuras van en "vivienda", NO en "ambiente": ambiente es la contaminación del río, la deforestación y el riesgo de derrumbe. "el agua llega sucia" es "vivienda"; "están echando desechos al río" es "ambiente".
-11c. La violencia dentro de la casa y la violencia contra una mujer van en "inclusion", no en "defensa", aunque las dos sean delitos: llegan a otra ruta de atención.
-11d. "no hay trabajo" es "trabajo"; "quiero montar un negocio" es "comercio". Un trámite que no avanza es "funcion_publica"; una denuncia sin respuesta ante la ley es "justicia".
-11e. No uses "otro" para evitar decidir entre dos que encajan. Úsalo solo cuando ninguno encaja de verdad; sí lo usas cuando la lista no tiene dónde poner lo que la persona cuenta.
+11a. Clasifica por LO QUE LA PERSONA NECESITA, no por la palabra que use. "me toca caminar dos horas para cobrar el subsidio" es "Transporte" si lo que cuenta es el camino, y "Inclusión Social y Reconciliación" si lo que cuenta es el subsidio; si el relato no lo deja claro, escoge por lo que más espacio ocupa en lo que dijo.
+11b. El agua potable, el alcantarillado y las basuras van en "Vivienda, Ciudad y Territorio", NO en "Ambiente y Desarrollo Sostenible": ambiente es la contaminación del río, la deforestación y el riesgo de derrumbe. "el agua llega sucia" es Vivienda; "están echando desechos al río" es Ambiente.
+11c. La violencia dentro de la casa y la violencia contra una mujer van en "Inclusión Social y Reconciliación", no en "Defensa", aunque las dos sean delitos: llegan a otra ruta de atención.
+11d. "no hay trabajo" es "Trabajo"; "quiero montar un negocio" es "Comercio, Industria y Turismo". Un trámite que no avanza es "Función Pública"; una denuncia sin respuesta ante la ley es "Justicia".
+11e. No devuelvas null para evitar decidir entre dos que encajan. Deja null solo cuando de verdad ninguno recibe lo que la persona cuenta.
 
 Devuelve SOLO un objeto JSON con estas claves:
 {
   "problemas": ["un fragmento por cada problema DISTINTO que cuente; casi siempre uno"],
   "problema": "el fragmento que dice qué está pasando",
-  "tema": "uno de: ${TEMAS.join(', ')}",
+  "tema": "uno de la lista, copiado exacto, o null",
   "lugar": "el fragmento que dice dónde ocurre, o null",
   "afectados": "el fragmento que dice a quiénes les pasa o cuántos son, o null",
   "desdeCuando": "el fragmento que dice hace cuánto pasa, o null",
@@ -200,7 +200,12 @@ export async function leerConIA(relato: string, lugar?: string | null): Promise<
     // al descuido: no es un fragmento del relato sino una etiqueta de una lista
     // cerrada. Lo que lo controla es la lista: si devuelve algo que no está en
     // ella, se descarta.
-    const tema = esTema(cruda.tema) ? cruda.tema : null;
+    //
+    // Se acepta con tildes o sin ellas —`comoSector` las ignora y devuelve el
+    // nombre como se escribe—: ahora el tema es una frase larga, y un modelo
+    // que contesta «Educacion» acertó el sector. Descartarlo por una tilde
+    // sería dejar sin tema un aporte bien clasificado.
+    const tema = comoSector(cruda.tema);
 
     return {
       problema: recortar(problema),

@@ -320,7 +320,7 @@ test("la bandeja dice de qué habla y si ya se escaló", async () => {
   // remiten lo mismo dos veces — la segunda sin forma de saberlo salvo abriendo
   // el aporte uno por uno.
   const sinEscalar = await nuevoAporte("bandeja-tema");
-  await p.from("aporte").update({ tema: "vivienda" }).eq("id", sinEscalar.aporteId);
+  await p.from("aporte").update({ tema: "Vivienda, Ciudad y Territorio" }).eq("id", sinEscalar.aporteId);
 
   const escalado = await nuevoAporte("bandeja-escalado");
   const e = await crearExpediente({
@@ -334,7 +334,7 @@ test("la bandeja dice de qué habla y si ya se escaló", async () => {
 
   const antes = await bandeja(procesoId, { ubicacion: "todos" }, 500);
   const filaTema = antes.filas.find((f) => f.aporteId === sinEscalar.aporteId);
-  assert.equal(filaTema!.tema, "vivienda");
+  assert.equal(filaTema!.tema, "Vivienda, Ciudad y Territorio");
   assert.equal(filaTema!.escalado, "no", "un aporte sin expediente no está escalado");
   assert.equal(
     antes.filas.find((f) => f.aporteId === escalado.aporteId)!.escalado,

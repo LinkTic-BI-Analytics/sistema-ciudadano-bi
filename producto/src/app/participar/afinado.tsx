@@ -8,7 +8,7 @@ import {
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
-import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, TEMAS, COMO_SE_LLAMA, type Lectura, type Preguntable, type Tema } from "../../captura/lectura.ts";
+import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, TEMAS, type Lectura, type Preguntable, type Tema } from "../../captura/lectura.ts";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -665,7 +665,7 @@ export function Afinado({ codigo }: { codigo: string }) {
                 <select id="tema" className="pc-input" value={tema ?? lect.tema ?? ""}
                         onChange={(e) => setTema((e.target.value || null) as Tema | null)}>
                   <option value="">Prefiero no decirlo</option>
-                  {TEMAS.map((x) => <option key={x} value={x}>{COMO_SE_LLAMA[x]}</option>)}
+                  {TEMAS.map((x) => <option key={x} value={x}>{x}</option>)}
                 </select>
                 <p className="pc-help">
                   {lect.tema
