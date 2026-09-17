@@ -34,8 +34,14 @@ if (existe) {
     canal: "voz_transcrita", grabacionId: g.grabacionId,
     lugarDeclarado: "la vereda de arriba",
   });
+  // El tema es el sector que responde: una vía que no sirve es Transporte.
+  // Confirmado, porque quien habló también escogió —hablar por voz no deja a
+  // nadie sin poder decir de qué se trata—.
   await p.from("aporte")
-    .update({ afectados: "los que vamos al colegio", desde_cuando: "desde que empezaron las lluvias" })
+    .update({
+      afectados: "los que vamos al colegio", desde_cuando: "desde que empezaron las lluvias",
+      tema: "Transporte", tema_propuesto: "Transporte",
+    })
     .eq("id", r.aporteId);
   console.log("  por voz:            sembrado con su grabación");
 }
