@@ -349,3 +349,30 @@ test("la bandeja dice de qué habla y si ya se escaló", async () => {
     "recibido",
   );
 });
+
+test("el departamento y el municipio de un aporte ubicado salen en los filtros", async () => {
+  // El desplegable de departamento y el de municipio enseñaban «Todos» y nada
+  // más, con 575 aportes ubicados en la base. La causa era una consulta que
+  // fallaba en silencio; el síntoma era este, y es lo que hay que vigilar: si
+  // un aporte tiene municipio confirmado, **tiene que poder filtrarse por él**.
+  const r = await nuevoAporte("filtros-territorio");
+  await resolverUbicacion({
+    aporteId: r.aporteId, codigo: mun[0]!.codigo, version: mun[0]!.version,
+    autor: "revisora", motivo: "la persona confirmó el municipio por teléfono",
+  });
+
+  const { opciones } = await bandeja(procesoId, { ubicacion: "todos" }, 500);
+  const municipio = opciones.municipios.find((m) => m.codigo === mun[0]!.codigo);
+  assert.ok(municipio, "el municipio del aporte no se puede escoger en el filtro");
+  assert.ok(
+    opciones.departamentos.some((d) => d.codigo === municipio.departamento),
+    "el municipio salió sin su departamento: filtrar por departamento no lo encontraría",
+  );
+
+  // Y filtrar por él tiene que devolverlo, que es para lo que está el filtro.
+  const filtrada = await bandeja(procesoId, { ubicacion: "todos", municipio: mun[0]!.codigo }, 500);
+  assert.ok(filtrada.filas.some((f) => f.aporteId === r.aporteId));
+  // El desplegable no se calcula sobre lo filtrado: si se calculara, escoger un
+  // municipio dejaría ese como única opción y no habría forma de volver.
+  assert.ok(filtrada.opciones.municipios.some((m) => m.codigo === mun[0]!.codigo));
+});

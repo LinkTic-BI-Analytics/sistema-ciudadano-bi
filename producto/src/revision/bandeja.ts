@@ -1,4 +1,5 @@
 import { clienteServidor } from "../datos/cliente.ts";
+import { todas, porLotes, type Respuesta } from "../datos/leer.ts";
 import { antiguedadDe, alcanceDe, type Antiguedad, type Alcance } from "./normalizar.ts";
 import { enPartes } from "./sintesis-en-partes.ts";
 
@@ -175,17 +176,18 @@ export async function bandeja(
 ): Promise<Pagina> {
   const p = clienteServidor().schema("participacion");
 
-  const { data: aportes, error } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, canal, " +
-            "recibido_en, estado_revision, es_colectivo, colectivo_declarado, evento_confirmado_id, tema")
-    .eq("proceso_id", procesoId).is("retirado_en", null)
-    .order("recibido_en", { ascending: true })
-    // Se lee de más para poder contar y filtrar en memoria. Cuando esto se
-    // quede corto, el corte volvería a ser callado — y por eso `total` se
-    // compara contra este tope en la pantalla.
-    .limit(2000);
-  if (error) throw new Error(`no se pudo leer la bandeja: ${error.message}`);
-  const filasCrudas = (aportes ?? []) as unknown as FilaAporte[];
+  // Todos los aportes, no los primeros mil. Se leen enteros para poder contar y
+  // filtrar en memoria; con `.limit(2000)` PostgREST devolvía 1.000 y un `200`,
+  // así que el aporte 1.001 no existía para la bandeja ni para su total.
+  const filasCrudas = await todas<FilaAporte>("la bandeja", (desde, hasta) =>
+    p.from("aporte")
+      .select("id, relato_original, lugar_declarado, afectados, desde_cuando, canal, " +
+              "recibido_en, estado_revision, es_colectivo, colectivo_declarado, evento_confirmado_id, tema")
+      .eq("proceso_id", procesoId).is("retirado_en", null)
+      .order("recibido_en", { ascending: true })
+      // El cliente no infiere la fila de un `select` partido en dos líneas: la
+      // forma es `FilaAporte`, escrita arriba a mano por esa misma razón.
+      .range(desde, hasta) as unknown as PromiseLike<Respuesta<FilaAporte>>);
   const vacia: Opciones = { departamentos: [], municipios: [] };
   if (!filasCrudas.length) return { filas: [], opciones: vacia, total: 0, hayMas: false };
 
@@ -194,64 +196,87 @@ export async function bandeja(
   // Las tres consultas de al lado se hacen aparte y no con un `select` anidado:
   // los anidados de PostgREST recortan a 1.000 filas sin avisar, y ya perdimos
   // 122 municipios por eso una vez.
-  const [{ data: ubicaciones }, { data: alertas }, { data: territorios }] = await Promise.all([
-    p.from("ubicacion").select("aporte_id, estado, territorio_codigo, autor").in("aporte_id", ids),
-    p.from("alerta").select("aporte_id, devuelta_en").in("aporte_id", ids),
-    p.from("territorio").select("codigo, nombre, padre").eq("nivel", "municipio"),
+  //
+  // **Y las que filtran por la lista de aportes van por lotes.** Con 788
+  // aportes, un `.in("aporte_id", ids)` de un solo golpe arma una URL de ~30 KB
+  // y la respuesta era `400`: la bandeja se quedaba sin ninguna ubicación, y
+  // con ella sin un solo departamento ni municipio que ofrecer en los filtros.
+  const [ubicaciones, alertas, territorios] = await Promise.all([
+    porLotes<{ aporte_id: string; estado: string; territorio_codigo: string | null; autor: string | null }>(
+      "las ubicaciones", ids, (lote, desde, hasta) =>
+        p.from("ubicacion").select("aporte_id, estado, territorio_codigo, autor")
+          .in("aporte_id", lote).order("aporte_id").range(desde, hasta)),
+    porLotes<{ aporte_id: string; devuelta_en: string | null }>(
+      "las alertas", ids, (lote, desde, hasta) =>
+        p.from("alerta").select("aporte_id, devuelta_en")
+          .in("aporte_id", lote).order("aporte_id").range(desde, hasta)),
+    // Los 1.122 municipios del país, por páginas: de un tirón vienen 1.000 y un
+    // `200`, y los 122 de la cola —la periferia, por orden de código— se
+    // quedaban sin nombre y sin departamento.
+    todas<{ codigo: string; nombre: string; padre: string | null }>(
+      "el catálogo de municipios", (desde, hasta) =>
+        p.from("territorio").select("codigo, nombre, padre").eq("nivel", "municipio")
+          .order("codigo").range(desde, hasta)),
   ]);
 
   // La síntesis vigente de cada aporte: es lo que la persona confirmó, y lo que
   // se enseña en la fila. Aparte y no anidada, como las demás: los anidados de
   // PostgREST recortan a 1.000 filas sin avisar.
-  const { data: sintesis } = await p.from("sintesis")
-    .select("aporte_id, version, texto").in("aporte_id", ids).order("version");
+  const sintesis = await porLotes<{ aporte_id: string; version: number; texto: string }>(
+    "las síntesis", ids, (lote, desde, hasta) =>
+      p.from("sintesis").select("aporte_id, version, texto")
+        .in("aporte_id", lote).order("version").range(desde, hasta));
   const vigenteDe = new Map<string, string>();
-  for (const s of sintesis ?? []) {
+  for (const s of sintesis) {
     // Van ordenadas por versión, así que la última que pase es la vigente.
-    vigenteDe.set(s.aporte_id as string, s.texto as string);
+    vigenteDe.set(s.aporte_id, s.texto);
   }
 
   // Los 33 departamentos, para poder decir «Rionegro, Antioquia» y no «05615».
   const { data: deptos } = await p.from("territorio")
     .select("codigo, nombre").eq("nivel", "departamento");
   const nombreDepto = new Map((deptos ?? []).map((d) => [d.codigo as string, d.nombre as string]));
-  const nombreMunicipio = new Map((territorios ?? []).map((t) => [t.codigo as string, t.nombre as string]));
-  const padreDe = new Map((territorios ?? []).map((t) => [t.codigo as string, t.padre as string | null]));
+  const nombreMunicipio = new Map(territorios.map((t) => [t.codigo, t.nombre]));
+  const padreDe = new Map(territorios.map((t) => [t.codigo, t.padre]));
   const porAporte = new Map<string, { estado: string; codigo: string | null; autor: string | null }>();
-  for (const u of ubicaciones ?? []) {
+  for (const u of ubicaciones) {
     const actual = porAporte.get(u.aporte_id);
     // Si hay una confirmada, manda: es la que resolvió alguien.
     if (!actual || u.estado === "confirmada") {
       porAporte.set(u.aporte_id, { estado: u.estado, codigo: u.territorio_codigo, autor: u.autor });
     }
   }
-  const conAlerta = new Set((alertas ?? []).filter((a) => !a.devuelta_en).map((a) => a.aporte_id));
+  const conAlerta = new Set(alertas.filter((a) => !a.devuelta_en).map((a) => a.aporte_id));
 
   // **Si ya se escaló.** Va por el expediente, que es lo que se remite: el
   // aporte es de la persona y no se manda a ninguna parte. Dos consultas
   // sueltas, no un anidado: los anidados de PostgREST recortan a 1.000 filas
   // sin avisar.
-  const { data: vinculos } = await p.from("vinculo_aporte_expediente")
-    .select("aporte_id, expediente_id").in("aporte_id", ids).is("desvinculado_en", null);
-  const expedientes = [...new Set((vinculos ?? []).map((v) => v.expediente_id as string))];
-  const { data: remisiones } = expedientes.length
-    ? await p.from("actuacion").select("expediente_id, aceptada_en")
-        .in("expediente_id", expedientes).eq("tipo", "remision")
-    : { data: [] };
+  const vinculos = await porLotes<{ aporte_id: string; expediente_id: string }>(
+    "los vínculos con expedientes", ids, (lote, desde, hasta) =>
+      p.from("vinculo_aporte_expediente").select("aporte_id, expediente_id")
+        .in("aporte_id", lote).is("desvinculado_en", null)
+        .order("aporte_id").range(desde, hasta));
+  const expedientes = [...new Set(vinculos.map((v) => v.expediente_id))];
+  const remisiones = await porLotes<{ expediente_id: string; aceptada_en: string | null }>(
+    "las remisiones", expedientes, (lote, desde, hasta) =>
+      p.from("actuacion").select("expediente_id, aceptada_en")
+        .in("expediente_id", lote).eq("tipo", "remision")
+        .order("expediente_id").range(desde, hasta));
   const remisionDe = new Map<string, boolean>();
-  for (const r of remisiones ?? []) {
+  for (const r of remisiones) {
     // Una aceptada manda sobre una pendiente: lo que importa es si alguien allá
     // lo tiene, no cuántas veces se mandó.
-    const ya = remisionDe.get(r.expediente_id as string);
-    remisionDe.set(r.expediente_id as string, ya === true || r.aceptada_en !== null);
+    const ya = remisionDe.get(r.expediente_id);
+    remisionDe.set(r.expediente_id, ya === true || r.aceptada_en !== null);
   }
-  const conExpediente = new Set((vinculos ?? []).map((v) => v.aporte_id as string));
+  const conExpediente = new Set(vinculos.map((v) => v.aporte_id));
   const escaladoDe = new Map<string, "no" | "pendiente" | "recibido">();
-  for (const v of vinculos ?? []) {
-    const estado = remisionDe.get(v.expediente_id as string);
+  for (const v of vinculos) {
+    const estado = remisionDe.get(v.expediente_id);
     if (estado === undefined) continue;
-    const actual = escaladoDe.get(v.aporte_id as string);
-    if (actual !== "recibido") escaladoDe.set(v.aporte_id as string, estado ? "recibido" : "pendiente");
+    const actual = escaladoDe.get(v.aporte_id);
+    if (actual !== "recibido") escaladoDe.set(v.aporte_id, estado ? "recibido" : "pendiente");
   }
 
   const filas: FilaBandeja[] = filasCrudas.map((a) => {
