@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { FilaBandeja, Opciones } from "../../revision/bandeja.ts";
-import { COMO_SE_LLAMA, esTema, TEMAS } from "../../captura/lectura.ts";
+import { Territorio } from "./territorio.tsx";
+import { esTema, TEMAS } from "../../captura/lectura.ts";
 import {
   COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE, ALCANCES,
 } from "../../revision/normalizar.ts";
@@ -26,7 +27,7 @@ const COMO_SE_LEE = {
  */
 export function DeQue({ tema }: { tema: string | null }) {
   if (!tema || !esTema(tema)) return <span className="bo-muted">sin tema</span>;
-  return <strong>{COMO_SE_LLAMA[tema]}</strong>;
+  return <strong>{tema}</strong>;
 }
 
 /**
@@ -191,13 +192,6 @@ export function Filtros({
   antiguedad: string;
   alcance: string;
 }) {
-  // Si hay un departamento escogido, el desplegable de municipios se queda con
-  // los suyos. Ofrecer los de todo el país después de haber escogido uno es
-  // ofrecer combinaciones que no devuelven nada.
-  const municipios = departamento
-    ? opciones.municipios.filter((m) => m.departamento === departamento)
-    : opciones.municipios;
-
   return (
     <form className="bo-filters" method="get" action="/consola">
       <div className="bo-field bo-search">
@@ -210,31 +204,17 @@ export function Filtros({
 
       {/* **El territorio, que es lo que se capturaba y no se podía filtrar.**
           Solo salen los departamentos y municipios donde de verdad llegó algo:
-          un desplegable con los 1.122 del país no es un filtro. */}
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="departamento">Departamento</label>
-        <select id="departamento" name="departamento" defaultValue={departamento}>
-          <option value="">Todos</option>
-          {opciones.departamentos.map((d) => (
-            <option key={d.codigo} value={d.codigo}>{d.nombre}</option>
-          ))}
-        </select>
-      </div>
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="municipio">Municipio</label>
-        <select id="municipio" name="municipio" defaultValue={municipio}>
-          <option value="">Todos</option>
-          {municipios.map((m) => (
-            <option key={m.codigo} value={m.codigo}>{m.nombre}</option>
-          ))}
-        </select>
-      </div>
+          un desplegable con los 1.122 del país no es un filtro.
+
+          Van encadenados y por eso corren en el navegador: la razón entera está
+          en `territorio.tsx`. */}
+      <Territorio opciones={opciones} departamento={departamento} municipio={municipio} />
       <div className="bo-field">
         <label className="bo-label-tag" htmlFor="tema">De qué</label>
         <select id="tema" name="tema" defaultValue={tema}>
           <option value="">Cualquier tema</option>
           <option value="sin_tema">Sin tema</option>
-          {TEMAS.map((x) => <option key={x} value={x}>{COMO_SE_LLAMA[x]}</option>)}
+          {TEMAS.map((x) => <option key={x} value={x}>{x}</option>)}
         </select>
       </div>
       {/* **La pregunta del negocio, filtrable.** «Qué comunidades tienen más

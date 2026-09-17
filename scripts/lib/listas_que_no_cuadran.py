@@ -27,12 +27,16 @@ LISTAS = [
 ]
 
 
+# Los valores ya no son claves cortas sino el nombre del sector —«Vivienda,
+# Ciudad y Territorio»—, con tildes, comas y espacios. Se toma lo que haya entre
+# comillas y punto: acotar a `[a-z_]+` era lo que había, y con la lista nueva no
+# habría encontrado ni uno, que es la forma más silenciosa de no comprobar nada.
 def del_codigo(archivo: str, patron: str) -> set[str]:
     texto = (PRODUCTO / archivo).read_text(encoding="utf-8")
     bloque = re.search(patron, texto, re.S)
     if not bloque:
         return set()
-    return set(re.findall(r'"([a-z_]+)"', bloque.group(1)))
+    return set(re.findall(r'"([^"]+)"', bloque.group(1)))
 
 
 def del_esquema(archivo: str, restriccion: str) -> set[str]:
@@ -42,7 +46,7 @@ def del_esquema(archivo: str, restriccion: str) -> set[str]:
         return set()
     # Hasta el paréntesis que cierra la restricción.
     bloque = texto[i:texto.find("),", i)]
-    return set(re.findall(r"'([a-z_]+)'", bloque))
+    return set(re.findall(r"'([^']+)'", bloque))
 
 
 def main() -> int:

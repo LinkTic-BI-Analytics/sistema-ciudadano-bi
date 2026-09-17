@@ -139,53 +139,58 @@ export function loQueFalta(l: Lectura): Preguntable[] {
  *
  * Siguen siendo **provisionales** mientras `T018` y `Q32` estén abiertos.
  *
- * **`otro` no es un cajón que se ignora**: sale marcado en la bandeja, y que un
- * mismo asunto se repita ahí es la señal de que a esta lista le falta algo
- * (`Q32`). Con veinticuatro sectores todo *cabe* en alguno, y por eso hace más
- * falta que antes: sin él, la lectura mete a la fuerza en un sector lo que no
- * supo clasificar, y nadie se entera de que no supo.
+ * **El tema es el nombre del sector, y no hay una clave corta detrás.** Hubo un
+ * día en que el código guardaba `vivienda` y enseñaba «Vivienda, Ciudad y
+ * Territorio»; la base guardaba el nombre largo, y guardar un tema desde la
+ * consola reventaba con `violates check constraint "tema_de_la_lista"`. Dos
+ * formas de escribir lo mismo son dos fuentes de verdad, y una de las dos
+ * siempre va a estar mal. Manda la base, donde ya hay 831 aportes clasificados.
+ *
+ * Lo que eso cuesta, y hay que saberlo: **el nombre es la llave**. El día que
+ * alguien reescriba «Función Pública» de otra forma, lo guardado deja de
+ * cuadrar y hay que traducirlo con un `update`. A cambio, lo que se ve en
+ * pantalla, lo que viaja en la dirección del filtro y lo que hay en la base son
+ * la misma cadena, y no hay dónde se desincronicen.
+ *
+ * **No hay «otra cosa».** Los veinticuatro son los sectores del Estado y la
+ * restricción de la base no admite nada más. Lo que la lectura no sepa
+ * clasificar queda **sin tema** —`null`, que ya es un estado con nombre en la
+ * pantalla y filtrable en la bandeja—, y eso es lo que hay que mirar para
+ * `Q32`: un asunto que se repite sin tema es la señal de que a la lista le falta
+ * algo. Meterlo a la fuerza en un sector sería peor, porque nadie se enteraría.
  *
  * El orden es el que entregó el cliente. No es alfabético ni por frecuencia, y
  * no se reordena: un orden por cuántos aportes tiene cada uno sería un ranking,
  * y `BI-02` prohíbe eso.
  */
 export const TEMAS = [
-  "salud", "vivienda", "transporte", "educacion", "ambiente", "defensa",
-  "agricultura", "comercio", "minas", "inclusion", "presidencia", "tic",
-  "deporte", "justicia", "culturas", "interior", "exteriores", "funcion_publica",
-  "hacienda", "ciencia", "planeacion", "trabajo", "estadistica", "inteligencia",
-  "otro",
+  "Salud y Protección Social",
+  "Vivienda, Ciudad y Territorio",
+  "Transporte",
+  "Educación",
+  "Ambiente y Desarrollo Sostenible",
+  "Defensa",
+  "Agricultura y Desarrollo Rural",
+  "Comercio, Industria y Turismo",
+  "Minas y Energía",
+  "Inclusión Social y Reconciliación",
+  "Presidencia de la República",
+  "Tecnologías de la Información y la Comunicación",
+  "Deporte y Recreación",
+  "Justicia",
+  "Culturas",
+  "Interior",
+  "Relaciones Exteriores",
+  "Función Pública",
+  "Hacienda",
+  "Ciencia, Tecnología e Innovación",
+  "Planeación",
+  "Trabajo",
+  "Estadística",
+  "Inteligencia",
 ] as const;
 
 export type Tema = (typeof TEMAS)[number];
-
-export const COMO_SE_LLAMA: Record<Tema, string> = {
-  salud: "Salud y Protección Social",
-  vivienda: "Vivienda, Ciudad y Territorio",
-  transporte: "Transporte",
-  educacion: "Educación",
-  ambiente: "Ambiente y Desarrollo Sostenible",
-  defensa: "Defensa",
-  agricultura: "Agricultura y Desarrollo Rural",
-  comercio: "Comercio, Industria y Turismo",
-  minas: "Minas y Energía",
-  inclusion: "Inclusión Social y Reconciliación",
-  presidencia: "Presidencia de la República",
-  tic: "Tecnologías de la Información y la Comunicación",
-  deporte: "Deporte y Recreación",
-  justicia: "Justicia",
-  culturas: "Culturas",
-  interior: "Interior",
-  exteriores: "Relaciones Exteriores",
-  funcion_publica: "Función Pública",
-  hacienda: "Hacienda",
-  ciencia: "Ciencia, Tecnología e Innovación",
-  planeacion: "Planeación",
-  trabajo: "Trabajo",
-  estadistica: "Estadística",
-  inteligencia: "Inteligencia",
-  otro: "Otra cosa",
-};
 
 /**
  * Qué cubre cada tema, **en las palabras con las que la gente lo cuenta**.
@@ -201,35 +206,55 @@ export const COMO_SE_LLAMA: Record<Tema, string> = {
  * deciden dónde cae «me toca caminar dos horas para cobrar el subsidio».
  */
 export const QUE_CUBRE: Record<Tema, string> = {
-  salud: "puestos y centros de salud, citas, medicamentos, ambulancias, salud mental, la EPS, vacunación, pensiones",
-  vivienda: "la casa —vivienda, mejoramiento, titulación—, el agua que llega sucia o no llega, acueducto, alcantarillado, pozos, basuras y reciclaje, parques y espacio público",
-  transporte: "vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo",
-  educacion: "colegios, profesores, alimentación escolar, cupos, internet para estudiar, universidad",
-  ambiente: "contaminación, deforestación, ríos, efecto de la minería, riesgo de derrumbe o inundación, animales callejeros y maltrato animal",
-  defensa: "delitos, extorsión, grupos armados, presencia de la policía o el ejército, inseguridad en el barrio",
-  agricultura: "cultivos, tierra, riego, crédito y asistencia técnica al campesino, precios, comprar y vender la cosecha",
-  comercio: "negocios y tiendas, turismo, formalizar o montar una empresa, industria",
-  minas: "luz, cortes de energía, alumbrado público, gas, combustible, la minería y quién la hace",
-  inclusion: "hambre, subsidios que no llegan, adulto mayor sin ingresos, discapacidad, primera infancia, víctimas del conflicto, habitante de calle, violencia contra la mujer e intrafamiliar, cuidado de niños o enfermos",
-  presidencia: "atención de emergencias y desastres, derechos humanos, y lo que la persona le dirige a la Presidencia sin que haya un sector que lo reciba",
-  tic: "internet, señal de celular, telefonía, correo, páginas del Estado que no cargan",
-  deporte: "canchas, escenarios deportivos, escuelas de deporte, recreación",
-  justicia: "denuncias sin respuesta, no hay a quién reclamar ante la ley, cárceles, conflictos entre vecinos que nadie resuelve, drogas",
-  culturas: "casas de la cultura, bibliotecas, patrimonio, fiestas y tradiciones, artistas",
-  interior: "convivencia, juntas de acción comunal y participación, líderes amenazados, asuntos étnicos, bomberos",
-  exteriores: "pasaporte, visa, consulados, colombianos que viven afuera, migrantes, la frontera",
-  funcion_publica: "trámites de una entidad que no avanzan, mala atención al ciudadano, empleo público, corrupción de un funcionario",
-  hacienda: "impuestos, predial, acceso a crédito y bancos, plata pública",
-  ciencia: "investigación, innovación, becas de posgrado",
-  planeacion: "el Sisbén y su puntaje, planes de desarrollo, regalías, en qué se invierte",
-  trabajo: "no hay trabajo, informalidad, salarios, capacitación para trabajar, el SENA, riesgos laborales",
-  estadistica: "el censo, encuestas del DANE, cifras oficiales",
-  inteligencia: "inteligencia del Estado",
-  otro: "nada de lo anterior encaja",
+  "Salud y Protección Social": "puestos y centros de salud, citas, medicamentos, ambulancias, salud mental, la EPS, vacunación, pensiones",
+  "Vivienda, Ciudad y Territorio": "la casa —vivienda, mejoramiento, titulación—, el agua que llega sucia o no llega, acueducto, alcantarillado, pozos, basuras y reciclaje, parques y espacio público",
+  "Transporte": "vías, puentes, andenes, transporte público y escolar, cómo salir del pueblo",
+  "Educación": "colegios, profesores, alimentación escolar, cupos, internet para estudiar, universidad",
+  "Ambiente y Desarrollo Sostenible": "contaminación, deforestación, ríos, efecto de la minería, riesgo de derrumbe o inundación, animales callejeros y maltrato animal",
+  "Defensa": "delitos, extorsión, grupos armados, presencia de la policía o el ejército, inseguridad en el barrio",
+  "Agricultura y Desarrollo Rural": "cultivos, tierra, riego, crédito y asistencia técnica al campesino, precios, comprar y vender la cosecha",
+  "Comercio, Industria y Turismo": "negocios y tiendas, turismo, formalizar o montar una empresa, industria",
+  "Minas y Energía": "luz, cortes de energía, alumbrado público, gas, combustible, la minería y quién la hace",
+  "Inclusión Social y Reconciliación": "hambre, subsidios que no llegan, adulto mayor sin ingresos, discapacidad, primera infancia, víctimas del conflicto, habitante de calle, violencia contra la mujer e intrafamiliar, cuidado de niños o enfermos",
+  "Presidencia de la República": "atención de emergencias y desastres, derechos humanos, y lo que la persona le dirige a la Presidencia sin que haya un sector que lo reciba",
+  "Tecnologías de la Información y la Comunicación": "internet, señal de celular, telefonía, correo, páginas del Estado que no cargan",
+  "Deporte y Recreación": "canchas, escenarios deportivos, escuelas de deporte, recreación",
+  "Justicia": "denuncias sin respuesta, no hay a quién reclamar ante la ley, cárceles, conflictos entre vecinos que nadie resuelve, drogas",
+  "Culturas": "casas de la cultura, bibliotecas, patrimonio, fiestas y tradiciones, artistas",
+  "Interior": "convivencia, juntas de acción comunal y participación, líderes amenazados, asuntos étnicos, bomberos",
+  "Relaciones Exteriores": "pasaporte, visa, consulados, colombianos que viven afuera, migrantes, la frontera",
+  "Función Pública": "trámites de una entidad que no avanzan, mala atención al ciudadano, empleo público, corrupción de un funcionario",
+  "Hacienda": "impuestos, predial, acceso a crédito y bancos, plata pública",
+  "Ciencia, Tecnología e Innovación": "investigación, innovación, becas de posgrado",
+  "Planeación": "el Sisbén y su puntaje, planes de desarrollo, regalías, en qué se invierte",
+  "Trabajo": "no hay trabajo, informalidad, salarios, capacitación para trabajar, el SENA, riesgos laborales",
+  "Estadística": "el censo, encuestas del DANE, cifras oficiales",
+  "Inteligencia": "inteligencia del Estado",
 };
 
 export function esTema(v: unknown): v is Tema {
   return typeof v === "string" && (TEMAS as readonly string[]).includes(v);
+}
+
+/**
+ * El sector, tal como se escribe, a partir de lo que alguien haya escrito.
+ *
+ * Existe porque el tema **es** una frase con tildes y comas —«Tecnologías de la
+ * Información y la Comunicación»— y hay dos sitios donde eso llega escrito a
+ * mano: la respuesta del modelo y una dirección que alguien pegó. Un modelo que
+ * devuelve «Educacion» sin tilde acertó el sector; descartarlo por la tilde
+ * sería tirar una clasificación correcta y dejar el aporte sin tema.
+ *
+ * Lo que **no** hace es adivinar: si no es uno de los veinticuatro escrito de
+ * alguna forma reconocible, devuelve `null`. Aproximar por parecido es cómo un
+ * aporte termina enrutado a una entidad que no le corresponde.
+ */
+export function comoSector(v: unknown): Tema | null {
+  if (typeof v !== "string") return null;
+  const igual = (s: string) =>
+    s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const buscado = igual(v);
+  return TEMAS.find((t) => igual(t) === buscado) ?? null;
 }
 
 /** Hasta dónde llega «una frase». Más largo que esto ya no se lee de un vistazo. */

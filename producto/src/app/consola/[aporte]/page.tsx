@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { recurrenciaDe } from "../../../revision/recurrencia.ts";
-import { COMO_SE_LLAMA, TEMAS, type Tema } from "../../../captura/lectura.ts";
+import { TEMAS } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
 import { enPartes } from "../../../revision/sintesis-en-partes.ts";
 import {
@@ -198,11 +198,11 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                   <dt className="bo-small">De qué</dt>
                   <dd>
                     {a.tema
-                      ? <strong>{COMO_SE_LLAMA[a.tema as Tema]}</strong>
+                      ? <strong>{a.tema}</strong>
                       : <span className="bo-muted">sin tema · no se puede enrutar</span>}
                     {a.tema_propuesto && a.tema !== a.tema_propuesto && (
                       <span className="bo-small">
-                        {" "}· la lectura propuso «{COMO_SE_LLAMA[a.tema_propuesto as Tema]}»
+                        {" "}· la lectura propuso «{a.tema_propuesto}»
                       </span>
                     )}
                   </dd>
@@ -291,7 +291,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                                 defaultValue={a.tema ?? ""}>
                         <option value="">Sin tema</option>
                         {TEMAS.map((x) => (
-                          <option key={x} value={x}>{COMO_SE_LLAMA[x]}</option>
+                          <option key={x} value={x}>{x}</option>
                         ))}
                       </Opciones>
                       <Campo id="tema-motivo" name="motivo" etiqueta="Por qué"

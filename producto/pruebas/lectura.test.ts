@@ -59,7 +59,7 @@ test("solo se pregunta por lo que la persona NO dijo", () => {
   // castiga por haberlo contado bien, y es exactamente lo que hace que alguien
   // abandone a mitad de camino.
   const completa = {
-    problema: "el agua llega turbia", otrosProblemas: [], tema: "vivienda" as const, lugar: "la parte alta",
+    problema: "el agua llega turbia", otrosProblemas: [], tema: "Vivienda, Ciudad y Territorio" as const, lugar: "la parte alta",
     afectados: "unas veinte familias", desdeCuando: "hace tres meses",
     resultadoEsperado: "que llegue limpia", solucionSugerida: null,
     fuente: "ia" as const,
@@ -93,42 +93,73 @@ test("el lugar se devuelve tal como lo dijo, o no se devuelve", () => {
   assert.equal(leer("x").lugar, null);
 });
 
-import { QUE_CUBRE, TEMAS, COMO_SE_LLAMA, type Tema } from "../src/captura/lectura.ts";
+import { QUE_CUBRE, TEMAS, comoSector, type Tema } from "../src/captura/lectura.ts";
 
 test("cada tema dice qué cubre, y en palabras de la gente", () => {
   // `QUE_CUBRE` no es documentación: va dentro del prompt. Con veinticuatro
   // sectores, el nombre solo no alcanza para decidir dónde cae «me toca
-  // caminar dos horas para cobrar el subsidio», y una lista sin fronteras
-  // devuelve `otro` o devuelve cualquier cosa.
+  // caminar dos horas para cobrar el subsidio», y una lista sin fronteras deja
+  // el aporte sin tema o lo manda a cualquier sector.
   for (const tema of TEMAS) {
     assert.ok(QUE_CUBRE[tema], `el tema ${tema} no dice qué cubre`);
     assert.ok(QUE_CUBRE[tema].length > 12, `lo que cubre ${tema} es demasiado corto para servir`);
     // Nada de nombres propios ni de encuadre político: son sectores, no
     // capítulos de un programa. Un PND lo escribe quien gane.
     assert.doesNotMatch(
-      `${COMO_SE_LLAMA[tema]} ${QUE_CUBRE[tema]}`,
+      `${tema} ${QUE_CUBRE[tema]}`,
       /patria|milagro|petro|gobierno|traici|presidente/i,
       `el tema ${tema} lleva encuadre político en el nombre o en lo que cubre`,
     );
   }
 });
 
-test("están los veinticuatro sectores, y otro al final", () => {
-  // La lista es la de los sectores administrativos del Estado, entregada por el
-  // cliente. Se comprueba entera y en orden: si alguien agrega uno a mitad, el
-  // orden de la pantalla deja de ser el que se acordó.
+test("son los veinticuatro sectores, escritos como los guarda la base", () => {
+  // **Esta lista es literal a propósito.** El tema que se guarda es esta misma
+  // cadena, con sus tildes y sus comas: una letra distinta aquí y la base
+  // rechaza el `update` con `violates check constraint "tema_de_la_lista"`, que
+  // es exactamente lo que pasó en producción.
   assert.deepEqual([...TEMAS], [
-    "salud", "vivienda", "transporte", "educacion", "ambiente", "defensa",
-    "agricultura", "comercio", "minas", "inclusion", "presidencia", "tic",
-    "deporte", "justicia", "culturas", "interior", "exteriores", "funcion_publica",
-    "hacienda", "ciencia", "planeacion", "trabajo", "estadistica", "inteligencia",
-    "otro",
+    "Salud y Protección Social",
+    "Vivienda, Ciudad y Territorio",
+    "Transporte",
+    "Educación",
+    "Ambiente y Desarrollo Sostenible",
+    "Defensa",
+    "Agricultura y Desarrollo Rural",
+    "Comercio, Industria y Turismo",
+    "Minas y Energía",
+    "Inclusión Social y Reconciliación",
+    "Presidencia de la República",
+    "Tecnologías de la Información y la Comunicación",
+    "Deporte y Recreación",
+    "Justicia",
+    "Culturas",
+    "Interior",
+    "Relaciones Exteriores",
+    "Función Pública",
+    "Hacienda",
+    "Ciencia, Tecnología e Innovación",
+    "Planeación",
+    "Trabajo",
+    "Estadística",
+    "Inteligencia",
   ]);
-  // `otro` va de último, y sigue existiendo aunque con veinticuatro sectores
-  // todo *quepa* en alguno: es la señal de que la lectura no supo clasificar.
-  // Sin él, lo que no se supo se mete a la fuerza en un sector y nadie se
-  // entera (`Q32`).
-  assert.equal(TEMAS[TEMAS.length - 1], "otro");
+  // Y no hay un veinticinco. Lo que no se sabe clasificar queda sin tema.
+  assert.equal(TEMAS.length, 24);
+});
+
+test("un sector escrito sin tildes se reconoce; uno inventado no", () => {
+  // El tema es una frase larga y llega escrito a mano desde dos sitios: la
+  // respuesta del modelo y una dirección que alguien pegó. Un modelo que
+  // contesta «Educacion» acertó el sector, y descartarlo por la tilde deja sin
+  // tema un aporte bien clasificado.
+  assert.equal(comoSector("Educacion"), "Educación");
+  assert.equal(comoSector("  minas y energia  "), "Minas y Energía");
+  assert.equal(comoSector("FUNCIÓN PÚBLICA"), "Función Pública");
+  // Pero no se aproxima por parecido: eso enruta un aporte a quien no le toca.
+  assert.equal(comoSector("Vivienda"), null);
+  assert.equal(comoSector("acueducto veredal"), null);
+  assert.equal(comoSector(null), null);
 });
 
 test("lo que la gente cuenta llega al sector que responde", () => {
@@ -138,13 +169,13 @@ test("lo que la gente cuenta llega al sector que responde", () => {
   // pantalla—, así que las traducciones que menos se adivinan se comprueban.
   const traduce = (palabra: string, tema: Tema) =>
     assert.match(QUE_CUBRE[tema], new RegExp(palabra, "i"),
-      `«${palabra}» no aparece en lo que cubre ${COMO_SE_LLAMA[tema]}, y nadie va a acertar solo con el nombre`);
+      `«${palabra}» no aparece en lo que cubre ${tema}, y nadie va a acertar solo con el nombre`);
 
-  traduce("agua", "vivienda");        // agua potable y saneamiento, no ambiente
-  traduce("basuras", "vivienda");
-  traduce("alumbrado", "minas");
-  traduce("subsidios", "inclusion");
-  traduce("sisbén", "planeacion");
-  traduce("trámites", "funcion_publica");
-  traduce("pensiones", "salud");      // protección social
+  traduce("agua", "Vivienda, Ciudad y Territorio");   // no en Ambiente
+  traduce("basuras", "Vivienda, Ciudad y Territorio");
+  traduce("alumbrado", "Minas y Energía");
+  traduce("subsidios", "Inclusión Social y Reconciliación");
+  traduce("sisbén", "Planeación");
+  traduce("trámites", "Función Pública");
+  traduce("pensiones", "Salud y Protección Social");
 });

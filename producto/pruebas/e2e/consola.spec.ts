@@ -454,6 +454,66 @@ test("el departamento se ve y se puede filtrar por territorio", async ({ page })
     .toBeLessThan(10);
 });
 
+test("el municipio del filtro está encadenado al departamento", async ({ page }) => {
+  // **Los dos desplegables no se hablaban.** El de municipios se acotaba
+  // leyendo la dirección, así que escoger un departamento no hacía nada hasta
+  // darle a «Filtrar»: hasta ese momento seguían ofreciéndose los municipios de
+  // todos los departamentos juntos, y se podía pedir Cogua —de Cundinamarca—
+  // con Antioquia escogido. Esa combinación devuelve cero aportes y la pantalla
+  // no dice por qué.
+  //
+  // Hacen falta **dos departamentos** para probarlo: con uno solo, una lista
+  // sin acotar y una acotada se ven exactamente igual.
+  const marca = `encadenado-${Date.now()}`;
+  for (const [n, departamento, municipio] of [
+    ["uno", "ANTIOQUIA", "RIONEGRO"],
+    ["dos", "CUNDINAMARCA", "COGUA"],
+  ] as const) {
+    await page.goto("/participar");
+    // Sin nombrar el lugar: si el relato lo dice, la captura lo empareja sola y
+    // no sale el paso donde se escoge municipio.
+    await page.fill("#relato", `${marca} ${n}: el agua llega turbia`);
+    await page.getByRole("button", { name: /continuar/i }).click();
+    await page.locator("[data-prueba='vuelta-1']")
+      .getByRole("button", { name: /sí, es eso/i }).click({ timeout: 25_000 });
+    await escogerMunicipio(page, departamento, municipio);
+    await expect(page.locator("[data-prueba='vuelta-2']")).toBeVisible({ timeout: 15_000 });
+  }
+
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
+  const filtros = page.locator(".bo-filters");
+  const municipio = filtros.locator("#municipio");
+
+  // Sin departamento no hay municipio que escoger, y se dice por qué: un
+  // control apagado y mudo se lee como una pantalla rota.
+  await expect(municipio).toBeDisabled();
+  await expect(filtros.locator("#municipio-ayuda")).toContainText(/primero el departamento/i);
+
+  // **Al escoger, no al enviar.** Esto es lo que estaba roto.
+  await filtros.locator("#departamento").selectOption({ label: "ANTIOQUIA" });
+  await expect(municipio).toBeEnabled();
+  const suyos = await municipio.locator("option").allTextContents();
+  expect(suyos).toContain("RIONEGRO");
+  expect(suyos, "ofrece municipios de otro departamento").not.toContain("COGUA");
+
+  // Cambiar de departamento no deja puesto el municipio anterior: así es
+  // exactamente como se arma la combinación que no devuelve nada.
+  await municipio.selectOption({ label: "RIONEGRO" });
+  await filtros.locator("#departamento").selectOption({ label: "CUNDINAMARCA" });
+  await expect(municipio).toHaveValue("");
+  const otros = await municipio.locator("option").allTextContents();
+  expect(otros).toContain("COGUA");
+  expect(otros).not.toContain("RIONEGRO");
+
+  // Y filtrando de verdad sale uno, no los dos.
+  await municipio.selectOption({ label: "COGUA" });
+  await filtros.getByRole("button", { name: /filtrar/i }).click();
+  await expect(page).toHaveURL(/departamento=25/);
+  const filas = page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true });
+  await expect(filas).toHaveCount(1, { timeout: 15_000 });
+  await expect(filas.first()).toContainText(`${marca} dos`);
+});
+
 test("la tabla de expedientes no hereda los anchos de la de aportes", async ({ page }) => {
   // «El último cuadro está descuadrado»: la tabla de expedientes tiene tres
   // columnas y heredaba las reglas de una de cuatro —el `last-child` a 20 %—,
@@ -486,14 +546,14 @@ test("se puede poner el tema desde la consola, y queda quién y por qué", async
   await abrirAporte(page, marca);
   const bloque = page.locator("[data-prueba='corregir-tema']");
   await bloque.locator("summary").click();
-  await bloque.locator("#tema-codigo").selectOption("vivienda");
+  await bloque.locator("#tema-codigo").selectOption("Vivienda, Ciudad y Territorio");
   await bloque.locator("#tema-motivo").fill("habla del acueducto, no de la vía");
   await bloque.getByRole("button", { name: /guardar el tema/i }).click();
 
   // La cabecera lo dice, y la bandeja permite filtrar por él.
   await expect(page.locator("[data-prueba='cabecera']"))
     .toContainText(/Vivienda, Ciudad y Territorio/i, { timeout: 15_000 });
-  await page.goto(`/consola?tema=vivienda&q=${encodeURIComponent(marca)}`);
+  await page.goto(`/consola?tema=${encodeURIComponent("Vivienda, Ciudad y Territorio")}&q=${encodeURIComponent(marca)}`);
   await expect(page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true }))
     .toHaveCount(1, { timeout: 15_000 });
 });

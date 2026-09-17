@@ -49,11 +49,15 @@ select conv.proceso_id, conv.id, t.titulo, t.tema, t.modalidad,
        now() + (t.dias || ' days')::interval, t.lugar, t.sala, t.ayudas, t.cupos,
        t.estado, case when t.estado='reprogramado' then now() + interval '4 days' end, t.motivo
 from conv, (values
-  ('Mesa sobre el agua en la zona rural', 'Agua y saneamiento', 'presencial', 5,
+  -- El tema del encuentro se escribe con el nombre del sector, el mismo que
+  -- lleva el aporte (`TEMAS` en `src/captura/lectura.ts`). El título
+  -- sigue hablando como la gente —«el agua en la zona rural»— porque es lo que
+  -- se lee en la portada: quien busca a qué ir no busca un sector.
+  ('Mesa sobre el agua en la zona rural', 'Vivienda, Ciudad y Territorio', 'presencial', 5,
    'Caseta comunal de la vereda El Salado', null, 'Hay interpretación en lengua de señas y transporte desde la cabecera', 40, 'programado', null),
-  ('Encuentro virtual: vías y transporte', 'Vías y transporte', 'virtual', 9,
+  ('Encuentro virtual: vías y transporte', 'Transporte', 'virtual', 9,
    null, 'https://encuentro.ejemplo/vias', 'Se puede entrar por teléfono, sin cámara', null, 'programado', null),
-  ('Mesa sobre salud rural', 'Salud', 'presencial', 12,
+  ('Mesa sobre salud rural', 'Salud y Protección Social', 'presencial', 12,
    'Puesto de salud de la vereda alta', null, null, 25, 'reprogramado',
    'se cruzaba con la jornada de vacunación'),
   ('Encuentro sobre educación', 'Educación', 'mixta', 16,
