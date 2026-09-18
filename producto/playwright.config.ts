@@ -67,6 +67,12 @@ export default defineConfig({
         OPENROUTER_API_KEY: "llave-de-los-recorridos",
         IA_URL: "http://127.0.0.1:3199/chat/completions",
         MISTRAL_API_KEY: "",
+        // **El webhook de llamadas, apagado.** Sin esto cada corrida dispara el
+        // flujo de n8n de verdad, y ese flujo llama a gente: una suite que se
+        // corre diez veces al día son diez llamadas a un número inventado —o,
+        // peor, a uno que existe. El contrato del aviso se prueba aparte, contra
+        // un servidor local (`pruebas/llamada.test.ts`).
+        SIN_WEBHOOK: "1",
       },
     },
   ],

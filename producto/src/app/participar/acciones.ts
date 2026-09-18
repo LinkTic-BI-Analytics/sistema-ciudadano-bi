@@ -17,6 +17,8 @@ import { resolverUbicacion, corregirUbicacionDelCiudadano } from "../../revision
 import { leerConIA } from "../../captura/lectura-ia.ts";
 import { canjearComprobante } from "../../comprobante/canjear.ts";
 import { hayIndicio, levantarAlerta } from "../../alerta/urgencia.ts";
+import { registrarLlamada, CODIGO_PAIS_POR_DEFECTO } from "../../llamada/registrar.ts";
+import { avisarLlamada } from "../../llamada/aviso.ts";
 
 export type Resultado =
   | { ok: true; codigo: string; yaExistia: boolean; lectura: Lectura }
@@ -528,6 +530,125 @@ export async function subirGrabacion(
   } catch (e) {
     console.error("subirGrabacion", e);
     return { ok: false, error: "No pudimos guardar la grabación. Puedes escribirlo mientras tanto." };
+  }
+}
+
+
+export type ResultadoLlamada =
+  | { ok: true }
+  | { ok: false; errores: string[] };
+
+/** Lo mínimo para poder marcar. Menos de siete dígitos no es un teléfono. */
+const DIGITOS_MINIMOS = 7;
+const DIGITOS_MAXIMOS = 15;
+
+/**
+ * El rastro de una petición de llamada.
+ *
+ * **Aquí vive lo que la tabla dejó de guardar.** `identidad.llamadas` no lleva
+ * `proceso_id` desde el 2026-09-18 —pedir que te llamen no es participar en un
+ * proceso—, pero de qué proceso salió sigue siendo útil: sin eso, quien llame no
+ * sabe de qué convocatoria le está hablando a la persona, y los guiones de
+ * limpieza no pueden distinguir una llamada de prueba de una de verdad.
+ *
+ * Entonces el vínculo se mueve de **dato** a **rastro**: vive en la auditoría,
+ * que es append-only y no se puede acomodar después.
+ *
+ * Y va **solo el identificador**. La auditoría está en `participacion`, que sí se
+ * expone por la API: si aquí quedaran el nombre y el teléfono, la partición de
+ * `identidad` no serviría de nada (`SEG-01`, `I6`).
+ *
+ * **No lanza.** Se llama con la petición ya guardada y el aviso ya mandado: un
+ * fallo de bitácora no puede convertirse en un «no pudimos guardar tu petición»,
+ * porque sí se guardó.
+ */
+async function anotarLlamada(llamadaId: string, entregado: boolean): Promise<void> {
+  try {
+    const procesoId = await procesoVigente();
+    const auditoria = clienteServidor().schema("participacion").from("auditoria");
+    await auditoria.insert([
+      {
+        proceso_id: procesoId, actor: "ciudadano", accion: "pedir_llamada",
+        entidad: "llamada", entidad_id: llamadaId,
+      },
+      {
+        proceso_id: procesoId, actor: "sistema", accion: "avisar_llamada",
+        entidad: "llamada", entidad_id: llamadaId,
+        motivo: entregado
+          ? "el flujo de llamadas recibió el aviso"
+          : "el flujo de llamadas no recibió el aviso: hay que llamar a mano",
+      },
+    ]);
+  } catch (e) {
+    // **Se anota que no se pudo anotar.** Es lo único que se puede hacer, y es
+    // mejor que el silencio: si mañana faltan asientos, aquí está el porqué.
+    console.error("anotarLlamada · la llamada se guardó pero no dejó rastro", llamadaId, e);
+  }
+}
+
+/**
+ * «Te llamamos»: la persona deja su nombre y su teléfono y la llamamos nosotros.
+ *
+ * **Aquí sí se valida, y es la excepción que confirma la regla.** `N02` pide
+ * validar poco al recibir un aporte, porque exigir datos excluye a quien no los
+ * tiene. Esto no es un aporte: es una petición de llamada, y una petición de
+ * llamada sin número al que llamar no se puede atender. Lo que se pide es lo
+ * único sin lo cual la promesa —«te llamamos»— no se puede cumplir.
+ *
+ * El orden importa y no se negocia: **primero se guarda, después se avisa**. Al
+ * revés, una caída del webhook dejaría a alguien esperando una llamada sin fila
+ * en ninguna tabla, y nadie sabría que la pidió. Es `DAT-01` otra vez: pendiente,
+ * falló y recibido no son intercambiables.
+ */
+export async function pedirLlamada(
+  _previo: ResultadoLlamada | null, datos: FormData,
+): Promise<ResultadoLlamada> {
+  const nombre = String(datos.get("nombre") ?? "").trim();
+  const telefono = String(datos.get("telefono") ?? "").trim();
+  const codigoPais = String(datos.get("codigoPais") ?? "").trim() || CODIGO_PAIS_POR_DEFECTO;
+  const digitos = telefono.replace(/[^0-9]/g, "");
+
+  // **Los dos errores se cuentan juntos.** Devolver el primero y callar el
+  // segundo obliga a enviar dos veces para enterarse de las dos cosas.
+  const errores: string[] = [];
+  if (!nombre) errores.push("Escribe tu nombre, para saber por quién preguntar cuando llamemos.");
+  if (!telefono) {
+    errores.push("Escribe el teléfono al que te podemos llamar.");
+  } else if (digitos.length < DIGITOS_MINIMOS || digitos.length > DIGITOS_MAXIMOS) {
+    errores.push(
+      "Ese número no nos sirve para llamarte: revísalo. Un celular en Colombia tiene 10 dígitos.",
+    );
+  }
+  if (errores.length) return { ok: false, errores };
+
+  try {
+    // **Lo primero, y sin depender de nada más.** La petición no pertenece a
+    // ningún proceso (decisión del negocio, 2026-09-18), así que guardarla no
+    // espera a `procesoVigente()`: si no hubiera proceso sembrado, el número de
+    // esta persona se guarda igual.
+    const { llamadaId } = await registrarLlamada({ nombre, telefono, codigoPais });
+
+    // El aviso va después y **no puede tumbar esto**: la petición ya está
+    // guardada, así que si el flujo no contesta lo que se pierde es el disparo
+    // automático, nunca el registro.
+    const entregado = await avisarLlamada({ llamadaId, nombre, codigoPais, telefono });
+
+    // Y el rastro, que es lo único que queda uniendo la llamada con el proceso
+    // desde el que se pidió — la columna se quitó, el vínculo se movió aquí.
+    //
+    // **Va de último y no puede tumbar nada.** Si falla, la persona ya está
+    // guardada y el flujo ya recibió su aviso; convertir un fallo de bitácora en
+    // un «no pudimos guardar tu petición» sería mentirle.
+    await anotarLlamada(llamadaId, entregado);
+
+    return { ok: true };
+  } catch (e) {
+    // El mensaje técnico no se le muestra a nadie. Pero el error no se traga.
+    console.error("pedirLlamada", e);
+    return {
+      ok: false,
+      errores: ["No pudimos guardar tu petición. Vuelve a intentarlo en un momento."],
+    };
   }
 }
 
