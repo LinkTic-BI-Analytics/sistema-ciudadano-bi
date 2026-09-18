@@ -6,6 +6,7 @@ import { claveEnvioVigente, olvidarClaveEnvio } from "../../captura/clave-envio.
 import { hayIndicio, ORIENTACION } from "../../alerta/urgencia.ts";
 import { Afinado } from "./afinado.tsx";
 import { Microfono } from "./microfono.tsx";
+import { Llamada } from "./llamada.tsx";
 import { LLAVE_RELATO } from "../../captura/contexto.ts";
 import { leerContextoEvento, type ContextoEvento } from "../e/contexto.ts";
 
@@ -23,7 +24,10 @@ export function Formulario({ claveDeReserva }: {
   const [resultado, accion, enviando] = useActionState<Resultado | null, FormData>(
     enviarAporte, null,
   );
-  const [modo, setModo] = useState<"escribir" | "hablar">("escribir");
+  // **«Te llamamos» es un modo más, no otra pantalla.** Quien no puede escribir
+  // y tampoco quiere grabar tiene que encontrar la salida en el mismo sitio
+  // donde ya está mirando, no detrás de un enlace en el pie.
+  const [modo, setModo] = useState<"escribir" | "hablar" | "llamada">("escribir");
   // **El relato vive aquí y no en el campo.** Es lo que hace que cambiar de modo
   // no lo borre — `direccion-visual.md` lo pide, y perder lo escrito al tocar un
   // botón es la forma más rápida de que alguien abandone.
@@ -102,30 +106,16 @@ export function Formulario({ claveDeReserva }: {
   if (resultado?.ok) return <Afinado codigo={resultado.codigo} />;
 
   return (
-    <form action={accion} noValidate>
-      <input type="hidden" name="clave" value={clave} readOnly />
-      <input type="hidden" name="grabacion" value={grabacion} readOnly />
-      {evento && (
-        <>
-          <input type="hidden" name="enlace" value={evento.enlaceId} readOnly />
-          <input type="hidden" name="eventoConfirmado" value={evento.eventoConfirmadoId ?? ""} readOnly />
-          <input type="hidden" name="estadoContexto" value={evento.estado} readOnly />
-          <input type="hidden" name="utms" value={JSON.stringify(evento.utms ?? null)} readOnly />
-        </>
-      )}
-
-      {resultado && !resultado.ok && (
-        <div className="pc-error-summary" role="alert" tabIndex={-1} ref={resumen}>
-          <h2>Falta algo para poder enviarlo</h2>
-          <ul>
-            {resultado.errores.map((e) => <li key={e}>{e}</li>)}
-          </ul>
-        </div>
-      )}
-
+    <>
       {indicio && (
         // Sale de más, nunca de menos: un falso positivo es un número de más en
         // la pantalla; un falso negativo es alguien en peligro que no lo ve.
+        //
+        // **Fuera del formulario, y por eso se ve en los tres modos.** Estaba
+        // dentro: quien escribía un indicio y luego tocaba «Te llamamos» perdía
+        // el 123 de vista justo cuando más falta le hacía. `V13` pide que la
+        // orientación se muestre «sin exigir que termine», y cambiar de modo no
+        // es terminar.
         <div className="pc-callout" role="alert" data-prueba="orientacion">
           <p><strong>{ORIENTACION}</strong></p>
           <a className="pc-action" href="tel:123">Llamar al 123</a>
@@ -135,50 +125,85 @@ export function Formulario({ claveDeReserva }: {
         </div>
       )}
 
+      {/* **El selector vive fuera de los dos formularios.** «Te llamamos» tiene
+          el suyo, y un formulario dentro de otro no es HTML válido: al enviar el
+          de adentro se enviaba también el de afuera. */}
       <div className="pc-modes" role="group" aria-label="Cómo quieres contarlo">
         <button type="button" className="pc-mode" aria-pressed={modo === "escribir"}
                 onClick={() => setModo("escribir")}>Escribir</button>
         <button type="button" className="pc-mode" aria-pressed={modo === "hablar"}
                 onClick={() => setModo("hablar")}>Hablar</button>
-      </div>
-      {modo === "hablar" && (
-        <Microfono
-          onTranscripcion={(texto, id) => {
-            // **Se añade, no se reemplaza.** Si ya había escrito algo, borrarlo
-            // castiga a quien empezó a teclear y se cansó — que es justo quien
-            // más necesita hablar.
-            ponerRelato(relato.trim() ? `${relato.trim()}\n${texto}` : texto);
-            setGrabacion(id);
-            setModo("escribir");
-          }}
-        />
-      )}
-
-      <div className="pc-field">
-        <label className="pc-label" htmlFor="relato">¿Qué está pasando?</label>
-        <textarea
-          id="relato" name="relato" className="pc-input" rows={6}
-          ref={caja} defaultValue="" onChange={(e) => setRelato(e.target.value)}
-          aria-invalid={resultado && !resultado.ok && !relato ? true : undefined}
-          aria-describedby="relato-ayuda"
-        />
-        <p className="pc-help" id="relato-ayuda">
-          Cuéntalo con tus palabras y sin apuro: qué pasa, dónde, a quiénes les pasa y desde
-          cuándo. No necesitas saber qué entidad responde ni proponer una solución.
-        </p>
+        <button type="button" className="pc-mode" aria-pressed={modo === "llamada"}
+                onClick={() => setModo("llamada")}>Te llamamos</button>
       </div>
 
-      {/* Aquí solo se cuenta. El lugar, a quiénes afecta, desde cuándo, qué
-          debería cambiar y la solución sugerida **se preguntan después**, y
-          solo las que la persona no haya dicho ya (`afinado.tsx`).
+      {modo === "llamada" && <Llamada />}
 
-          Pedirlas aquí convertía una caja en un formulario de seis campos
-          antes de que hubiera nada guardado, y quien lo cerraba se iba sin
-          dejar nada. Ahora lo primero que pasa es que su relato queda. */}
+      {/* **Se oculta, no se desmonta.** La caja del relato no la controla React
+          —lleva `defaultValue` para no perder lo que alguien teclee antes de
+          hidratar— así que desmontarla borraría lo escrito. Con `hidden` el
+          texto sigue ahí cuando vuelva a «Escribir», que es lo que
+          `direccion-visual.md` pide de cambiar de modo. */}
+      <form action={accion} noValidate hidden={modo === "llamada"}>
+        <input type="hidden" name="clave" value={clave} readOnly />
+        <input type="hidden" name="grabacion" value={grabacion} readOnly />
+        {evento && (
+          <>
+            <input type="hidden" name="enlace" value={evento.enlaceId} readOnly />
+            <input type="hidden" name="eventoConfirmado" value={evento.eventoConfirmadoId ?? ""} readOnly />
+            <input type="hidden" name="estadoContexto" value={evento.estado} readOnly />
+            <input type="hidden" name="utms" value={JSON.stringify(evento.utms ?? null)} readOnly />
+          </>
+        )}
 
-      <button type="submit" className="pc-action" disabled={enviando}>
-        {enviando ? "Guardando…" : "Continuar"}
-      </button>
-    </form>
+        {resultado && !resultado.ok && (
+          <div className="pc-error-summary" role="alert" tabIndex={-1} ref={resumen}>
+            <h2>Falta algo para poder enviarlo</h2>
+            <ul>
+              {resultado.errores.map((e) => <li key={e}>{e}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {modo === "hablar" && (
+          <Microfono
+            onTranscripcion={(texto, id) => {
+              // **Se añade, no se reemplaza.** Si ya había escrito algo, borrarlo
+              // castiga a quien empezó a teclear y se cansó — que es justo quien
+              // más necesita hablar.
+              ponerRelato(relato.trim() ? `${relato.trim()}\n${texto}` : texto);
+              setGrabacion(id);
+              setModo("escribir");
+            }}
+          />
+        )}
+
+        <div className="pc-field">
+          <label className="pc-label" htmlFor="relato">¿Qué está pasando?</label>
+          <textarea
+            id="relato" name="relato" className="pc-input" rows={6}
+            ref={caja} defaultValue="" onChange={(e) => setRelato(e.target.value)}
+            aria-invalid={resultado && !resultado.ok && !relato ? true : undefined}
+            aria-describedby="relato-ayuda"
+          />
+          <p className="pc-help" id="relato-ayuda">
+            Cuéntalo con tus palabras y sin apuro: qué pasa, dónde, a quiénes les pasa y desde
+            cuándo. No necesitas saber qué entidad responde ni proponer una solución.
+          </p>
+        </div>
+
+        {/* Aquí solo se cuenta. El lugar, a quiénes afecta, desde cuándo, qué
+            debería cambiar y la solución sugerida **se preguntan después**, y
+            solo las que la persona no haya dicho ya (`afinado.tsx`).
+
+            Pedirlas aquí convertía una caja en un formulario de seis campos
+            antes de que hubiera nada guardado, y quien lo cerraba se iba sin
+            dejar nada. Ahora lo primero que pasa es que su relato queda. */}
+
+        <button type="submit" className="pc-action" disabled={enviando}>
+          {enviando ? "Guardando…" : "Continuar"}
+        </button>
+      </form>
+    </>
   );
 }
