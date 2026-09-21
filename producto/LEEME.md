@@ -50,13 +50,18 @@ cd .. && ./scripts/sembrar.sh        # el proceso de prueba, el catálogo del DA
                                      # y el depósito de las grabaciones
 ./scripts/sembrar-agenda.sh          # la convocatoria y los encuentros de la portada
 ./scripts/tokens.sh                  # los tokens del sistema de diseño
-./scripts/marca.sh                   # la bandera del hero, a producto/public/marca/
+./scripts/marca.sh                   # la bandera del hero y el escudo, a producto/public/marca/
 cd producto && npm run dev           # http://localhost:3100
 ```
 
 El catálogo territorial **ya viene en el repositorio** —los `.xlsx` del geoportal del DANE
 y los `.csv` convertidos, con su versión— así que no hay que descargarlo. `divipola.sh
 --bajar` existe para el día que el DANE publique uno nuevo.
+
+**La consola y la administración piden un token.** Pon `ACCESS_TOKEN` —el que se escribe en
+`/ingresar`— y `JWT_SECRET` —otro valor, de al menos 32 caracteres: `openssl rand -base64 48`—
+en `.env.local` y en las variables de entorno de Vercel. Sin alguno de los dos nadie entra, a
+propósito. Los recorridos de navegador traen los suyos y no necesitan los del equipo.
 
 **La llave de IA es opcional.** Sin `OPENROUTER_API_KEY` la captura funciona igual: se usa
 la segmentación y se le pregunta a la persona por las cinco partes en vez de solo por las

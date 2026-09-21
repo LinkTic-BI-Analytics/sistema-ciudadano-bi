@@ -7,7 +7,7 @@ import { FiltrosActivos } from "./filtros-activos.tsx";
 import { Paginacion } from "./paginacion.tsx";
 import { sectorDe } from "../../producto/sectores.ts";
 import { Armazon, type VistaInterna } from "../../producto/armazon.tsx";
-import { IconoBandeja, IconoBuscar, IconoSiguiente } from "../../producto/iconos.tsx";
+import { IconoBandeja, IconoBuscar } from "../../producto/iconos.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 
@@ -81,11 +81,6 @@ export default async function Consola({
     .eq("proceso_id", procesoId).is("retirado_en", null)
     .order("abierto_en", { ascending: false }).limit(20);
 
-  // «Abrir siguiente» abre **el primero visible por fecha de recepción**, no el
-  // más grave ni el más votado: no hay puntuación de prioridad, y no haberla es
-  // la decisión (`BI-02`).
-  const siguiente = filas[0]?.aporteId ?? null;
-
   // En cuál de las vistas de trabajo estamos. No son secciones distintas: son la
   // misma bandeja con un filtro puesto, y por eso se deducen de la dirección en
   // vez de declararse. El orden importa — con alerta y sin expediente a la vez,
@@ -123,17 +118,8 @@ export default async function Consola({
             vereda dispersa pesa lo mismo que uno de una avenida, y el orden no cambia al filtrar.
           </p>
         </div>
-        {/* **Fuera del formulario de filtros.** Estaba dentro, en el último
-            campo, al lado del botón de filtrar: un enlace metido en un `<form>`
-            y dos acciones principales compitiendo en el mismo grupo. Aquí arriba
-            es lo que es — la acción de la pantalla. */}
-        {siguiente
-          ? <Link className="bo-button" data-variant="primary" href={`/consola/${siguiente}`}>
-              Abrir el siguiente<IconoSiguiente />
-            </Link>
-          : <button className="bo-button" data-variant="primary" disabled>
-              Abrir el siguiente<IconoSiguiente />
-            </button>}
+        {/* Aquí iba «Abrir el siguiente». Se quitó el 2026-09-21 a pedido del
+            equipo: ya no se usa, y cada aporte se abre desde la tabla. */}
       </div>
 
       {/* **Los conteos, que iban en 12 px en una esquina de la barra de

@@ -4,6 +4,7 @@ import {
   History, Info, Inbox, Landmark, Lightbulb, Link2, ListChecks, MapPin, Megaphone, Menu,
   MessagesSquare, Mic, PenLine, Phone, PhoneCall, QrCode, Scissors, Search, Send, ShieldCheck,
   SlidersHorizontal, Sun, Moon, Tag, TriangleAlert, Users, Volume2, X,
+  ExternalLink, KeyRound, LogOut,
   type LucideIcon, type LucideProps,
 } from "lucide-react";
 
@@ -85,6 +86,11 @@ export const IconoSinCuenta = decorativo(ShieldCheck);
 // El tema. El rótulo dice a dónde va, no dónde está, y el icono lo acompaña.
 export const IconoClaro = decorativo(Sun);
 export const IconoOscuro = decorativo(Moon);
+
+// El acceso a la zona interna y la salida al tablero, que abre en otra pestaña.
+export const IconoIngresar = decorativo(KeyRound);
+export const IconoSalir = decorativo(LogOut);
+export const IconoTablero = decorativo(ExternalLink);
 
 // Ronda 2: navegación, filtros, paginación y la ficha.
 export const IconoMenu = decorativo(Menu);

@@ -1,0 +1,13 @@
+{
+  "runs": [
+    {
+      "date": "2026-09-21T18:24:21.093581+00:00",
+      "input_tokens": 1071301,
+      "output_tokens": 0,
+      "files": 588,
+      "note": "tokens = subagent totals for 6 re-dispatched chunks; 16 chunks from the interrupted session were not metered"
+    }
+  ],
+  "total_input_tokens": 1071301,
+  "total_output_tokens": 0
+}

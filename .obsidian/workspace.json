@@ -1,0 +1,235 @@
+{
+  "main": {
+    "id": "769c4b47e4a5bd40",
+    "type": "split",
+    "children": [
+      {
+        "id": "04ae6e7e27ef733f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0e08973040d1f401",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "metodo/codigos.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "codigos"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2dfd8afc71748048",
+    "type": "split",
+    "children": [
+      {
+        "id": "47561f482fa69e82",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8116136cbf512f5f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "59fa0b3520989172",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "aad93bdc4f46ce52",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "cd0259c93626b39d",
+    "type": "split",
+    "children": [
+      {
+        "id": "d68054cc6f34dbdd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8212988782f1d0e8",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "metodo/codigos.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "cb33603fcca97e1b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "metodo/codigos.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "40771a324ead08a6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "5aaad57c1ae5c712",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "b52151adf252e012",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "metodo/codigos.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "8116136cbf512f5f",
+  "lastOpenFiles": [
+    "producto/test-results/zz-captura-tmp-captura-del-velo-telefono/trace.zip",
+    "producto/test-results/zz-captura-tmp-captura-del-velo-telefono/error-context.md",
+    "producto/test-results/zz-captura-tmp-captura-del-velo-telefono",
+    "producto/test-results/sesion.json",
+    "producto/test-results",
+    "producto/pruebas/e2e/zz-captura-tmp.spec.ts",
+    "producto/test-results/consola-filtrar-también-dice-que-está-cargando-escritorio/trace.zip",
+    "producto/test-results/consola-filtrar-también-dice-que-está-cargando-escritorio/error-context.md",
+    "producto/test-results/consola-filtrar-también-dice-que-está-cargando-escritorio",
+    "producto/test-results/consola-al-cambiar-de-vist-c1d27-y-deja-de-decirlo-al-llegar-escritorio/trace.zip",
+    "producto/test-results/consola-al-cambiar-de-vist-c1d27-y-deja-de-decirlo-al-llegar-escritorio/error-context.md",
+    "producto/test-results/consola-al-cambiar-de-vist-c1d27-y-deja-de-decirlo-al-llegar-escritorio",
+    "producto/pruebas/e2e/zz-depurar-tmp.spec.ts",
+    "producto/test-results/consola-filtrar-también-dice-que-está-cargando-telefono/trace.zip",
+    "producto/test-results/consola-filtrar-también-dice-que-está-cargando-telefono/error-context.md",
+    "producto/test-results/identidad-la-firma-tricolo-d6c1e-y-en-el-orden-de-la-bandera-telefono/error-context.md",
+    "producto/test-results/afinar-volver-atrás-y-camb-f2bf9-pio-NO-deja-dos-territorios-telefono/error-context.md",
+    "producto/test-results/afinar-se-puede-escribir-d-d155b-r-el-municipio-del-problema-telefono/error-context.md",
+    "producto/test-results/afinar-se-pregunta-si-habl-cb268-el-grupo-llega-a-la-consola-telefono/error-context.md",
+    "producto/test-results/afinar-si-nombra-un-munici-c71a3-ecemos-para-que-lo-confirme-telefono/error-context.md",
+    "producto/test-results/afinar-lo-que-precisa-después-llega-al-aporte-y-a-la-consola-telefono/error-context.md",
+    "producto/test-results/identidad-la-firma-tricolo-d6c1e-y-en-el-orden-de-la-bandera-escritorio/error-context.md",
+    "producto/test-results/afinar-volver-atrás-y-camb-f2bf9-pio-NO-deja-dos-territorios-escritorio/error-context.md",
+    "graphify-out/2026-09-21/GRAPH_REPORT.md",
+    "producto/test-results/afinar-se-puede-escribir-d-d155b-r-el-municipio-del-problema-escritorio/error-context.md",
+    "producto/test-results/afinar-se-pregunta-si-habl-cb268-el-grupo-llega-a-la-consola-escritorio/error-context.md",
+    "producto/test-results/afinar-si-nombra-un-munici-c71a3-ecemos-para-que-lo-confirme-escritorio/error-context.md",
+    "producto/test-results/afinar-lo-que-precisa-después-llega-al-aporte-y-a-la-consola-escritorio/error-context.md",
+    "producto/test-results/consola-todo-campo-de-la-c-afb06-ene-etiqueta-no-placeholder-escritorio/error-context.md",
+    "producto/test-results/consola-abrir-un-aporte-mu-04c1f-inal-y-dice-que-no-se-edita-escritorio/error-context.md",
+    "producto/test-results/acceso-un-token-equivocado-no-entra-y-lo-dice-escritorio/error-context.md",
+    "producto/test-results/consola-el-municipio-acept-71e70-abecera-aunque-no-haya-tema-telefono/error-context.md",
+    "producto/test-results/consola-ninguna-pantalla-mete-bloques-donde-no-caben-telefono/error-context.md",
+    "producto/test-results/consola-se-puede-poner-el--cbba7-ola-y-queda-quién-y-por-qué-telefono/error-context.md",
+    "producto/test-results/consola-la-ficha-no-deja-reescribir-lo-que-la-persona-dijo-telefono/error-context.md",
+    "producto/test-results/consola-escalar-a-una-mesa-e456b--hasta-que-alguien-confirme-telefono/error-context.md",
+    "producto/public/marca/escudo-colombia.png",
+    "top_secret/Resumen_Encuentro_Regional.jpeg",
+    "top_secret/Cronograma_Despliegue_Territorial.jpeg",
+    "harness/vista-modulos/linktic-negro.svg",
+    "harness/vista-modulos/linktic-blanco.svg"
+  ]
+}

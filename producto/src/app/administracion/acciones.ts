@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { exigirSesion } from "../../acceso/servidor.ts";
 import { clienteServidor } from "../../datos/cliente.ts";
 import { procesoVigente } from "../../datos/proceso.ts";
 import { crearEnlace, type Pieza } from "../../convocatoria/enlaces.ts";
@@ -16,6 +17,7 @@ export type Hecho = { ok: true; mensaje: string } | { ok: false; error: string }
  * perder lo que se hizo antes.
  */
 export async function crearEncuentro(_previo: Hecho | null, datos: FormData): Promise<Hecho> {
+  await exigirSesion();
   const p = clienteServidor().schema("participacion");
   const campo = (k: string) => String(datos.get(k) ?? "").trim();
 
@@ -67,6 +69,7 @@ export async function crearEncuentro(_previo: Hecho | null, datos: FormData): Pr
  * son piezas distintas del mismo evento (`QR-01`).
  */
 export async function generarEnlace(_previo: Hecho | null, datos: FormData): Promise<Hecho> {
+  await exigirSesion();
   const campo = (k: string) => String(datos.get(k) ?? "").trim();
   const encuentroId = campo("encuentro");
   const pieza = campo("pieza") as Pieza;
@@ -93,6 +96,7 @@ export async function generarEnlace(_previo: Hecho | null, datos: FormData): Pro
 
 /** Retirar un enlace le quita el acceso; **no borra los aportes que entraron por él**. */
 export async function retirarEnlace(id: string): Promise<Hecho> {
+  await exigirSesion();
   try {
     const p = clienteServidor().schema("participacion");
     const { error } = await p.from("enlace").update({ estado: "retirado" }).eq("id", id);

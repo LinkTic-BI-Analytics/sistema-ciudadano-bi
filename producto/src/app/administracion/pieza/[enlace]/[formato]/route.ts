@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { clienteServidor } from "../../../../../datos/cliente.ts";
 import { resolverEnlace } from "../../../../../convocatoria/enlaces.ts";
 import { piezaSVG, piezaPNG, FORMATOS, type DatosPieza, type Formato } from "../../../../../convocatoria/pieza.ts";
+import { NOMBRE_SISTEMA } from "../../../../../producto/nombre.ts";
 
 // Descarga de la pieza gráfica (`PIE-01`).
 //
@@ -36,7 +37,7 @@ export async function GET(
   const protocolo = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
 
   const datos: DatosPieza = {
-    convocatoria: c?.nombre ?? "Participación ciudadana",
+    convocatoria: c?.nombre ?? NOMBRE_SISTEMA,
     titulo: e.titulo, tema: e.tema,
     comienzaEn: e.comienza_en, zonaHoraria: e.zona_horaria,
     modalidad: e.modalidad, lugar: e.lugar ?? e.sala,

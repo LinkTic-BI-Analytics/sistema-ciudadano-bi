@@ -6,6 +6,7 @@ import {
   IconoAbrirBarra, IconoAgenda, IconoBandeja, IconoDesplegar, IconoExpediente, IconoLugar,
   IconoMenu, IconoPlegarBarra, IconoQuitar, IconoUrgencia, IconoVolver,
 } from "./iconos.tsx";
+import { Escudo, NOMBRE_SISTEMA } from "./escudo.tsx";
 
 /**
  * La barra lateral del perfil interno.
@@ -123,10 +124,12 @@ export function BarraLateral({
   return (
     <aside className="bo-sidebar" data-plegada={plegada ? "true" : undefined}>
       <div className="bo-brand">
-        <span className="bo-tricolor" aria-hidden><i /><i /><i /></span>
+        {/* El escudo ocupa el sitio del tricolor, y plegada es lo único que
+            queda de la marca. */}
+        <Escudo alto={26} className="bo-brand-escudo" />
         <span className="bo-brand-texto">
           {seccion}
-          <span>Participación ciudadana</span>
+          <span>{NOMBRE_SISTEMA}</span>
         </span>
         {/* Solo de 48rem hacia arriba; en teléfono no hay riel que plegar. */}
         <button type="button" className="bo-plegar" onClick={() => plegar(!plegada)}
@@ -158,17 +161,21 @@ export function BarraLateral({
       </nav>
 
       {/* **El aviso va aquí y en ninguna parte más.** Sin códigos internos: su
-          sitio es el comentario del código, no la pantalla. Un recorrido exige
-          que la barra diga «sin permisos» y «no desplegar». Plegada, queda el
-          icono con el texto completo en el título. */}
+          sitio es el comentario del código, no la pantalla. Plegada, queda el
+          icono con el texto completo en el título.
+
+          Decía «Sin permisos: cualquiera que abra esta dirección ve esto» y
+          «No desplegar». Desde el 2026-09-21 la puerta pide un token, así que
+          lo primero dejó de ser cierto; **lo segundo sigue siéndolo a medias**:
+          el token es uno solo para todo el equipo, y nada dice quién hizo qué.
+          Un recorrido exige que la barra lo diga. */}
       <div className="bo-sidebar-bottom">
         <div className="bo-aviso" role="note"
-             title="Sin permisos. Cualquiera que abra esta dirección ve esto, y puede cambiarlo. No desplegar.">
+             title="Token compartido. Quien tenga el token ve esto y puede cambiarlo: todavía no hay forma de saber quién es quién.">
           <IconoUrgencia />
           <p>
-            <strong>Sin permisos.</strong> Cualquiera que abra esta dirección ve esto, y puede
-            cambiarlo. Todavía no hay forma de saber quién es quién.{" "}
-            <strong>No desplegar.</strong>
+            <strong>Token compartido.</strong> Quien tenga el token ve esto y puede cambiarlo.
+            Todavía no hay forma de saber quién es quién.
           </p>
         </div>
       </div>

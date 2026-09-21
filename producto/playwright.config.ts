@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { SECRETO_RECORRIDOS, SESION, TOKEN_RECORRIDOS } from "./pruebas/e2e/acceso-recorridos.ts";
 
 // Los recorridos se prueban en un navegador de verdad. `AGENTS.md` §12: una
 // pantalla no se da por terminada con una afirmación.
@@ -19,9 +20,14 @@ export default defineConfig({
   globalTeardown: "./pruebas/e2e/recoger.ts",
   reporter: process.env.CI ? "list" : [["list"]],
   use: { baseURL: "http://127.0.0.1:3101", trace: "retain-on-failure" },
+  // **La sesión se abre una vez, antes de todo.** La consola y la
+  // administración piden el token; `sesion.setup.ts` entra por el formulario y
+  // deja las cookies en `SESION`, y los dos proyectos arrancan con ellas.
+  // `acceso.spec.ts` las descarta, porque lo que prueba es no tenerlas.
   projects: [
-    { name: "escritorio", use: { ...devices["Desktop Chrome"] } },
-    { name: "telefono", use: { ...devices["Pixel 5"] } },
+    { name: "sesion", testMatch: /sesion\.setup\.ts/ },
+    { name: "escritorio", use: { ...devices["Desktop Chrome"], storageState: SESION }, dependencies: ["sesion"] },
+    { name: "telefono", use: { ...devices["Pixel 5"], storageState: SESION }, dependencies: ["sesion"] },
   ],
   // **Su propio servidor, en su propio puerto y sin llave de IA.**
   //
@@ -73,6 +79,10 @@ export default defineConfig({
         // peor, a uno que existe. El contrato del aviso se prueba aparte, contra
         // un servidor local (`pruebas/llamada.test.ts`).
         SIN_WEBHOOK: "1",
+        // **El token y el secreto de los recorridos**, no los del equipo
+        // (`acceso-recorridos.ts`). Pisan lo que haya en `.env.local`.
+        ACCESS_TOKEN: TOKEN_RECORRIDOS,
+        JWT_SECRET: SECRETO_RECORRIDOS,
       },
     },
   ],

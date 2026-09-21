@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat, Inter, JetBrains_Mono } from "next/font/google";
 import { GUION_TEMA } from "../producto/tema.tsx";
+import { NOMBRE_SISTEMA } from "../producto/nombre.ts";
 import "./globals.css";
 
 // Las tres familias que pide la línea gráfica Patria Milagro v1: Montserrat en
@@ -32,7 +33,7 @@ const cifra = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Participación Ciudadana",
+  title: NOMBRE_SISTEMA,
   description:
     "Cuéntanos qué necesita mejorar donde vives. Podrás revisar lo que entendimos y conocer qué pasó con tu aporte.",
 };
