@@ -1,12 +1,19 @@
 """
-Siembra: un proceso y el catálogo territorial.
+Siembra: un proceso y los catálogos territoriales.
 
 **Lo único que se inventa a propósito es el proceso**, y es la excepción que
 `AGENTS.md` §3 permite: los datos de la cuenta demo no son datos del negocio, son
 un escenario para poder mirar. Su nombre lo dice en voz alta.
 
-El catálogo no se inventa: sale de `producto/datos/divipola/`, que viene del
-geoportal del DANE con su versión.
+Los catálogos no se inventan. Son dos y cada uno trae su versión:
+
+    producto/datos/divipola/   el geoportal del DANE      'junio 2026'
+    producto/datos/paises/     ISO 3166-1 + nombres CLDR  'CLDR 48.0'
+
+Los países están para una sola pregunta —**«¿desde dónde nos contactas?»**—, y
+por eso se siembran al mismo nivel que DIVIPOLA y no en otra tabla: lo que la
+persona escoge es un sitio del mundo con código y versión, al que el aporte
+apunta igual en los dos casos.
 """
 
 import csv
@@ -18,6 +25,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 DIV = RAIZ / "producto/datos/divipola"
+PAI = RAIZ / "producto/datos/paises"
 
 
 def _cliente():
@@ -84,8 +92,32 @@ def main():
                  + " on conflict do nothing;")
         print(f"  {nivel:<15} {len(filas):>5} filas")
 
+    # Los países, con **su propia versión**. No es la de DIVIPOLA y no se
+    # mezclan: son dos catálogos en la misma tabla, y el corte toma la suya
+    # mirando solo los tres niveles de arriba (`participacion.tomar_corte`).
+    #
+    # Si el archivo no está, se avisa y se sigue: sin países la captura funciona
+    # igual —la pregunta de dónde nos contacta se puede dejar sin contestar
+    # (`N02`)— y parar la siembra entera por esto dejaría la base sin municipios.
+    if (PAI / "paises.csv").exists():
+        version_paises = (PAI / "VERSION").read_text(encoding="utf-8").strip()
+        filas = list(csv.DictReader((PAI / "paises.csv").open(encoding="utf-8")))
+        valores = [
+            f"({escapar(f['codigo'])},{escapar(version_paises)},'pais',{escapar(f['pais'])})"
+            for f in filas
+        ]
+        for i in range(0, len(valores), 1000):
+            psql("insert into participacion.territorio (codigo, version, nivel, nombre) values "
+                 + ",".join(valores[i:i + 1000])
+                 + " on conflict do nothing;")
+        print(f"  {'pais':<15} {len(filas):>5} filas   versión {version_paises}")
+    else:
+        print("  pais            —       falta producto/datos/paises/: corre ./scripts/paises.sh")
+
     print("  " + psql(
-        "select 'total: ' || count(*) || ' territorios en la versión ' || max(version) "
+        "select 'total: ' || count(*) || ' territorios · DIVIPOLA ' || "
+        "max(version) filter (where nivel <> 'pais') || ', países ' || "
+        "coalesce(max(version) filter (where nivel = 'pais'), 'sin sembrar') "
         "from participacion.territorio;"))
     return 0
 

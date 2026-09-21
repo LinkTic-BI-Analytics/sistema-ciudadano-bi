@@ -47,6 +47,43 @@ create table participacion.aporte (
   afectados         text,
   desde_cuando      text,
 
+  -- **Desde dónde nos contacta la persona, que NO es dónde ocurre el problema.**
+  -- Son dos preguntas distintas y juntarlas es el error que `GEO-01` ya nombra
+  -- para la residencia: *«una dirección residencial no se usa como lugar del
+  -- problema sin confirmación»*. Quien escribe desde Madrid sobre la vía de su
+  -- vereda en Caldas está diciendo dos cosas, y el municipio afectado sigue
+  -- siendo Caldas — eso vive en `participacion.ubicacion` y aquí no se toca.
+  --
+  -- Por qué aquí y no en `ubicacion`: `ubicacion` es de dónde ocurre, un aporte
+  -- puede tener varias y es lo que cuentan `R1` y `R2`. Meter el contacto ahí
+  -- sumaría a la persona en un territorio donde no pasa nada, y ese es
+  -- exactamente el numerador que `R2` protege. Esto es un hecho declarado del
+  -- aporte, como `afectados` o `desde_cuando`: vacío significa **no lo dijo**.
+  --
+  --   nacional       el código es un municipio de DIVIPOLA (5 dígitos)
+  --   internacional  el código es un país de ISO 3166-1 (2 letras)
+  contacto_ambito   text check (contacto_ambito in ('nacional','internacional')),
+  contacto_codigo   text,
+  contacto_version  text,
+  foreign key (contacto_codigo, contacto_version)
+    references participacion.territorio (codigo, version),
+
+  -- **El ámbito y el código no se pueden contradecir, y lo impide la base.**
+  -- Se apoya en `forma_del_codigo` de `participacion.territorio`: allí un país
+  -- son dos letras y un municipio cinco dígitos, así que la forma del código ya
+  -- dice de qué nivel es. Sin esto, «internacional · 05001» sería una fila
+  -- válida que ninguna pantalla sabe leer.
+  constraint el_contacto_cuadra_con_el_ambito check (
+    contacto_codigo is null
+    or (contacto_ambito = 'nacional'      and contacto_codigo ~ '^[0-9]{5}$')
+    or (contacto_ambito = 'internacional' and contacto_codigo ~ '^[A-Z]{2}$')
+  ),
+  -- La clave foránea no lo exige —con una columna nula se salta la
+  -- comprobación—, así que se exige aquí: un código sin versión de catálogo no
+  -- se puede volver a leer dentro de un año (`Q5`).
+  constraint el_contacto_trae_su_version
+    check ((contacto_codigo is null) = (contacto_version is null)),
+
   -- La grabación, cuando la persona habló. **Es el original** (ADR 0013), y por
   -- eso el aporte apunta a ella y no al revés.
   --
@@ -219,3 +256,7 @@ comment on column participacion.aporte.clave_envio is
   'I1. Un reintento trae la misma clave y no crea otro aporte. Nunca se deduplica por similitud ni por IP.';
 comment on column participacion.aporte.lugar_declarado is
   'GEO-01. Se guarda siempre: es lo único que permitirá re-normalizar al barrio cuando llegue su catálogo (Q26).';
+comment on column participacion.aporte.contacto_ambito is
+  'Desde dónde escribe la persona, no dónde ocurre el problema. Nulo significa que no lo dijo, y eso es una respuesta (N02).';
+comment on column participacion.aporte.contacto_codigo is
+  'Municipio de DIVIPOLA si el ámbito es nacional; país de ISO 3166-1 si es internacional. Nunca entra en el denominador de R2.';

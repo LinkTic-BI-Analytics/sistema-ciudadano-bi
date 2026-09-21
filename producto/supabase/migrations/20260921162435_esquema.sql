@@ -57,20 +57,33 @@ comment on column participacion.proceso.compromiso is
   'Qué se promete: consulta, deliberacion_con_respuesta o decision_presupuestal_autorizada. Nunca "vinculante" a secas.';
 
 -- ═══ 02_territorio.sql ═══
--- El catálogo territorial: DIVIPOLA del DANE (`V10`).
+-- El catálogo territorial: DIVIPOLA del DANE (`V10`), y los países.
 --
 -- **La versión va en cada fila, no en una tabla aparte** (`Q5`). DIVIPOLA
 -- cambia: en 1997 los centros poblados pasaron de 2 dígitos a 3, y las notas al
 -- pie de junio de 2026 mencionan un deslinde en curso entre Norte de Santander y
 -- Boyacá. Un código histórico significa cosas distintas según la versión con que
 -- se escribió, y `R2` exige que un corte exportado siga siendo reproducible.
+--
+-- **Dos catálogos en la misma tabla, y cada uno con su versión.** El nivel
+-- `pais` no sale de DIVIPOLA —DIVIPOLA es la división político-administrativa
+-- *de Colombia*— sino de ISO 3166-1, con los nombres del CLDR
+-- (`producto/datos/paises/`). Están juntos porque son lo mismo para quien los
+-- usa: un sitio del mundo con un código y una versión de catálogo, al que una
+-- fila puede apuntar.
+--
+-- Lo que sí hay que saber: **la versión de los países no es la de DIVIPOLA**, y
+-- por eso `participacion.tomar_corte` toma la versión de catálogo mirando solo
+-- los tres niveles colombianos. Un `max(version)` sobre toda la tabla anotaría
+-- en el corte una versión que no es la del catálogo con que se contó.
 
 create table participacion.territorio (
   -- El código compone: departamento 2, municipio 2+3, centro poblado 5+3.
+  -- El país no compone con nada: son las dos letras de ISO 3166-1.
   codigo        text not null,
-  version       text not null,   -- 'junio 2026'
+  version       text not null,   -- 'junio 2026' · 'CLDR 48.0'
 
-  nivel         text not null check (nivel in ('departamento','municipio','centro_poblado')),
+  nivel         text not null check (nivel in ('pais','departamento','municipio','centro_poblado')),
   nombre        text not null,
   -- Solo en municipio: Municipio · Isla · Área no municipalizada.
   -- Solo en centro poblado: CM (cabecera) · CP.
@@ -87,20 +100,33 @@ create table participacion.territorio (
 
   constraint codigo_compone_con_su_padre
     check (padre is null or codigo like padre || '%'),
-  constraint largo_del_codigo check (
-    (nivel = 'departamento'   and length(codigo) = 2) or
-    (nivel = 'municipio'      and length(codigo) = 5) or
-    (nivel = 'centro_poblado' and length(codigo) = 8)
-  )
+  -- **La forma del código dice de qué nivel es, y al revés.** Antes esto solo
+  -- miraba el largo, y con los países en la misma tabla el largo ya no alcanza:
+  -- un país y un departamento tienen los dos dos caracteres.
+  --
+  -- Distinguirlos por la forma —letras contra dígitos— no es un adorno: es lo
+  -- que permite que la restricción del aporte compruebe **sin mirar esta
+  -- tabla** que un contacto internacional no trae un código de municipio. Una
+  -- comprobación entre tablas necesitaría un disparador; esta es declarativa.
+  constraint forma_del_codigo check (
+    (nivel = 'pais'           and codigo ~ '^[A-Z]{2}$') or
+    (nivel = 'departamento'   and codigo ~ '^[0-9]{2}$') or
+    (nivel = 'municipio'      and codigo ~ '^[0-9]{5}$') or
+    (nivel = 'centro_poblado' and codigo ~ '^[0-9]{8}$')
+  ),
+  -- Un país no cuelga de nadie: es raíz, como el departamento.
+  constraint el_pais_no_tiene_padre check (nivel <> 'pais' or padre is null)
 );
 
 create index on participacion.territorio (version, nivel);
 create index on participacion.territorio (padre, version);
 
 comment on table participacion.territorio is
-  'DIVIPOLA del DANE, del geoportal y no de una republicación. No llega al barrio: el nivel sub-municipal es rural (V21).';
+  'DIVIPOLA del DANE, del geoportal y no de una republicación, más los países de ISO 3166-1. No llega al barrio: el nivel sub-municipal es rural (V21).';
 comment on column participacion.territorio.version is
-  'Va en la clave primaria a propósito: el mismo código puede significar otra cosa en otra versión (Q5).';
+  'Va en la clave primaria a propósito: el mismo código puede significar otra cosa en otra versión (Q5). La de los países es la del CLDR, no la de DIVIPOLA.';
+comment on column participacion.territorio.nivel is
+  'pais solo se usa para «desde dónde nos contactas». Dónde ocurre un problema que este sistema pueda atender es siempre un municipio colombiano.';
 
 -- ═══ 02b_grabacion.sql ═══
 -- La voz de quien no escribe (ADR 0013).
@@ -341,6 +367,43 @@ create table participacion.aporte (
   afectados         text,
   desde_cuando      text,
 
+  -- **Desde dónde nos contacta la persona, que NO es dónde ocurre el problema.**
+  -- Son dos preguntas distintas y juntarlas es el error que `GEO-01` ya nombra
+  -- para la residencia: *«una dirección residencial no se usa como lugar del
+  -- problema sin confirmación»*. Quien escribe desde Madrid sobre la vía de su
+  -- vereda en Caldas está diciendo dos cosas, y el municipio afectado sigue
+  -- siendo Caldas — eso vive en `participacion.ubicacion` y aquí no se toca.
+  --
+  -- Por qué aquí y no en `ubicacion`: `ubicacion` es de dónde ocurre, un aporte
+  -- puede tener varias y es lo que cuentan `R1` y `R2`. Meter el contacto ahí
+  -- sumaría a la persona en un territorio donde no pasa nada, y ese es
+  -- exactamente el numerador que `R2` protege. Esto es un hecho declarado del
+  -- aporte, como `afectados` o `desde_cuando`: vacío significa **no lo dijo**.
+  --
+  --   nacional       el código es un municipio de DIVIPOLA (5 dígitos)
+  --   internacional  el código es un país de ISO 3166-1 (2 letras)
+  contacto_ambito   text check (contacto_ambito in ('nacional','internacional')),
+  contacto_codigo   text,
+  contacto_version  text,
+  foreign key (contacto_codigo, contacto_version)
+    references participacion.territorio (codigo, version),
+
+  -- **El ámbito y el código no se pueden contradecir, y lo impide la base.**
+  -- Se apoya en `forma_del_codigo` de `participacion.territorio`: allí un país
+  -- son dos letras y un municipio cinco dígitos, así que la forma del código ya
+  -- dice de qué nivel es. Sin esto, «internacional · 05001» sería una fila
+  -- válida que ninguna pantalla sabe leer.
+  constraint el_contacto_cuadra_con_el_ambito check (
+    contacto_codigo is null
+    or (contacto_ambito = 'nacional'      and contacto_codigo ~ '^[0-9]{5}$')
+    or (contacto_ambito = 'internacional' and contacto_codigo ~ '^[A-Z]{2}$')
+  ),
+  -- La clave foránea no lo exige —con una columna nula se salta la
+  -- comprobación—, así que se exige aquí: un código sin versión de catálogo no
+  -- se puede volver a leer dentro de un año (`Q5`).
+  constraint el_contacto_trae_su_version
+    check ((contacto_codigo is null) = (contacto_version is null)),
+
   -- La grabación, cuando la persona habló. **Es el original** (ADR 0013), y por
   -- eso el aporte apunta a ella y no al revés.
   --
@@ -513,6 +576,10 @@ comment on column participacion.aporte.clave_envio is
   'I1. Un reintento trae la misma clave y no crea otro aporte. Nunca se deduplica por similitud ni por IP.';
 comment on column participacion.aporte.lugar_declarado is
   'GEO-01. Se guarda siempre: es lo único que permitirá re-normalizar al barrio cuando llegue su catálogo (Q26).';
+comment on column participacion.aporte.contacto_ambito is
+  'Desde dónde escribe la persona, no dónde ocurre el problema. Nulo significa que no lo dijo, y eso es una respuesta (N02).';
+comment on column participacion.aporte.contacto_codigo is
+  'Municipio de DIVIPOLA si el ámbito es nacional; país de ISO 3166-1 si es internacional. Nunca entra en el denominador de R2.';
 
 -- ═══ 04_expediente.sql ═══
 -- El expediente: el registro de trabajo y seguimiento de una necesidad situada
@@ -822,7 +889,14 @@ create or replace function participacion.tomar_corte(
 language plpgsql as $$
 declare v_id uuid; v_cat text;
 begin
-  select max(version) into v_cat from participacion.territorio;
+  -- **La versión de DIVIPOLA, no la de la tabla entera.** Desde que los países
+  -- viven aquí, `participacion.territorio` tiene dos catálogos con versiones
+  -- distintas —'junio 2026' y 'CLDR 48.0'— y el corte se calcula sobre
+  -- municipios. Un `max(version)` sobre todo anotaría en el corte una versión
+  -- que no es la del catálogo con que se contó, y el corte dejaría de ser
+  -- reproducible justo por el campo que existe para que lo sea (`Q5`, `R2`).
+  select max(version) into v_cat from participacion.territorio
+   where nivel in ('departamento','municipio','centro_poblado');
   if v_cat is null then
     raise exception 'no hay catálogo territorial sembrado: un corte sin versión de catálogo no es reproducible';
   end if;

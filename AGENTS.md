@@ -200,6 +200,27 @@ Dos cosas que hay que saber antes de modelar una ubicación:
   los centros poblados pasaron de 2 dígitos a 3, así que un código histórico significa cosas
   distintas según la versión con que se escribió. Guardar la versión junto al dato es lo que
   hace que `R2` se pueda cumplir — *un corte exportado no se reescribe*.
+- **DIVIPOLA no llega a un país, y hace falta uno** (`V27`). La captura pregunta *«¿desde
+  dónde nos contactas?»*, y **se puede aportar desde fuera del país** (`V28`). El detalle que
+  se pide no es el mismo en los dos lados: **desde fuera, el país y nada más; dentro, el
+  departamento y el municipio.** No se pide ninguna división interna de otro país — el
+  catálogo llega hasta el país y ahí para—, y esto vale **solo para esa pregunta**. Los países viven en la
+  misma tabla con `nivel = 'pais'`, código ISO 3166-1 de **dos letras** y **su propia
+  versión de catálogo** — la del CLDR, no la de DIVIPOLA. Tres consecuencias que no se
+  negocian por tabla:
+
+  **Desde dónde escribe alguien no es dónde ocurre el problema.** Vive en columnas
+  declaradas del aporte, no en `participacion.ubicacion`; escribirlo ahí sumaría a esa
+  persona en un territorio donde no pasa nada, que es el numerador que `R2` protege.
+
+  **La forma del código dice el nivel**: país dos letras, departamento dos dígitos,
+  municipio cinco, centro poblado ocho. Es lo que permite comprobar en el nivel 2, y sin
+  disparadores, que un contacto internacional no traiga un código de municipio.
+
+  **Cualquier cuenta que tome «la versión del catálogo» toma la de DIVIPOLA**, no el
+  `max(version)` de la tabla. Con dos catálogos dentro, ese máximo puede ser el de los
+  países, y un corte anotado con la versión equivocada deja de ser reproducible justo por
+  el campo que existe para que lo sea.
 
 **El expediente es la unidad de decisión, y tiene forma.** Decidido el 2026-09-13
 (`negocio/vacios.md` V12; la definición completa está en la respuesta a la `P2` del pliego).

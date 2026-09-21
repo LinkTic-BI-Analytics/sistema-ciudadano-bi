@@ -88,6 +88,29 @@ es lo mismo que el diff produciría contra una base vacía.
 `schema_paths` viene comentado, el CLI ignora `schemas/` y `db reset` siembra contra una base
 vacía — el error que sale es `relation "…" does not exist` y no dice por qué.
 
+## `paises.sh` y `migrar-contacto.sh`
+
+Los dos son de la misma pregunta: **«¿desde dónde nos contactas?»**, lo último que se pregunta
+en la captura.
+
+```
+./scripts/paises.sh            regenera producto/datos/paises/paises.csv
+./scripts/migrar-contacto.sh   pone el esquema al día en una base que YA tiene datos
+./scripts/sembrar.sh           siembra DIVIPOLA y los países
+```
+
+`paises.sh` no baja nada: los códigos son ISO 3166-1 alpha-2 —escritos dentro del guion, que
+es un estándar publicado— y los nombres salen del CLDR que trae Node, así que la versión que
+se anota es la del CLDR. Para y no escribe nada si el ICU no conoce alguno: un país sembrado
+con su propio código por nombre se lee como un error en la pantalla de alguien.
+
+`migrar-contacto.sh` es para **la base que ya tiene aportes de gente y no se puede botar**. Una
+base nueva no lo necesita: el esquema declarativo es la fuente y `esquema.sh` más un `db reset`
+la dejan bien. Es idempotente y no toca ninguna fila — lo único que quita son dos restricciones
+para volverlas a poner más anchas. **Las tres columnas nuevas del aporte nacen nulas y así se
+quedan** en todo lo que ya existía: rellenarlas con «nacional» sería inventar la respuesta de
+gente a la que nadie le preguntó (`I2`).
+
 ## `linea-grafica.sh`
 
 Trae el sistema de diseño del cliente adentro del MVP.

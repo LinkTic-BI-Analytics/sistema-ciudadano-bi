@@ -22,6 +22,20 @@ export type ContextoHeredado = {
   afectados: string | null;
   desdeCuando: string | null;
   colectivo: string | null;
+  /**
+   * Desde dónde nos contacta.
+   *
+   * Es lo **menos** probable que cambie entre un aporte y el siguiente —quien
+   * cuenta dos cosas no se mudó de país entre una pantalla y otra— y aun así se
+   * propone en vez de heredarse, como todo lo demás de aquí. `nombre` es solo
+   * para poder enseñárselo: lo que se guarda es el código con su versión.
+   */
+  contacto: {
+    ambito: "nacional" | "internacional";
+    codigo: string;
+    version: string;
+    nombre: string;
+  } | null;
 };
 
 export const LLAVE_RELATO = "pc:otro-relato";
@@ -29,7 +43,9 @@ export const LLAVE_CONTEXTO = "pc:contexto";
 
 /** ¿Trae algo que valga la pena preguntar? Un contexto vacío no se pregunta. */
 export function tieneAlgo(c: ContextoHeredado | null): c is ContextoHeredado {
-  return !!c && Boolean(c.lugarDeclarado || c.municipio || c.afectados || c.desdeCuando || c.colectivo);
+  return !!c && Boolean(
+    c.lugarDeclarado || c.municipio || c.afectados || c.desdeCuando || c.colectivo || c.contacto,
+  );
 }
 
 export function guardarContexto(relato: string, c: ContextoHeredado): void {

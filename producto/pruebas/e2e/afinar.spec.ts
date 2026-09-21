@@ -11,7 +11,8 @@
 //   · nada se pide dos veces — se pregunta solo por lo que la persona no dijo.
 
 import { test, expect, type Page } from "@playwright/test";
-import { salirDelMunicipio, escogerMunicipio, confirmarMunicipio, hablarPorMi, decirElLugar } from "./ayudas.ts";
+import { salirDelMunicipio, escogerMunicipio, confirmarMunicipio, hablarPorMi, decirElLugar,
+         noDecirDesdeDonde } from "./ayudas.ts";
 
 async function contar(page: Page, relato: string) {
   await page.goto("/participar");
@@ -263,6 +264,7 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   // Se le dice que no lo verificamos. Callarlo invitaría a leerlo como probado.
   await expect(voz).toContainText(/no lo verificamos/i);
   await voz.getByRole("button", { name: /^listo$/i }).click();
+  await noDecirDesdeDonde(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
   await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
@@ -272,6 +274,72 @@ test("se pregunta si habla por sí o por un grupo, y el grupo llega a la consola
   await expect(page.locator("body")).toContainText(/junta de acción comunal/);
   // Y el revisor ve el límite, no solo el dato.
   await expect(page.locator("body")).toContainText(/nadie verificó/i);
+});
+
+test("se puede escribir desde otro país sin mover el municipio del problema", async ({ page }) => {
+  // **El caso que la pregunta vino a resolver.** Alguien fuera del país contando
+  // lo de su vereda no estaba equivocándose de ubicación: hasta hoy no tenía
+  // dónde decir dónde estaba, y lo que pasaba era lo otro —que lo escribiera en
+  // el campo del lugar del problema y el aporte pareciera de Madrid—.
+  //
+  // Las dos respuestas tienen que quedar separadas en la ficha: el municipio
+  // afectado, el de siempre; desde dónde escribe, España.
+  const marca = `exterior-${Date.now()}`;
+  await contar(page, `${marca}: la vía de la vereda está intransitable`);
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  await escogerMunicipio(page, "ANTIOQUIA", "RIONEGRO");
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await page.locator("[data-prueba='voceria']").getByRole("button", { name: /hablo por mí/i }).click();
+
+  const c = page.locator("[data-prueba='contacto']");
+  await expect(c).toBeVisible({ timeout: 15_000 });
+  // Lo primero que dice la pantalla es que esto no es dónde ocurre el problema.
+  // Sin esa frase, media pantalla vuelve a escribir su municipio.
+  await expect(c).toContainText(/no es dónde ocurre el problema/i);
+  await c.getByRole("button", { name: /desde otro país/i }).click();
+  await c.locator("#contacto-pais").selectOption({ label: "España" });
+  await c.getByRole("button", { name: /^listo$/i }).click();
+  await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
+
+  await page.goto(`/consola?ubicacion=todos&q=${encodeURIComponent(marca)}`);
+  await page.locator(".bo-record-link", { hasText: marca }).filter({ visible: true })
+    .click({ timeout: 15_000 });
+  await page.waitForURL(/\/consola\/[0-9a-f-]{8}/);
+  const cabecera = page.locator("[data-prueba='cabecera']");
+  await expect(cabecera).toContainText(/España/);
+  await expect(cabecera).toContainText(/fuera del país/i);
+  // Y el problema sigue donde ocurre: lo uno no pisó lo otro.
+  await expect(cabecera).toContainText(/RIONEGRO/i);
+});
+
+test("desde Colombia se pregunta el municipio, no el país", async ({ page }) => {
+  await contar(page, "el puesto de salud no tiene médico los fines de semana");
+  await page.locator("[data-prueba='vuelta-1']").getByRole("button", { name: /sí, es eso/i })
+    .click({ timeout: 20_000 });
+  await salirDelMunicipio(page);
+  await page.locator("[data-prueba='vuelta-2']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await page.locator("[data-prueba='vuelta-3']")
+    .getByRole("button", { name: /continuar|listo/i }).first().click();
+  await page.locator("[data-prueba='voceria']").getByRole("button", { name: /hablo por mí/i }).click();
+
+  const c = page.locator("[data-prueba='contacto']");
+  await expect(c).toBeVisible({ timeout: 15_000 });
+  await c.getByRole("button", { name: /desde colombia/i }).click();
+  const nacional = c.locator("[data-prueba='contacto-nacional']");
+  await expect(nacional).toBeVisible();
+  await nacional.locator("#contacto-departamento").selectOption({ label: "ANTIOQUIA" });
+  await nacional.locator("#contacto-municipio").fill("RIONEGRO");
+  await nacional.getByRole("button", { name: /^RIONEGRO$/i }).click();
+  // **Escoger no guarda.** Con 125 nombres en una lista es fácil tocar la fila
+  // de al lado, y hay que poder corregir antes de que quede escrito.
+  await expect(c).toContainText(/nos escribes desde/i);
+  await c.getByRole("button", { name: /sí, desde ahí/i }).click();
+  await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 });
 
 test("hablar por uno mismo no deja grupo puesto", async ({ page }) => {
@@ -284,6 +352,7 @@ test("hablar por uno mismo no deja grupo puesto", async ({ page }) => {
   await page.locator("[data-prueba='vuelta-3']")
     .getByRole("button", { name: /continuar|listo/i }).first().click();
   await page.locator("[data-prueba='voceria']").getByRole("button", { name: /hablo por mí/i }).click();
+  await noDecirDesdeDonde(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 });
 
@@ -618,6 +687,7 @@ test("la persona puede ver TODO lo que quedó registrado suyo", async ({ page })
   await voz.getByRole("button", { name: /hablo por un grupo/i }).click();
   await voz.locator("#grupo").fill("la junta de acción comunal");
   await voz.getByRole("button", { name: /^listo$/i }).click();
+  await noDecirDesdeDonde(page);
   await expect(page.locator("[data-prueba='afinado-listo']")).toBeVisible({ timeout: 15_000 });
 
   await page.goto("/mis-aportes");

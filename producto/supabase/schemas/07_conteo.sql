@@ -119,7 +119,14 @@ create or replace function participacion.tomar_corte(
 language plpgsql as $$
 declare v_id uuid; v_cat text;
 begin
-  select max(version) into v_cat from participacion.territorio;
+  -- **La versión de DIVIPOLA, no la de la tabla entera.** Desde que los países
+  -- viven aquí, `participacion.territorio` tiene dos catálogos con versiones
+  -- distintas —'junio 2026' y 'CLDR 48.0'— y el corte se calcula sobre
+  -- municipios. Un `max(version)` sobre todo anotaría en el corte una versión
+  -- que no es la del catálogo con que se contó, y el corte dejaría de ser
+  -- reproducible justo por el campo que existe para que lo sea (`Q5`, `R2`).
+  select max(version) into v_cat from participacion.territorio
+   where nivel in ('departamento','municipio','centro_poblado');
   if v_cat is null then
     raise exception 'no hay catálogo territorial sembrado: un corte sin versión de catálogo no es reproducible';
   end if;
