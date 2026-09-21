@@ -35,6 +35,20 @@
  */
 @import "../producto/tokens/backoffice.css";
 
+/* Y de últimas, lo que este proyecto le agrega a cada una de las dos caras.
+ *
+ * **Van al final porque tienen que poder pisar**: una regla de aquí que cambie
+ * lo que declara el paquete solo gana si llega después, y a igualdad de
+ * especificidad manda el orden. Es la misma razón por la que
+ * `shadcn-completar.css` va detrás de `shadcn-theme.css`.
+ *
+ * Estas dos **sí son nuestras y sí se editan a mano** — son la excepción que el
+ * `LEEME.md` de la carpeta explica. `scripts/tokens.sh` copia seis archivos y
+ * ninguno de estos está en la lista, así que no las pisa ni las borra.
+ */
+@import "../producto/tokens/propio-ciudadano.css";
+@import "../producto/tokens/propio-interno.css";
+
 /* El modo oscuro es el principal de la línea gráfica Patria Milagro, y el claro
  * se pide con `data-tema="claro"` en el `<html>` (ver `src/producto/tema.tsx`).
  *

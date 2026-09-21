@@ -3,6 +3,9 @@ import { Fragment } from "react";
 import { recurrenciaDe } from "../../../revision/recurrencia.ts";
 import { TEMAS } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
+import { BotonEnvio } from "../boton-envio.tsx";
+import { Armazon } from "../../../producto/armazon.tsx";
+import { IconoVacio } from "../../../producto/iconos.tsx";
 import { enPartes } from "../../../revision/sintesis-en-partes.ts";
 import {
   antiguedadDe, alcanceDe, COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE,
@@ -35,9 +38,61 @@ const FACTORES: [string, string, string[]][] = [
   ["competencia", "Competencia", ["clara", "en_disputa", "sin_establecer"]],
 ];
 
+/**
+ * Los cinco tipos de actuación de `RES-01`, en palabras.
+ *
+ * **Recepción, respuesta, decisión, remisión y siguiente paso son cinco
+ * eventos distintos**, y esa es justamente la decisión: no son un campo
+ * `estado` que avanza. Por eso cada uno se nombra por lo que es y ninguno dice
+ * «resuelto».
+ */
+const COMO_SE_LEE_ACTUACION: Record<string, string> = {
+  recepcion: "Una entidad acusó recibo",
+  remision: "Se remitió",
+  decision: "Se registró una decisión",
+  respuesta: "Se registró una respuesta",
+  siguiente_paso: "Se anotó un siguiente paso",
+};
+
+/** Por dónde entró el aporte, dicho como lo entendería quien revisa. */
+const COMO_LLEGO: Record<string, string> = {
+  web: "por internet",
+  voz_transcrita: "hablando · la transcripción puede estar mal",
+  telefono: "por teléfono",
+};
+
 /** «por_clasificar» es como se guarda; no es como se lee. */
 function enPalabras(valor: string | null | undefined): string {
   return (valor ?? "").replace(/_/g, " ");
+}
+
+/**
+ * Hora de Bogotá, explícita.
+ *
+ * Iba con `toLocaleString("es-CO")` a secas, que usa el huso **del servidor**.
+ * Es el mismo defecto que la bandeja ya tenía resuelto, y aquí quedaba: la
+ * ficha podía decir una hora y la bandeja otra para el mismo aporte.
+ */
+const fechaHora = (iso: string) =>
+  new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota" });
+
+/**
+ * El titular de la ficha: la primera frase de lo que hay.
+ *
+ * La ficha no tenía titular. Empezaba en la rejilla de contexto, así que para
+ * saber qué aporte tenías abierto había que bajar hasta el relato — y el único
+ * texto de la barra superior eran ocho caracteres de un identificador.
+ *
+ * **Manda la síntesis vigente**, que es lo que la persona confirmó, y el relato
+ * solo cuando todavía no hay ninguna (`N03`: la síntesis no lo sustituye, y por
+ * eso el relato sigue entero más abajo, sin recortar).
+ */
+function primeraFrase(texto: string): string {
+  const limpio = texto.replace(/^Problema:\s*/i, "").split("\n")[0]?.trim() ?? "";
+  if (limpio.length <= 90) return limpio;
+  const corte = limpio.slice(0, 90);
+  const ultimo = corte.lastIndexOf(" ");
+  return `${ultimo > 54 ? corte.slice(0, ultimo) : corte}…`;
 }
 
 export default async function Ficha({ params }: { params: Promise<{ aporte: string }> }) {
@@ -48,7 +103,26 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const { data: a } = await p.from("aporte")
     .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas, tema, tema_propuesto")
     .eq("id", aporteId).single();
-  if (!a) return <div className="pc-backoffice"><p className="bo-empty">No existe ese aporte.</p></div>;
+  // **Sin armazón, esto era una frase suelta sobre el fondo de la página**: sin
+  // barra lateral, sin forma de volver y sin nada que dijera dónde estabas. Un
+  // aporte no encontrado casi siempre es una dirección vieja o un aporte
+  // retirado, y quien llega necesita poder volver a la bandeja.
+  if (!a) {
+    return (
+      <Armazon seccion="Consola" vista={null} kicker="Aporte no encontrado"
+               volver={{ href: "/consola", texto: "Volver a la bandeja" }}>
+        <div className="bo-empty">
+          <IconoVacio />
+          <h2>No existe ese aporte</h2>
+          <p>
+            La dirección puede estar vieja, o el aporte se retiró. Lo que se recibió por él sigue
+            contando en los totales.
+          </p>
+          <Link className="bo-button" data-variant="primary" href="/consola">Ir a la bandeja</Link>
+        </div>
+      </Armazon>
+    );
+  }
 
   const { data: ubi } = await p.from("ubicacion")
     .select("estado, territorio_codigo, territorio_version, motivo, autor")
@@ -152,44 +226,54 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const remisiones = actuaciones.filter((x) => x.tipo === "remision");
 
   return (
-    <div className="pc-backoffice">
-      <div className="bo-shell">
-        <aside className="bo-sidebar">
-          <div className="bo-brand">Consola</div>
-          <Link className="bo-back" href="/consola">← Volver a la bandeja</Link>
-          <div className="bo-sidebar-bottom">
-            <p className="bo-small"><strong>Sin permisos.</strong> No desplegar.</p>
-          </div>
-        </aside>
+    <Armazon
+      seccion="Consola"
+      vista={null}
+      volver={{ href: "/consola", texto: "Volver a la bandeja" }}
+      kicker="Ficha de revisión"
+      meta={
+        <p>
+          {a.canal}
+          <span>{fechaHora(a.recibido_en)}</span>
+        </p>
+      }
+    >
+      {/* **La cabecera de la ficha, que la hoja ya tenía escrita.**
+          `.bo-record-head` existía sin usarse, con su `h1` a 27 caracteres de
+          ancho —la medida en que un titular se lee de una pasada— y el código
+          del aporte en la tipografía de cifras. Antes el código iba solo, en la
+          barra de arriba, y la ficha empezaba sin titular: había que leerse el
+          relato para saber qué tenías delante. */}
+      <div className="bo-record-head">
+        <h1>{primeraFrase(vigente?.texto ?? a.relato_original)}</h1>
+        <span className="bo-record-code">{aporteId}</span>
+      </div>
 
-        <div className="bo-workspace">
-          <header className="bo-topbar">
-            <span className="bo-record-code">{aporteId.slice(0, 8)}</span>
-            <span className="bo-results-line">{a.canal} · {new Date(a.recibido_en).toLocaleString("es-CO")}</span>
-          </header>
-
-          <main className="bo-main">
-            {alerta && !alerta.devuelta_en && (
-              <section className="bo-error">
-                <h2>Alerta urgente</h2>
-                <p>
-                  La levantó <strong>{alerta.origen === "senal" ? "una señal de texto" : alerta.origen}</strong>
-                  {alerta.indicio && <> · indicio: «{alerta.indicio}»</>}
-                </p>
-                <p className="bo-small">
-                  Orientación mostrada: {alerta.orientacion_mostrada_en ? "sí" : "no"} ·
-                  Contacto intentado: {alerta.contacto_intentado_en ? "sí" : "no"} ·
-                  Recepción confirmada: {alerta.recepcion_confirmada_en ? "sí" : "no"}
-                </p>
-                <p className="bo-small">
-                  <strong>Mostrar un teléfono no es haber contactado, y contactar no es que
-                  alguien haya recibido.</strong>
-                </p>
-              </section>
-            )}
+      {alerta && !alerta.devuelta_en && (
+        <section className="bo-error">
+          <h2>Alerta urgente</h2>
+          <p>
+            La levantó <strong>{alerta.origen === "senal" ? "una señal de texto" : alerta.origen}</strong>
+            {alerta.indicio && <> · indicio: «{alerta.indicio}»</>}
+          </p>
+          <p className="bo-small">
+            Orientación mostrada: {alerta.orientacion_mostrada_en ? "sí" : "no"} ·
+            Contacto intentado: {alerta.contacto_intentado_en ? "sí" : "no"} ·
+            Recepción confirmada: {alerta.recepcion_confirmada_en ? "sí" : "no"}
+          </p>
+          <p className="bo-small">
+            <strong>Mostrar un teléfono no es haber contactado, y contactar no es que
+            alguien haya recibido.</strong>
+          </p>
+        </section>
+      )}
 
             <div className="bo-review-layout">
-              <div>
+              {/* `.bo-reading` no es cosmética: lleva `min-width: 0`, y sin eso
+                  un relato largo sin espacios —una dirección, un código— empuja
+                  la columna y **descuadra la rejilla entera**. La clase estaba
+                  declarada y el marcado tenía un `<div>` pelado. */}
+              <div className="bo-reading">
                 {/* **Lo que hay que ver antes de leer el relato** (`CLA-02`).
                     Sin esto el revisor tenía que leerse cada aporte entero para
                     saber siquiera si hablaba de agua o de una vía, y no había
@@ -297,7 +381,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <Campo id="tema-motivo" name="motivo" etiqueta="Por qué"
                              ejemplo="habla del acueducto, no de la vía" />
                       <Campo id="tema-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Guardar el tema</button>
+                      <BotonEnvio mientras="Guardando…">Guardar el tema</BotonEnvio>
                       {/* Que es una etiqueta nuestra y no algo que la persona
                           afirmó ya lo dice el formulario: pide motivo y firma. Y
                           la cabecera enseña «la lectura propuso …» cuando
@@ -369,7 +453,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
                              ejemplo="dice El Salado de Rionegro, no el de Bello" />
                       <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Corregir</button>
+                      <BotonEnvio mientras="Corrigiendo…">Corregir</BotonEnvio>
                       <p className="bo-small">
                         <strong>Reemplaza el municipio, no agrega un segundo.</strong> El cambio
                         queda registrado con tu nombre y el motivo.
@@ -388,7 +472,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
                              ejemplo="la persona dijo otra cosa al llamarla" />
                       <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Devolver a por aclarar</button>
+                      <BotonEnvio mientras="Devolviendo…">Devolver a por aclarar</BotonEnvio>
                       {/* Por qué el código se borra en vez de quedarse de
                           adorno —sería el cuarto estado implícito que `I2`
                           prohíbe— está en `src/revision/ubicacion.ts`. Aquí solo
@@ -414,7 +498,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
                              ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
                       <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button" data-variant="primary">Aceptar el municipio</button>
+                      <BotonEnvio variante="primary" mientras="Aceptando…">Aceptar el municipio</BotonEnvio>
                       <p className="bo-small">
                         Acepta <strong>el lugar del problema</strong>, no la dirección de quien
                         escribió.
@@ -586,6 +670,81 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                     </p>
                   </section>
                 )}
+
+                {/* ── Qué ha pasado con esto ──────────────────────────────────
+                    **Las actuaciones que no son remisiones no se veían en
+                    ninguna parte.** La ficha las traía todas —`historiaDe`
+                    devuelve los cinco tipos de `RES-01`— y solo dibujaba las
+                    remisiones, dentro del panel de la derecha: una decisión o
+                    una respuesta registradas quedaban en la base sin pantalla
+                    que las mostrara.
+
+                    Y la ficha entera no tenía una sola línea de tiempo. Para
+                    reconstruir qué había pasado con un aporte había que juntar
+                    con la cabeza tres sitios: la sección de ubicación, el
+                    panel de gestión y la historia de la prioridad.
+
+                    `.bo-history` es la clase que el sistema de diseño trae para
+                    esto —línea vertical, punto dorado, fecha en cifras— y
+                    ninguna pantalla la usaba.
+
+                    **Solo hechos con fecha.** No hay pasos futuros en gris ni
+                    una secuencia prometida: lo que no ha pasado, no se dibuja. */}
+                <section className="bo-history-section">
+                  <h2>Qué ha pasado con esto</h2>
+                  <ul className="bo-history">
+                    <li>
+                      <strong>Llegó {COMO_LLEGO[a.canal] ?? `por ${a.canal}`}</strong>
+                      <p>
+                        Quedó guardado con sus palabras y con el comprobante que se le entregó.
+                      </p>
+                      <small>{fechaHora(a.recibido_en)}</small>
+                    </li>
+
+                    {exp && (
+                      <li>
+                        <strong>Se abrió un expediente</strong>
+                        <p>{exp.descripcion}</p>
+                        <small>
+                          {exp.reabierto_en
+                            ? `reabierto el ${fechaHora(exp.reabierto_en)}`
+                            : "abrir un expediente no aprueba ni compromete nada"}
+                        </small>
+                      </li>
+                    )}
+
+                    {actuaciones.map((x) => (
+                      <li key={x.actuacionId}>
+                        <strong>{COMO_SE_LEE_ACTUACION[x.tipo]}</strong>
+                        {x.destino && <p>A {x.destino}.</p>}
+                        {x.motivo && <p>{x.motivo}</p>}
+                        {x.siguientePaso && <p>Siguiente paso: {x.siguientePaso}</p>}
+                        <small>
+                          {fechaHora(x.ocurridaEn)} · {x.autor}
+                          {x.tipo === "remision" && (
+                            x.aceptadaEn
+                              ? ` · la recibieron el ${fechaHora(x.aceptadaEn)}`
+                              : " · todavía sin aceptar"
+                          )}
+                        </small>
+                      </li>
+                    ))}
+
+                    {/* Lo que falta se dice una vez, al final, y sin fingir que
+                        es un paso pendiente de una secuencia acordada: no hay
+                        plazo escrito para responder y el sistema no cierra por
+                        silencio. */}
+                    {actuaciones.length === 0 && (
+                      <li>
+                        <strong>Sin actuaciones registradas</strong>
+                        <p>
+                          Nadie ha remitido, decidido ni respondido todavía. No hay plazo escrito
+                          para hacerlo.
+                        </p>
+                      </li>
+                    )}
+                  </ul>
+                </section>
               </div>
 
               <aside className="bo-inspector">
@@ -614,7 +773,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                            defaultValue={propuestaDeExpediente.cambio} />
                     <Campo id="exp-motivo" name="motivo" etiqueta="Por qué se abre" />
                     <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
-                    <button className="bo-button" data-variant="primary">Abrir</button>
+                    <BotonEnvio variante="primary" mientras="Abriendo…">Abrir</BotonEnvio>
                     <p className="bo-small">
                       <strong>Un expediente por afectación</strong>, aunque compartan tema o
                       municipio.
@@ -660,7 +819,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                       ))}
                       <Campo id="pri-incertidumbre" name="incertidumbre" etiqueta="Qué no sabemos" opcional />
                       <Campo id="pri-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <button className="bo-button">Registrar prioridad</button>
+                      <BotonEnvio mientras="Registrando…">Registrar prioridad</BotonEnvio>
                       {/* Por qué los factores van por separado y no hay
                           puntaje está junto a `FACTORES`, arriba. En pantalla
                           sobraba: quien revisa ve cuatro selectores sueltos y no
@@ -706,7 +865,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                               <Campo id={`ace-${r.actuacionId}`} name="motivo"
                                      etiqueta="Quién confirmó que lo recibió"
                                      ejemplo="la secretaría lo radicó con el número 4471" />
-                              <button className="bo-button">Confirmar recepción</button>
+                              <BotonEnvio mientras="Confirmando…">Confirmar recepción</BotonEnvio>
                             </form>
                           )}
                         </div>
@@ -722,7 +881,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                         <Campo id="rem-motivo" name="motivo" etiqueta="Por qué se escala"
                                ejemplo="necesita desagregarse: son tres necesidades en una" opcional />
                         <Campo id="rem-autor" name="autor" etiqueta="Tu nombre" opcional />
-                        <button className="bo-button" data-variant="primary">Remitir</button>
+                        <BotonEnvio variante="primary" mientras="Remitiendo…">Remitir</BotonEnvio>
                         <p className="bo-small">
                           <strong>Remitir no es haber atendido:</strong> queda pendiente hasta que
                           la mesa confirme que lo recibió.
@@ -748,9 +907,6 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                 )}
               </aside>
             </div>
-          </main>
-        </div>
-      </div>
-    </div>
+    </Armazon>
   );
 }

@@ -1,0 +1,270 @@
+/* Lo que este proyecto le agrega al perfil interno del sistema de diseño.
+   Importar DESPUÉS de backoffice.css.
+
+   **Esta hoja es nuestra, no del paquete v0.5.** Misma relación que
+   `propio-ciudadano.css`: `scripts/tokens.sh` copia seis archivos y esta no
+   está en la lista, así que no la pisa. Y va aparte de la ciudadana a
+   propósito — `scripts/paralelismo.sh --duro` falla si dos tareas activas
+   declaran el mismo archivo, y así los dos carriles pueden avanzar a la vez.
+
+   Cada clase de aquí es una que hay que pedirle al equipo de diseño para la
+   v0.6. Queda anotado en `negocio/vacios.md`.
+
+   ## Lo que esta hoja NO hereda de la cara ciudadana, y es a propósito
+
+   Lo dice la cabecera de `backoffice.css` y sigue valiendo: ni el halo dorado
+   —en una pantalla con veinte controles deja de señalar— ni las entradas
+   animadas: *«una bandeja que se reordena delante de quien está leyendo una
+   fila es una bandeja que hace perder el sitio»*. Aquí pesa el doble, porque
+   los filtros viajan en la dirección: **cada filtro es una carga de página**, y
+   una cascada de filas se repetiría en cada clic.
+
+   Por eso el esqueleto de carga es **estático**: un brillo que recorre es un
+   pulso continuo, y `direccion-visual.md` los prohíbe por su nombre.
+
+   Cero literales de color, sombra o duración: todo `var(--pc-…)`. */
+
+/* ── Navegación lateral, para enlaces ─────────────────────────────────────────
+   `backoffice.css:80-97` tiene el contrato entero del renglón de navegación
+   —incluida la barra dorada a la izquierda del activo, que existe porque *«el
+   fondo solo, sobre navy, se confunde con el hover»*— pero escrito contra
+   `nav button`. La consola navega entre vistas con `<Link>`, que es un `<a>`.
+
+   Esto replica el mismo contrato para el elemento correcto. Si el paquete lo
+   incorpora, esta sección se borra entera. */
+.pc-backoffice nav a {
+  position: relative; display: flex; align-items: center; gap: .625rem; width: 100%;
+  min-height: 44px; border: 0; background: transparent; color: var(--bo-muted);
+  padding: .625rem; border-radius: var(--pc-primitive-radius-sm);
+  text-align: left; font-size: .8125rem; font-weight: 600; text-decoration: none;
+}
+.pc-backoffice nav a[aria-current=page] {
+  background: var(--pc-component-backoffice-navigation-background);
+  color: var(--pc-component-backoffice-navigation-foreground); font-weight: 700;
+}
+.pc-backoffice nav a[aria-current=page]::before {
+  content: ''; position: absolute; left: 0; top: .5rem; bottom: .5rem; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--pc-semantic-color-brand-accent);
+}
+.pc-backoffice nav a:hover { background: var(--pc-semantic-color-surface-subtle); color: var(--bo-ink); }
+.pc-backoffice nav a svg { width: 16px; height: 16px; }
+.pc-backoffice nav a span { margin-left: auto; font-size: .75rem; font-variant-numeric: tabular-nums; }
+
+/* ── El botón de tema, dentro del perfil interno ──────────────────────────────
+   `.pc-tema` está declarado en `marco.css` bajo `.pc-ui`, así que dentro de
+   `.pc-backoffice` no lo alcanza ninguna regla. La clase existe y es la misma;
+   lo que cambia son los alias de la hoja.
+
+   Y hace falta: quien revisa pasa horas aquí y el interno **no tenía forma de
+   cambiar de tema**, aunque el sistema traiga los dos modos completos. */
+.pc-backoffice .pc-tema {
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: var(--pc-component-backoffice-button-height);
+  padding: .375rem .875rem;
+  font-size: .75rem; font-weight: 600; font-family: inherit;
+  color: var(--bo-ink); background: var(--bo-paper);
+  border: 1px solid var(--bo-line);
+  border-radius: var(--pc-primitive-radius-pill);
+}
+.pc-backoffice .pc-tema:hover { border-color: var(--pc-semantic-color-border-accent); }
+.pc-backoffice .pc-tema svg { width: 16px; height: 16px; }
+
+/* ── El resumen de la bandeja ─────────────────────────────────────────────────
+   Los tres conteos —cuántos en la lista, cuántos aportes, cuántos expedientes—
+   iban en un `<span class="bo-results-line">` dentro de la barra superior, en
+   12 px y separados por puntos medios. `.bo-results-line` no es eso: es un
+   bloque flex con margen vertical, diseñado para ir **entre los filtros y la
+   tabla** (`backoffice.css:198`), que es donde ahora vuelve.
+
+   Las cifras van en la tipografía de cifras con numerales tabulares, que es lo
+   que la línea gráfica pide para un dato que se compara.
+
+   **No es un ranking.** `BI-02` prohíbe ordenar por popularidad, y esto no
+   ordena nada: son totales del universo que la persona está mirando. */
+.pc-backoffice .bo-resumen {
+  display: grid; gap: .75rem; margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+.pc-backoffice .bo-resumen > div {
+  padding: .875rem 1rem;
+  background: var(--pc-semantic-color-surface-editorial);
+  border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+}
+/* El borde dorado marca **dónde está el trabajo**, no un estado. El rótulo lo
+   dice con palabras, que es lo que `interfaz.md` exige: el color nunca solo. */
+.pc-backoffice .bo-resumen > div[data-foco=true] {
+  border-left: 3px solid var(--pc-semantic-color-brand-accent);
+}
+.pc-backoffice .bo-resumen strong {
+  display: block; margin-top: .25rem;
+  font-family: var(--pc-semantic-fontFamily-mono);
+  font-size: 1.625rem; font-weight: 700; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--bo-ink);
+}
+.pc-backoffice .bo-resumen p { margin: .25rem 0 0; font-size: .6875rem; color: var(--bo-muted); line-height: 1.5; }
+
+/* ── Los filtros que están puestos ────────────────────────────────────────────
+   Había diez controles y ninguna forma de saber cuáles estaban aplicados sin
+   recorrerlos uno por uno: la bandeja salía con nueve aportes y la explicación
+   estaba tres pantallas más arriba, dentro de un `<select>`.
+
+   Cada píldora dice **el campo y su valor**, y su «×» es un enlace a la misma
+   dirección sin ese parámetro — así quitar un filtro es un clic y sigue siendo
+   una dirección que se puede guardar y mandar, que es media razón de que los
+   filtros vivan en la URL.
+
+   **No se usa `.bo-badge`**, que se le parece: su punto `::before` significa
+   *estado del aporte*, y un filtro no es un estado de nada. */
+.pc-backoffice .bo-chips {
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  margin: 0 0 1rem;
+}
+.pc-backoffice .bo-chip {
+  display: inline-flex; align-items: center; gap: .5rem; max-width: 100%;
+  padding: .25rem .25rem .25rem .625rem;
+  font-size: .75rem; line-height: 1.4;
+  color: var(--bo-ink);
+  background: var(--pc-semantic-color-surface-subtle);
+  border: 1px solid var(--pc-semantic-color-border-control);
+  border-radius: var(--pc-primitive-radius-pill);
+}
+.pc-backoffice .bo-chip b { font-weight: 700; }
+/* La «×» es el objetivo táctil de verdad: 28 px dentro de una píldora de 12 px
+   de texto. Debajo de eso no se acierta con el pulgar. */
+.pc-backoffice .bo-chip a {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; flex-shrink: 0;
+  border-radius: 50%; color: var(--bo-muted); text-decoration: none;
+}
+.pc-backoffice .bo-chip a:hover { background: var(--pc-semantic-color-surface-base); color: var(--bo-ink); }
+.pc-backoffice .bo-chip a svg { width: 14px; height: 14px; }
+
+/* ── La carga ─────────────────────────────────────────────────────────────────
+   Filtrar es una navegación entera —los filtros van en la dirección— y no había
+   ninguna señal de que estuviera pasando algo: la pantalla se quedaba con los
+   resultados viejos hasta que llegaban los nuevos.
+
+   **Sin brillo que recorre.** Un esqueleto animado es un pulso continuo, y esos
+   están prohibidos por nombre. Lo que comunica aquí es la forma, no el
+   movimiento: bloques del tamaño de lo que va a llegar. */
+/* El contenedor de la espera. **No es `.bo-main`, y no puede serlo**: mientras
+   React cambia lo de espera por lo de verdad los dos árboles conviven en el
+   documento, y dos `.bo-main` son dos `<main>` — un documento tiene uno. El
+   porqué entero está en `src/producto/esqueleto.tsx`. */
+.pc-backoffice .bo-espera { padding: var(--pc-semantic-internal-pagePadding); }
+.pc-backoffice .bo-esqueleto {
+  display: block;
+  background: var(--pc-semantic-color-surface-subtle);
+  border-radius: var(--pc-primitive-radius-sm);
+  height: 1rem; margin-bottom: .625rem;
+}
+.pc-backoffice .bo-esqueleto[data-alto=titular] { height: 2rem; margin-bottom: 1rem; }
+.pc-backoffice .bo-esqueleto[data-alto=fila] { height: 3.5rem; margin-bottom: 1px; }
+.pc-backoffice .bo-esqueleto[data-alto=panel] { height: 12rem; }
+
+/* ── La barra de filtros, compacta ────────────────────────────────────────────
+   Diez controles en una rejilla de tres columnas son cuatro filas, y cada
+   `.bo-field` trae `margin: 1.25rem 0` pensado para un formulario en columna.
+   Sumado al `gap` de la rejilla, la barra medía **440 px de alto**: entre las
+   cifras y la tabla había una pantalla de teléfono entera en blanco, y había
+   que desplazarse para ver el primer aporte.
+
+   El `gap` ya separa. Los márgenes sobran y se quitan **solo aquí**. */
+.pc-backoffice .bo-filters .bo-field { margin: 0; }
+.pc-backoffice .bo-filters .bo-check { margin: 0; }
+/* El botón se alinea con la base de los campos de su fila, no con su tapa. */
+.pc-backoffice .bo-filters .bo-field:last-child { align-self: end; }
+/* Con sitio de sobra, cuatro columnas: diez controles pasan de cuatro filas a
+   tres, y ninguno queda más ancho de lo que su contenido necesita. */
+@media (min-width: 82rem) {
+  .pc-backoffice .bo-filters {
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* El rótulo de un `<details>` es `display:flex`, así que el espacio entre el
+   texto y el conteo que va al lado **se colapsa**: salía «Expedientes
+   abiertos· 0». En una caja flex la separación es el `gap`, no un espacio. */
+.pc-backoffice .bo-plegable > summary { gap: .375rem; }
+
+/* ── La rejilla de contexto de la ficha ───────────────────────────────────────
+   Va a `1fr 1fr`, y sus celdas son una etiqueta en versalita —«DE QUÉ», cinco
+   caracteres— y un dato. Con las dos columnas iguales, la etiqueta se queda
+   con la mitad del ancho de la ficha y el dato empieza a 370 px del borde: se
+   lee como una tabla con una columna vacía.
+
+   La etiqueta ocupa lo que mide, y el dato el resto. */
+.pc-backoffice .bo-context-grid {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 2rem;
+}
+@media (max-width: 36rem) {
+  .pc-backoffice .bo-context-grid { grid-template-columns: 1fr; column-gap: 0; }
+}
+
+/* ── El tercer nivel de titular ───────────────────────────────────────────────
+   La hoja del paquete define `h1` y `h2` y se detiene ahí. Una ficha con
+   secciones dentro de secciones —o una lista de encuentros dentro de una
+   sección— necesita el tercero, y sin regla sale con el tamaño por defecto del
+   navegador: 1.17em en negrita, que es **más grande que el `h2` de esta hoja**
+   (1rem). La jerarquía queda al revés justo donde más se nota. */
+.pc-backoffice h3 {
+  margin: 0 0 .5rem;
+  font-size: .9375rem; font-weight: 700; line-height: 1.4;
+  color: var(--bo-ink);
+}
+
+/* ── El código QR de un material ──────────────────────────────────────────────
+   La hoja pone todo `svg` del perfil interno a 18 px, que es lo que hace falta
+   para un icono y es exactamente lo que **no** hace falta para un QR. Se
+   resolvía con un `style` en línea de 128 px sobre el contenedor; aquí es una
+   regla, y el ancho se escribe una vez.
+
+   `[data-qr]` y no una clase: el atributo dice qué contiene el elemento, no
+   cómo se ve, y no hay que pedirle un nombre nuevo al sistema de diseño para
+   decir «aquí va un QR». */
+.pc-backoffice [data-qr] { width: 8rem; flex-shrink: 0; }
+.pc-backoffice [data-qr] svg { width: 100%; height: auto; }
+/* Un QR alto al lado de un bloque de texto: centrarlos deja el texto flotando. */
+.pc-backoffice .bo-record-card .bo-inline { align-items: flex-start; }
+
+/* ── La tabla de cinco columnas ───────────────────────────────────────────────
+   `backoffice.css:210-219` reparte anchos contando desde los dos extremos, así
+   que una tabla con un número de columnas distinto del previsto hereda el ancho
+   de una columna que no existe. Ya pasó con la de tres —era «el último cuadro
+   está descuadrado»— y `pruebas/e2e/consola.spec.ts` lo vigila desde entonces:
+   si las columnas no son cuatro, exige `data-columnas` con el número correcto.
+
+   Cinco, porque «qué falta» y «en manos de quién está» son dos preguntas y
+   estaban en la misma celda. */
+.pc-backoffice .bo-table[data-columnas="5"] th:first-child { width: 34%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(2) { width: 14%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(3) { width: 20%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(4) { width: 16%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:last-child { width: 16%; }
+
+@media (max-width: 60rem) {
+  .pc-backoffice .bo-resumen { grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
+}
+/* Bajo 48rem la barra lateral se acuesta y `nav` pasa a ser una fila que
+   envuelve. La hoja del paquete ya lo hace para `nav button`; esto es lo mismo
+   para el enlace, que es lo que la navegación usa de verdad. Sin esto, cada
+   renglón ocupa el ancho entero y la barra mide cinco filas. */
+@media (max-width: 48rem) {
+  .pc-backoffice nav a { width: auto; min-width: 8rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pc-backoffice :is(nav a, .pc-tema, .bo-chip a) {
+    transition: background-color var(--pc-semantic-motion-fast) var(--bo-ease),
+                color var(--pc-semantic-motion-fast) var(--bo-ease),
+                border-color var(--pc-semantic-motion-fast) var(--bo-ease);
+  }
+}
+@media (forced-colors: active) {
+  .pc-backoffice nav a[aria-current=page] { border: 1px solid ButtonText; }
+  .pc-backoffice .bo-chip { border: 1px solid CanvasText; }
+  .pc-backoffice .bo-esqueleto { border: 1px solid CanvasText; }
+  .pc-backoffice .bo-resumen > div { border: 1px solid CanvasText; }
+}

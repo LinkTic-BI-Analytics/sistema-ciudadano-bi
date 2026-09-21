@@ -47,7 +47,12 @@ export default async function PorEnlace({
       <div className="pc-shell">
         <FranjaInstitucional />
         <Cabecera />
-        <main className="pc-main" data-layout="eventDetail">{children}</main>
+        {/* `.pc-entra`: la ficha del encuentro sube doce píxeles al aparecer.
+            Quien llega aquí acaba de escanear un QR en una caseta comunal, con
+            datos caros y un teléfono lento; que la página *llegue* en vez de
+            estar ahí de golpe es lo que dice que la cámara acertó. Vive dentro
+            de `prefers-reduced-motion` y no aplica al imprimir. */}
+        <main className="pc-main pc-entra" data-layout="eventDetail">{children}</main>
         <Pie />
       </div>
     </div>

@@ -9,6 +9,7 @@ import { Microfono } from "./microfono.tsx";
 import { Llamada } from "./llamada.tsx";
 import { LLAVE_RELATO } from "../../captura/contexto.ts";
 import { leerContextoEvento, type ContextoEvento } from "../e/contexto.ts";
+import { IconoEscribir, IconoLlamada, IconoMicrofono, IconoTelefono } from "../../producto/iconos.tsx";
 
 export function Formulario({ claveDeReserva }: {
   /**
@@ -118,7 +119,9 @@ export function Formulario({ claveDeReserva }: {
         // es terminar.
         <div className="pc-callout" role="alert" data-prueba="orientacion">
           <p><strong>{ORIENTACION}</strong></p>
-          <a className="pc-action" href="tel:123">Llamar al 123</a>
+          {/* El icono del teléfono y nada más: el texto de `ORIENTACION` es el
+              acordado en `V13` y no se toca ni se le añade nada. */}
+          <a className="pc-action" href="tel:123"><IconoTelefono />Llamar al 123</a>
           <p className="pc-help">
             Lo que ya escribiste se conserva. Puedes llamar y volver.
           </p>
@@ -128,13 +131,17 @@ export function Formulario({ claveDeReserva }: {
       {/* **El selector vive fuera de los dos formularios.** «Te llamamos» tiene
           el suyo, y un formulario dentro de otro no es HTML válido: al enviar el
           de adentro se enviaba también el de afuera. */}
+      {/* Los tres modos, con su icono. `.pc-mode svg` está dimensionado en la
+          hoja desde el principio y no había ninguno: tres palabras sueltas en
+          una barra gris no se leen como tres formas de hacer lo mismo.
+          El texto no cambia — es el nombre por el que se llaman. */}
       <div className="pc-modes" role="group" aria-label="Cómo quieres contarlo">
         <button type="button" className="pc-mode" aria-pressed={modo === "escribir"}
-                onClick={() => setModo("escribir")}>Escribir</button>
+                onClick={() => setModo("escribir")}><IconoEscribir />Escribir</button>
         <button type="button" className="pc-mode" aria-pressed={modo === "hablar"}
-                onClick={() => setModo("hablar")}>Hablar</button>
+                onClick={() => setModo("hablar")}><IconoMicrofono />Hablar</button>
         <button type="button" className="pc-mode" aria-pressed={modo === "llamada"}
-                onClick={() => setModo("llamada")}>Te llamamos</button>
+                onClick={() => setModo("llamada")}><IconoLlamada />Te llamamos</button>
       </div>
 
       {modo === "llamada" && <Llamada />}

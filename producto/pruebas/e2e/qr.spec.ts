@@ -14,7 +14,13 @@ const marca = () => `qr-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 test("se puede crear un encuentro desde administración", async ({ page }) => {
   const titulo = `Mesa de prueba ${marca()}`;
   await page.goto("/administracion");
-  await expect(page.locator("h1")).toContainText(/crear un encuentro/i);
+  // **El titular es el de la pantalla, no el de su primera sección.** Decía
+  // «Crear un encuentro», que es una de las cuatro cosas que se hacen aquí:
+  // quien entraba a generar un QR leía un titular que hablaba de otra cosa. Se
+  // comprueban los dos — que el `h1` nombre la pantalla y que la sección siga
+  // estando donde se la busca.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/encuentros y materiales/i);
+  await expect(page.getByRole("heading", { name: /crear un encuentro/i })).toBeVisible();
   // Una pantalla interna sin autorización es aceptable en desarrollo; que nadie
   // se entere, no.
   await expect(page.locator(".bo-sidebar")).toContainText(/sin permisos/i);

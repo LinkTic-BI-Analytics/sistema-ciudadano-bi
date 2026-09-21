@@ -220,7 +220,9 @@ test("«abrir siguiente» abre el más antiguo, no el más grave", async ({ page
 
   await page.goto("/consola");
   const primero = await page.locator(".bo-table-desktop .bo-record-link").first().getAttribute("href");
-  const siguiente = await page.getByRole("link", { name: /abrir siguiente/i }).getAttribute("href");
+  // El rótulo pasó a «Abrir el siguiente» al salir del formulario de filtros y
+  // subir a la cabecera de la página, que es donde va la acción de la pantalla.
+  const siguiente = await page.getByRole("link", { name: /abrir el siguiente/i }).getAttribute("href");
   expect(siguiente).toBe(primero);
 });
 

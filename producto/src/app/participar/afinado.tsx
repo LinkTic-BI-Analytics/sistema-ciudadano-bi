@@ -9,6 +9,9 @@ import {
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, TEMAS, type Lectura, type Preguntable, type Tema } from "../../captura/lectura.ts";
+import { Progreso } from "./progreso.tsx";
+import { Comprobante } from "./comprobante.tsx";
+import { IconoGrupo, IconoIdea } from "../../producto/iconos.tsx";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -371,6 +374,30 @@ export function Afinado({ codigo }: { codigo: string }) {
     setPaso(vueltaAlVolver >= vueltas.length ? "voceria" : "falta");
   }
 
+  // **Cuántos pasos hay, y que no cambien a mitad.** El total se contaba con
+  // `candidatos.length`, que sube y baja mientras la persona busca su
+  // municipio: el «de 5» se volvía «de 4» sin que ella hubiera hecho nada. Y
+  // escoger problema dejaba de contarse al juntarlos en uno.
+  //
+  // Los pasos son fijos desde el principio: escoger (si contó varias cosas) ·
+  // lo que entendimos · el contexto heredado (si viene de otro aporte) · dónde
+  // ocurre · las vueltas de lo que falta · quién habla.
+  //
+  // **Sube aquí desde más abajo, y eso es lo que arregla la queja.** Estaba
+  // calculado después de las salidas de `voceria` y de `listo`, así que en esos
+  // dos pasos no existía: el indicador se apagaba justo al final, que es donde
+  // alguien se pregunta cuánto falta.
+  const antes = (huboEscoger ? 1 : 0) + (tieneAlgo(heredado) ? 1 : 0);
+  const total = antes + 3 + vueltas.length;
+  const actual =
+    paso === "escoger" ? 1
+    : paso === "entendimos" ? (huboEscoger ? 2 : 1)
+    : paso === "heredado" ? (huboEscoger ? 3 : 2)
+    : paso === "falta" ? antes + 3 + vuelta
+    // La vocería es el último de los pasos fijos; el municipio, el anterior.
+    : paso === "voceria" ? total
+    : antes + 2;
+
   if (leyendo) {
     return (
       <section className="pc-section" data-prueba="afinar">
@@ -391,11 +418,14 @@ export function Afinado({ codigo }: { codigo: string }) {
     // La lectura no salió. No se pierde nada: el aporte está guardado y el
     // código es lo único que la persona necesita de nosotros.
     return (
-      <section className="pc-section" data-prueba="afinar">
+      <section className="pc-section pc-entra" data-prueba="afinar">
         <h2>Recibimos lo que nos contaste</h2>
-        <p className="pc-status" data-prueba="codigo" style={{ fontSize: "1.5rem", letterSpacing: "0.1em" }}>
-          {codigo}
-        </p>
+        {/* **El mismo comprobante que el del final**, no una versión hecha con
+            estilos en línea. Este es el camino de cuando la lectura no sale: la
+            persona no pierde nada —el aporte está guardado— y lo único que
+            necesita de nosotros es esto, así que tiene que verse igual de bien
+            que cuando todo funciona. */}
+        <Comprobante codigo={codigo} rotulo="Tu código" />
         <p className="pc-help">Guárdalo. Con él puedes volver a ver tu aporte, sin correo ni cuenta.</p>
         <a className="pc-action" href="/mis-aportes">Consultar mi aporte</a>
       </section>
@@ -405,21 +435,34 @@ export function Afinado({ codigo }: { codigo: string }) {
   const volverDeVoceria = atras();
   if (paso === "voceria") {
     return (
-      <section className="pc-section" data-prueba="voceria">
-        {/* También aquí se puede volver: es la última pantalla antes de
-            terminar, y es justo donde alguien se acuerda de que escribió mal
-            el municipio. */}
-        <div className="pc-topline">
-          <p className="pc-help" aria-live="polite">Última pregunta</p>
-          {volverDeVoceria && (
-            <button type="button" className="pc-text-action" data-prueba="volver"
-                    onClick={volverDeVoceria}>
-              Volver
-            </button>
-          )}
-        </div>
+      <section className="pc-section pc-entra" key="voceria" data-prueba="voceria">
+        {/* **El indicador también aquí.** Decía «Última pregunta» y quitaba el
+            «Paso X de Y», así que el contador desaparecía justo en el paso
+            donde alguien está decidiendo si sigue o se va. La vocería es el
+            último de los pasos fijos: va en `total` de `total`.
+
+            También aquí se puede volver: es la última pantalla antes de
+            terminar, y es justo donde alguien se acuerda de que escribió mal el
+            municipio. */}
+        <Progreso actual={total} total={total} volver={volverDeVoceria && (
+          <button type="button" className="pc-text-action" data-prueba="volver"
+                  onClick={volverDeVoceria}>
+            Volver
+          </button>
+        )} />
         <Guardado codigo={codigo} />
-        <h2>¿Hablas por ti o por un grupo?</h2>
+
+        {/* **Esta no es una pregunta más, y se veía como una más.** Cambia a
+            quién hay que responderle y a nombre de quién queda el aporte —si es
+            de un colectivo, el expediente deja de ser de una persona—. Lleva el
+            mismo realce que «¿Se te ocurre cómo?»: no es decoración, es lo que
+            distingue una pregunta que decide algo de una que solo completa. */}
+        <div className="pc-destacada">
+          <span className="pc-label-display">
+            <IconoGrupo />
+            Antes de terminar
+          </span>
+          <h2>¿Hablas por ti o por un grupo?</h2>
         {!porGrupo ? (
           <>
             <p className="pc-help">
@@ -465,6 +508,7 @@ export function Afinado({ codigo }: { codigo: string }) {
             </div>
           </>
         )}
+        </div>
       </section>
     );
   }
@@ -472,13 +516,19 @@ export function Afinado({ codigo }: { codigo: string }) {
   if (paso === "listo") {
     return (
       <>
-        <section className="pc-section" data-prueba="afinado-listo" aria-live="polite">
+        <section className="pc-section pc-entra" key="listo" data-prueba="afinado-listo" aria-live="polite">
+          {/* **El indicador llega hasta el final.** Aquí no había nada, así que
+              la barra que acompañó a la persona durante cinco pantallas
+              desaparecía en la única donde se cierra. Llena, y diciendo
+              «Listo»: con la captura terminada, «Paso 5 de 5» es una cuenta y
+              lo que hace falta es la respuesta. */}
+          <Progreso actual={total} total={total} terminado />
           <h2>Listo. Quedó registrado con tus palabras</h2>
           {/* `.pc-success` es un estilo de texto, no una caja: va en la frase
               que da la buena noticia y en nada más. Puesto en la sección teñía
               de verde y agrandaba todo lo de dentro, avisos incluidos. */}
           <p className="pc-success">Guarda este código.</p>
-          <p className="pc-key" data-prueba="codigo">{codigo}</p>
+          <Comprobante codigo={codigo} rotulo="Tu código" />
           <p className="pc-help">
             Con él vuelves a ver tu aporte y qué pasó con él, <strong>sin dar correo ni crear una
             cuenta</strong>. Anótalo o tómale una foto: no te lo podemos volver a mostrar, porque
@@ -541,39 +591,27 @@ export function Afinado({ codigo }: { codigo: string }) {
   const hayQueConfirmar = candidatos.length > 0;
   const volver = atras();
 
-  // **Cuántos pasos hay, y que no cambien a mitad.** El total se contaba con
-  // `candidatos.length`, que sube y baja mientras la persona busca su
-  // municipio: el «de 5» se volvía «de 4» sin que ella hubiera hecho nada. Y
-  // escoger problema dejaba de contarse al juntarlos en uno.
-  //
-  // Ahora los pasos son fijos desde el principio: escoger (si contó varias
-  // cosas) · lo que entendimos · el contexto heredado (si viene de otro aporte)
-  // · dónde ocurre · las vueltas de lo que falta · quién habla.
-  const antes = (huboEscoger ? 1 : 0) + (tieneAlgo(heredado) ? 1 : 0);
-  const total = antes + 3 + vueltas.length;
-  const actual =
-    paso === "escoger" ? 1
-    : paso === "entendimos" ? (huboEscoger ? 2 : 1)
-    : paso === "heredado" ? (huboEscoger ? 3 : 2)
-    : paso === "falta" ? antes + 3 + vuelta
-    : antes + 2;
+  // Si la vuelta que toca es **solo la propuesta**. Con cuatro preguntables
+  // repartidas de tres en tres, es el caso corriente: la segunda vuelta queda
+  // con `solucionSugerida` sola, y es la que la persona ve casi siempre.
+  const soloLaPropuesta =
+    vueltas[vuelta]?.length === 1 && vueltas[vuelta]?.[0] === "solucionSugerida";
 
   return (
-    <section className="pc-section" data-prueba="afinar">
+    // **Cada paso entra, y por eso se nota que es otro.** `key={paso}` obliga a
+    // React a montar una sección nueva en cada avance, así que `.pc-entra`
+    // —que ya existe, ya vive dentro de `prefers-reduced-motion` y ya tiene su
+    // rama de `@media print`— vuelve a dispararse. Sin la `key`, React reusa el
+    // mismo nodo y la animación corre una vez y nunca más: la pantalla cambiaba
+    // de contenido sin que nada dijera que había cambiado de pregunta.
+    <section className="pc-section pc-entra" key={paso} data-prueba="afinar">
       {/* Decir cuánto falta es lo que impide que alguien abandone creyendo que
           esto no se acaba nunca. */}
-      {/* `.pc-topline` existe y hace justo esto: dos cosas en una línea, que se
-          apilan cuando no caben. `.pc-steps` es la lista numerada de la portada
-          y usarla aquí sería inventarle un significado a una clase que ya
-          tiene el suyo. */}
-      <div className="pc-topline">
-        <p className="pc-help" aria-live="polite">Paso {actual} de {total}</p>
-        {volver && (
-          <button type="button" className="pc-text-action" data-prueba="volver" onClick={volver}>
-            Volver
-          </button>
-        )}
-      </div>
+      <Progreso actual={actual} total={total} volver={volver && (
+        <button type="button" className="pc-text-action" data-prueba="volver" onClick={volver}>
+          Volver
+        </button>
+      )} />
       <Guardado codigo={codigo} />
       {paso !== "entendimos" && paso !== "escoger" && <SobreQue problema={problema} />}
 
@@ -985,10 +1023,29 @@ export function Afinado({ codigo }: { codigo: string }) {
 
       {paso === "falta" && vueltas[vuelta] && (
         <div data-prueba={`vuelta-${vuelta + 2}`}>
-          <h2>{vuelta === 0 ? "Nos falta poco" : "Y lo último"}</h2>
+          {/* **Cuando la vuelta es solo la propuesta, la vuelta entera cambia de
+              tono.** El encabezado genérico decía «Esto no lo encontramos en lo
+              que contaste», y eso es cierto de un dato que falta —dónde, a
+              quiénes, desde cuándo— pero no de una solución: no es algo que se
+              nos escapó, es algo que nadie está obligado a traer. Presentarla
+              igual que las demás es lo que la hacía parecer «una pregunta
+              cualquiera del cuestionario». */}
+          <h2>
+            {soloLaPropuesta ? "Una última cosa, y es opcional"
+              : vuelta === 0 ? "Nos falta poco" : "Y lo último"}
+          </h2>
           <p className="pc-help">
-            Esto no lo encontramos en lo que contaste. <strong>Lo que no sepas, déjalo en
-            blanco</strong> — no vamos a suponerlo.
+            {soloLaPropuesta ? (
+              <>
+                Nadie tiene que traer la solución para que el problema se escuche.{" "}
+                <strong>Si se te ocurre algo, aquí queda con tus palabras.</strong>
+              </>
+            ) : (
+              <>
+                Esto no lo encontramos en lo que contaste. <strong>Lo que no sepas, déjalo en
+                blanco</strong> — no vamos a suponerlo.
+              </>
+            )}
           </p>
           <form action={accion2} key={vuelta}>
             <input type="hidden" name="codigo" value={codigo} readOnly />
@@ -1002,7 +1059,31 @@ export function Afinado({ codigo }: { codigo: string }) {
             {PREGUNTABLES.filter((k) => !vueltas[vuelta]!.includes(k) && lect[k]).map((k) => (
               <input key={k} type="hidden" name={k} value={lect[k]!} readOnly />
             ))}
-            {vueltas[vuelta].map((k) => (
+            {vueltas[vuelta].map((k) => k === "solucionSugerida" ? (
+              /* **La pregunta que no es una más.** Salía del mismo bucle que las
+                 demás: misma etiqueta, misma caja de una línea, mismo gris. Y no
+                 es lo mismo — las otras cuatro completan un registro; esta es lo
+                 único de toda la captura donde la persona propone, y el propio
+                 requisito insiste en que no puede ser un requisito.
+
+                 Tres cosas la separan, y ninguna es un color de texto nuevo:
+                 el bloque con borde dorado y elevación, la versalita con icono
+                 que dice de qué va, y una caja de tres renglones en vez de una
+                 — porque una propuesta no cabe en una línea, y una caja de una
+                 línea le dice a la persona cuánto se espera que escriba. */
+              <div className="pc-destacada" key={k}>
+                <span className="pc-label-display">
+                  <IconoIdea />
+                  Tu propuesta
+                </span>
+                <div className="pc-field">
+                  <label className="pc-label" htmlFor={k}>{COMO_SE_PREGUNTA[k].etiqueta}</label>
+                  <textarea id={k} name={k} className="pc-input" rows={3}
+                            defaultValue={lect[k] ?? ""} aria-describedby={`${k}-ayuda`} />
+                  <p className="pc-help" id={`${k}-ayuda`}>{COMO_SE_PREGUNTA[k].ayuda}</p>
+                </div>
+              </div>
+            ) : (
               <div className="pc-field" key={k}>
                 <label className="pc-label" htmlFor={k}>{COMO_SE_PREGUNTA[k].etiqueta}</label>
                 {/* Lo que ya escribió vuelve puesto. Sin esto, volver atrás y

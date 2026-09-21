@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { FilaBandeja, Opciones } from "../../revision/bandeja.ts";
 import { Territorio } from "./territorio.tsx";
 import { esTema, TEMAS } from "../../captura/lectura.ts";
+import { IconoBuscar } from "../../producto/iconos.tsx";
 import {
   COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE, ALCANCES,
 } from "../../revision/normalizar.ts";
@@ -176,13 +176,12 @@ export function Señales({ fila }: { fila: FilaBandeja }) {
  * que exista una bandeja compartida.
  */
 export function Filtros({
-  texto, ubicacion, orden, siguiente, opciones, departamento, municipio, tema, gestion,
+  texto, ubicacion, orden, opciones, departamento, municipio, tema, gestion,
   soloAlerta, antiguedad, alcance,
 }: {
   texto: string;
   ubicacion: string;
   orden: string;
-  siguiente: string | null;
   opciones: Opciones;
   departamento: string;
   municipio: string;
@@ -196,10 +195,19 @@ export function Filtros({
     <form className="bo-filters" method="get" action="/consola">
       <div className="bo-field bo-search">
         <label className="bo-label-tag" htmlFor="q">Buscar</label>
-        {/* Relato, lugar, territorio, departamento o tema. Sin tildes ni
-            mayúsculas: nadie escribe «Abriaquí» con tilde buscando deprisa. */}
-        <input id="q" name="q" defaultValue={texto} type="search"
-               placeholder="relato, lugar, municipio o tema" />
+        {/* **`.bo-search-field` es la envoltura que la hoja pide para esto** y
+            no se estaba usando: coloca la lupa dentro del campo y le deja sitio
+            con `padding-left`. Sin ella, el icono se pondría encima del texto.
+            No confundir con `bo-search`, que es la que hace que el buscador
+            ocupe la fila entera bajo 60rem — son dos cosas, y confundirlas ya
+            costó una vez (ver la cabecera de `campos.tsx`). */}
+        <div className="bo-search-field">
+          <IconoBuscar />
+          {/* Relato, lugar, territorio, departamento o tema. Sin tildes ni
+              mayúsculas: nadie escribe «Abriaquí» con tilde buscando deprisa. */}
+          <input id="q" name="q" defaultValue={texto} type="search"
+                 placeholder="relato, lugar, municipio o tema" />
+        </div>
       </div>
 
       {/* **El territorio, que es lo que se capturaba y no se podía filtrar.**
@@ -282,14 +290,17 @@ export function Filtros({
           Solo con alerta de urgencia
         </label>
       </div>
+      {/* **Solo «Filtrar».** Aquí vivía también «Abrir siguiente», que no es un
+          filtro: era un enlace metido dentro de un `<form>` y una segunda acción
+          principal en el mismo grupo, justo lo que la dirección visual prohíbe
+          —«una acción principal por grupo»—. Se fue a la cabecera de la página,
+          que es donde el sistema de diseño pone la acción de una pantalla.
+
+          **Y sigue sin enviarse solo al cambiar un control.** Un formulario que
+          se manda al soltar un `<select>` sorprende a quien navega con el
+          teclado y recarga la pantalla debajo de los dedos. */}
       <div className="bo-field">
-        <button className="bo-button">Filtrar</button>{" "}
-        {/* «Abrir siguiente» abre el primero visible **por fecha de
-            recepción**, no el más grave: no hay puntuación de prioridad, y no
-            haberla es la decisión. */}
-        {siguiente
-          ? <Link className="bo-button" data-variant="primary" href={`/consola/${siguiente}`}>Abrir siguiente</Link>
-          : <button className="bo-button" data-variant="primary" disabled>Abrir siguiente</button>}
+        <button className="bo-button">Filtrar</button>
       </div>
     </form>
   );

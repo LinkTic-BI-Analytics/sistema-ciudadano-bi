@@ -27,6 +27,7 @@ de la máquina, no del proyecto.
 | **No hay, a propósito** | **Ninguna tabla.** Ver [`supabase/schemas/LEEME.md`](supabase/schemas/LEEME.md) |
 | **No hay, a propósito** | **Ninguna autenticación.** No hay mecanismo de identidad decidido — es la pregunta P4 del pliego |
 | Hay | La línea gráfica **Patria Milagro v1**: 374 tokens en dos modos, Montserrat e Inter servidas desde el propio dominio, y la bandera de fondo en el hero |
+| Hay | **Dos hojas propias** además de las seis copiadas del paquete de diseño: `propio-ciudadano.css` y `propio-interno.css`. Qué puede ir ahí y qué no, en [`src/producto/tokens/LEEME.md`](src/producto/tokens/LEEME.md); por qué existen, en `V25` de [`negocio/vacios.md`](../negocio/vacios.md) |
 
 ## De cero a andando
 

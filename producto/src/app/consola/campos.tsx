@@ -44,7 +44,12 @@ export function Campo({ id, name, etiqueta, opcional, ayuda, ejemplo, defaultVal
   opcional?: boolean; ayuda?: string; ejemplo?: string; defaultValue?: string;
 }) {
   return (
-    <Envoltura id={id} etiqueta={etiqueta} opcional={opcional} ayuda={ayuda}>
+    // **El `ejemplo` se pasaba y se perdía aquí.** `Envoltura` sabe pintarlo
+    // —debajo del campo y dicho como lo que es, «Por ejemplo: …»— y `Campo` lo
+    // recibía sin reenviarlo. Quince campos de la ficha traían su ejemplo
+    // escrito desde que se construyó la pantalla y ninguno lo mostraba; el
+    // `eslint` lo decía en forma de aviso por una variable sin usar.
+    <Envoltura id={id} etiqueta={etiqueta} opcional={opcional} ayuda={ayuda} ejemplo={ejemplo}>
       {/* `required` va por ausencia de `opcional`: un campo obligatorio que no
           lo dice hasta que fallas es una trampa. */}
       {/* **Sin `placeholder`.** En una pantalla de revisión, un ejemplo que es

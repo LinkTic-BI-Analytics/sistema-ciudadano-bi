@@ -1,8 +1,12 @@
 # Los tokens del producto
 
-**Nada de esta carpeta se edita a mano.** Todo sale de
+**Nada de lo copiado del paquete se edita a mano.** Esas seis hojas salen de
 `negocio/linea-grafica/tokens/` con `npm run tokens:build` (o `./scripts/tokens.sh` desde la
 raíz), y lo que cambie se ve en el diff.
+
+Lo demás sí es nuestro, y la tabla dice cuál es cuál. **Esa distinción es el archivo**: el
+titular decía antes «nada de esta carpeta», y ya era falso para `shadcn-completar.css`. Una
+regla que el propio archivo incumple no la respeta nadie.
 
 | Archivo | De dónde sale | Qué trae |
 |---|---|---|
@@ -10,11 +14,32 @@ raíz), y lo que cambie se ve en el diff.
 | `shadcn-theme.css` | copiado del paquete v0.5 | Las 22 variables de shadcn mapeadas a tokens semánticos. Siguen al modo solas: apuntan a un semántico y CSS reevalúa |
 | `componentes.css`, `marco.css`, `estructura.css` | copiadas del paquete v0.5 | La cara ciudadana, bajo `.pc-ui` |
 | `backoffice.css` | copiada del paquete v0.5 | El perfil interno, bajo `.pc-backoffice` |
-| `shadcn-completar.css` | **generado aquí** | Lo que este proyecto le agrega: las ocho de barra lateral y las ocho sombras |
+| `shadcn-completar.css` | **generado aquí** por `scripts/lib/tokens_producto.py` | Lo que este proyecto le agrega al puente de shadcn: las ocho de barra lateral y las ocho sombras |
+| `propio-ciudadano.css` | **escrito aquí** | Las clases que la cara ciudadana necesitaba y el paquete no trae: el avance de la captura, la pregunta destacada y el comprobante |
+| `propio-interno.css` | **escrito aquí** | Lo mismo para el perfil interno: el resumen de la bandeja, los filtros puestos, el esqueleto de carga, la navegación por enlaces y el botón de tema |
 
 La separación es a propósito: **se tiene que poder ver de un vistazo qué es del sistema de
 diseño y qué es nuestro.** Es la misma regla que gobierna los tokens uno por uno — cada valor
 dice de dónde salió.
+
+## Qué puede llevar una hoja propia, y qué no
+
+Las dos hojas `propio-*` existen porque `scripts/lib/clases_inventadas.py` exige que toda clase
+`pc-`/`bo-` usada en una pantalla esté declarada en esta carpeta, y su propia cabecera dice qué
+significa que no lo esté: *«o es un error de dedo o es una clase que hay que pedirle al
+diseño»*. Estas son lo segundo, y **por eso hay que pedirlas**: la lista está en
+[`negocio/vacios.md`](../../../../negocio/vacios.md) para la v0.6.
+
+Mientras tanto, tres reglas que las hacen inofensivas:
+
+- **Cero literales.** Ni un color, ni una sombra, ni una duración escritos a mano: todo
+  `var(--pc-…)`. La compuerta de contraste valida 108 pares **sobre el JSON**, y un `#hex`
+  escrito aquí se le escapa entero.
+- **Solo pares de texto que el generador ya validó.** El énfasis se hace con borde, icono,
+  elevación y versalita, que no son texto y no arrastran umbral.
+- **Nada de reglas sueltas.** Todo cuelga de `.pc-ui` o de `.pc-backoffice`, como las copiadas:
+  una regla global se cuela en las vistas del harness y no hay token que la detenga
+  (`harness/interfaz.md` I5).
 
 ## Los dos modos
 

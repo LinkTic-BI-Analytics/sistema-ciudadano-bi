@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { procesoVigente } from "../datos/proceso.ts";
 import { convocatoriaVigente, proximosEncuentros, type Encuentro } from "../convocatoria/agenda.ts";
 import { Cabecera, FranjaInstitucional, Pie, Tricolor } from "../producto/marca.tsx";
+import { IconoAviso, IconoSinCuenta } from "../producto/iconos.tsx";
 
 /** El retardo de entrada de cada pieza del hero. Entra en cascada, no de golpe. */
 const orden = (n: number) => ({ "--pc-orden": n }) as CSSProperties;
@@ -185,10 +186,18 @@ export default async function Portada() {
 
                     Es el mismo error que ya cometimos con `.bo-search-field`:
                     usar como estilo de texto una clase que es un contenedor. */}
+                {/* **Y el icono que esa clase esperaba.** `.pc-hero-help svg`
+                    está dimensionado en la hoja con su `margin-top` de dos
+                    píxeles para que caiga alineado con la primera línea, y no
+                    había ninguno: la regla llevaba ahí desde el primer día
+                    apuntando a un elemento que nadie ponía.
+                    Va `aria-hidden` y nunca solo: el texto lo dice entero. */}
                 <p className="pc-hero-help">
+                  <IconoSinCuenta />
                   <span>Sin cuenta, sin correo y sin cédula. Puedes escribirlo o contarlo hablando.</span>
                 </p>
                 <p className="pc-hero-help">
+                  <IconoAviso />
                   <span>
                     Registrarlo no es una promesa de obra: es que alguien lo lea y tú puedas ver
                     qué pasó.

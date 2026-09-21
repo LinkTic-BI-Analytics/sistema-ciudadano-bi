@@ -1,0 +1,194 @@
+/* Lo que este proyecto le agrega a la cara ciudadana del sistema de diseño.
+   Importar DESPUÉS de componentes.css, marco.css y estructura.css.
+
+   **Esta hoja es nuestra, no del paquete v0.5.** Las seis hojas que copia
+   `scripts/tokens.sh` no se editan a mano y esta no está en esa lista: el
+   guion no la copia, no la pisa y no la borra. La separación es la misma regla
+   que gobierna `shadcn-completar.css` y que el `LEEME.md` de esta carpeta
+   enuncia: *se tiene que poder ver de un vistazo qué es del sistema de diseño
+   y qué es nuestro*.
+
+   Cada clase de aquí es **una clase que hay que pedirle al equipo de diseño**
+   para la v0.6. Lo dice la cabecera de `scripts/lib/clases_inventadas.py`: si
+   una clase no está en el paquete, «o es un error de dedo o es una clase que
+   hay que pedirle al diseño». Esto es lo segundo, y queda anotado en
+   `negocio/vacios.md` para que no se pierda.
+
+   ## Las cuatro reglas que esta hoja no rompe
+
+   1. **Cero literales.** Ni un color, ni una sombra, ni una duración escritos a
+      mano. Todo `var(--pc-…)`. La compuerta de contraste valida 108 pares sobre
+      el JSON, y un `#hex` aquí se le escapa entero.
+   2. **Solo pares de texto que el generador ya validó.** El texto de estos
+      bloques es `text.default`, y el fondo es `surface.subtle` o `surface.base`
+      —los dos pares están en `generar_tokens.py`—. El énfasis lo dan el borde,
+      el icono y la versalita, que **no son texto** y no arrastran umbral.
+   3. **Todo cuelga de `.pc-ui`.** Ni una regla suelta: las vistas del harness
+      comparten documento y tienen su propia línea gráfica (`interfaz.md` I5).
+   4. **El movimiento vive dentro de `prefers-reduced-motion: no-preference`**,
+      no se apaga después. Y nada nace en `opacity: 0` fuera de esa guarda:
+      `pruebas/e2e/identidad.spec.ts` comprueba que con el movimiento reducido no
+      quede nada invisible. */
+
+/* ── El avance de la captura ──────────────────────────────────────────────────
+   «Paso 3 de 5» estaba escrito y era lo único: un párrafo de 14 px en gris, del
+   tamaño de la ayuda que hay debajo. La queja fue literal — *cuesta entender en
+   qué punto de la recolección de los datos se encuentra*.
+
+   La barra no sustituye al texto, va con él: `interfaz.md` pide que el estado
+   nunca se comunique solo por color, y una barra sin cifra es exactamente eso.
+
+   Va en el `.pc-topline` que ya existe, así que hereda su comportamiento de
+   apilarse cuando no cabe. */
+.pc-ui .pc-progreso {
+  flex: 1 1 100%;
+  height: .375rem;
+  border-radius: var(--pc-primitive-radius-pill);
+  background: var(--pc-component-mode-background);
+  overflow: hidden;
+}
+.pc-ui .pc-progreso-barra {
+  display: block; height: 100%;
+  border-radius: inherit;
+  background: var(--pc-semantic-color-brand-accent);
+}
+
+/* ── La pregunta que no es una más ────────────────────────────────────────────
+   Dos preguntas del afinado no son del mismo orden que las otras y salían
+   idénticas: «¿Se te ocurre cómo?» —lo que la persona propondría— y «¿Hablas
+   por ti o por un grupo?», que cambia a quién hay que responderle.
+
+   El énfasis es **borde dorado, elevación, versalita e icono**, nunca un color
+   de texto nuevo: el fondo es `surface.subtle`, que es el par que el generador
+   valida contra `text.default` («Aviso de borrador»).
+
+   **No se usa `.pc-callout`**, que existe y se le parece: ese es el borde del
+   aviso del 123 y teñiría de alerta una pregunta que es optativa y se puede
+   dejar en blanco. */
+.pc-ui .pc-destacada {
+  background: var(--pc-semantic-color-surface-subtle);
+  border: var(--pc-semantic-border-width) solid var(--pc-semantic-color-border-accent);
+  border-left-width: 3px;
+  border-radius: var(--pc-primitive-radius-lg);
+  box-shadow: var(--pc-semantic-elevation-card);
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+/* La versalita de la cabecera y su icono. El icono va en dorado porque **no es
+   texto**: es el mismo recurso que el sistema ya usa en `.bo-empty > svg`.
+   Vale igual para el comprobante, que lleva la misma cabecera. */
+.pc-ui :is(.pc-destacada, .pc-comprobante) > .pc-label-display {
+  display: flex; align-items: center; gap: .5rem;
+}
+/* Solo en la pregunta destacada: el comprobante es una rejilla con `gap`, y un
+   margen encima del `gap` separa el doble. */
+.pc-ui .pc-destacada > .pc-label-display { margin-bottom: .75rem; }
+.pc-ui :is(.pc-destacada, .pc-comprobante) > .pc-label-display svg {
+  width: 18px; height: 18px; flex-shrink: 0;
+  color: var(--pc-semantic-color-brand-accent);
+}
+/* El campo de dentro pierde su margen de arriba: el bloque ya lo pone. */
+.pc-ui .pc-destacada > .pc-field:first-of-type { margin-top: 0; }
+.pc-ui .pc-destacada > p:last-child { margin-bottom: 0; }
+@media (max-width: 40rem) {
+  .pc-ui .pc-destacada { padding: 1rem; }
+}
+
+/* ── El comprobante ───────────────────────────────────────────────────────────
+   Es lo único que la persona se lleva, y se pintaba con `.pc-key` — que es la
+   leyenda de color del muestrario del sistema, en el bloque rotulado «no se usa
+   en el producto»: 14 px, fuente de cuerpo, sin caja y sin forma de copiarlo.
+
+   Mientras tanto `layout.tsx` carga JetBrains Mono con un comentario que dice
+   para qué: «las cifras que se comparan entre sí —el código del comprobante».
+
+   **El nodo de texto es el código crudo, sin espacios insertados.** El
+   agrupamiento visual lo hace `letter-spacing`: meter espacios de verdad
+   rompería copiar y pegar, y `pruebas/e2e` lee ese nodo para volver a usarlo. */
+.pc-ui .pc-comprobante {
+  display: grid; gap: .75rem; justify-items: start;
+  background: var(--pc-component-card-background);
+  border: var(--pc-semantic-border-width) solid var(--pc-semantic-color-border-subtle);
+  border-left: 3px solid var(--pc-semantic-color-brand-accent);
+  border-radius: 0 var(--pc-primitive-radius-lg) var(--pc-primitive-radius-lg) 0;
+  box-shadow: var(--pc-semantic-elevation-card);
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 1.5rem;
+}
+.pc-ui .pc-comprobante b {
+  font-family: var(--pc-semantic-fontFamily-mono);
+  font-size: var(--pc-primitive-fontSize-h3);
+  font-weight: 700; line-height: 1.25;
+  letter-spacing: .16em;
+  color: var(--pc-semantic-color-text-default);
+  /* Doce caracteres con tracking no caben en 320 px sin esto, y lo que se
+     desborda no se puede copiar. */
+  overflow-wrap: anywhere;
+}
+.pc-ui .pc-comprobante .pc-text-action { min-height: 2.75rem; }
+/* La confirmación de «Copiado» **no se desvanece**: un aviso que se va solo no
+   comunica un estado. Ocupa su sitio desde el principio para que al aparecer no
+   empuje el botón que la persona acaba de tocar. */
+.pc-ui .pc-comprobante output {
+  display: block; min-height: 1.5rem;
+  font-size: .875rem; color: var(--pc-semantic-color-text-secondary);
+}
+@media (max-width: 40rem) {
+  .pc-ui .pc-comprobante { padding: 1rem 1.125rem; }
+}
+
+/* ── El campo donde se teclea un código ───────────────────────────────────────
+   El alfabeto del comprobante no tiene O, ni I, ni L: se escogió así porque el
+   código se lee en voz alta en una mesa y esas tres se confunden al dictarlas
+   (`captura/recibir.ts`). Esa precaución se perdía entera al teclearlo con la
+   letra del cuerpo, donde el cero y la O vuelven a parecerse.
+
+   `[data-cifra]` y no una clase nueva: es una variante de `.pc-input`, no otro
+   componente. La mayúscula es solo de pantalla —el servidor normaliza igual—
+   y lo que hace es que se vea como lo que la persona tiene apuntado. */
+.pc-ui .pc-input[data-cifra] {
+  font-family: var(--pc-semantic-fontFamily-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* ── Los iconos que este proyecto añade ───────────────────────────────────────
+   El paquete dimensiona `svg` sitio por sitio y deja sin tamaño los sitios
+   donde no había previsto ninguno. Sin regla, un icono sale a 24 px al lado de
+   un texto de 14: se ve como un error, no como un icono.
+
+   Regla del producto: **el icono acompaña a una palabra, nunca la sustituye**,
+   y siempre va con `aria-hidden` (ver `src/producto/iconos.tsx`). */
+/* Con el icono puesto, los tres modos dejan de caber en una línea de teléfono
+   y el navegador parte las palabras: salía «Escrib / ir» y «Habl / ar». Una
+   palabra partida a la mitad dentro de un botón se lee como un error de la
+   pantalla, no como un botón estrecho.
+   No se parte, y si no cabe, la barra envuelve — que es lo único honesto. */
+.pc-ui .pc-modes { flex-wrap: wrap; }
+.pc-ui .pc-mode { white-space: nowrap; }
+
+/* Título a un lado y estado al otro. En un teléfono no caben los dos, y sin
+   permiso para envolver el título se estruja contra la píldora. */
+@media (max-width: 40rem) {
+  .pc-ui .pc-summary-head { flex-wrap: wrap; gap: .5rem; }
+}
+
+.pc-ui .pc-meta svg { width: 14px; height: 14px; vertical-align: -2px; }
+.pc-ui .pc-text-action svg { width: 16px; height: 16px; }
+.pc-ui .pc-callout svg { width: 16px; height: 16px; vertical-align: -3px; }
+.pc-ui .pc-voice-status svg { width: 16px; height: 16px; vertical-align: -3px; }
+
+/* ── Movimiento ───────────────────────────────────────────────────────────────
+   Un solo gesto propio: la barra que avanza. Todo lo demás reutiliza `.pc-entra`
+   de `componentes.css`, que ya vive dentro de esta misma guarda y ya tiene su
+   rama de `@media print`. */
+@media (prefers-reduced-motion: no-preference) {
+  .pc-ui .pc-progreso-barra {
+    transition: width var(--pc-semantic-motion-normal) var(--pc-ease-out);
+  }
+}
+@media (forced-colors: active) {
+  .pc-ui .pc-progreso { border: 1px solid CanvasText; }
+  .pc-ui .pc-progreso-barra { background: Highlight; }
+  .pc-ui .pc-destacada, .pc-ui .pc-comprobante { border: 1px solid CanvasText; }
+}

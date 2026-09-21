@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { subirGrabacion } from "./acciones.ts";
+import { IconoMicrofono } from "../../producto/iconos.tsx";
 
 // Contar hablando (ADR 0013).
 //
@@ -116,7 +117,7 @@ export function Microfono({
     <div className="pc-voice" data-prueba="microfono" data-estado={estado}>
       {estado === "listo" && (
         <>
-          <p className="pc-voice-status">Contar hablando</p>
+          <p className="pc-voice-status"><IconoMicrofono />Contar hablando</p>
           {/* Se le dice **antes** de grabar, no en una política que nadie lee.
               Si guardamos su voz, tiene que saberlo cuando aprieta el botón. */}
           <p className="pc-help">
@@ -137,7 +138,27 @@ export function Microfono({
 
       {estado === "grabando" && (
         <>
-          <p className="pc-voice-status" aria-live="polite">Grabando · {reloj_}</p>
+          {/* **El punto que late, que el sistema de diseño tenía y nadie
+              renderizaba.** `.pc-record-dot` está declarado desde la primera
+              versión —con su tamaño, su rojo de grabación, su animación y hasta
+              su rama de `forced-colors`— y el comentario de la hoja dice para
+              qué existe: *«es lo único que se mueve solo en toda la interfaz, y
+              tiene una razón: dice que el micrófono está abierto ahora»*. Y la
+              condición que lo acompaña también está escrita ahí: **nunca es la
+              única señal**, al lado va la palabra «Grabando». */}
+          <p className="pc-voice-status" aria-live="polite">
+            <span className="pc-record-dot" aria-hidden />
+            Grabando · {reloj_}
+          </p>
+          {/* Cuánto queda del tope. Tres minutos sin nada que los mida son tres
+              minutos hablando a ciegas, y el corte automático llega sin aviso.
+              Sin `aria-live`: el reloj de arriba ya se anuncia. */}
+          <div className="pc-progreso" role="progressbar"
+               aria-valuemin={0} aria-valuemax={TOPE_SEGUNDOS} aria-valuenow={segundos}
+               aria-label={`Llevas ${reloj_} de ${TOPE_SEGUNDOS / 60} minutos`}>
+            <span className="pc-progreso-barra"
+                  style={{ width: `${Math.min(100, (segundos / TOPE_SEGUNDOS) * 100)}%` }} />
+          </div>
           <p className="pc-help">
             {/* «No prometer audio recuperable si no fue almacenado»: mientras
                 graba no hay nada guardado, y callarlo sería prometerlo. */}
