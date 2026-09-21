@@ -54,9 +54,24 @@ export async function confirmarMunicipio(page: Page, esperado?: string) {
   await c.getByRole("button", { name: /sí, es ahí/i }).click();
 }
 
-/** Sale del paso de vocería sin declarar grupo. */
+/**
+ * Sale del paso de vocería sin declarar grupo, y del que viene detrás.
+ *
+ * **Pasa también por «desde dónde nos contactas»**, que es el último paso fijo
+ * desde que existe. Las pruebas que solo querían llegar al comprobante no tienen
+ * por qué enterarse de que en el medio hay una pregunta más: la que sí quiere
+ * probar esa pregunta la contesta a mano.
+ */
 export async function hablarPorMi(page: Page) {
   const v = page.locator("[data-prueba='voceria']");
   await expect(v).toBeVisible({ timeout: 20_000 });
   await v.getByRole("button", { name: /hablo por mí/i }).click();
+  await noDecirDesdeDonde(page);
+}
+
+/** Termina sin decir desde dónde escribe. `N02`: no contestar es una respuesta. */
+export async function noDecirDesdeDonde(page: Page) {
+  const c = page.locator("[data-prueba='contacto']");
+  await expect(c).toBeVisible({ timeout: 20_000 });
+  await c.locator("[data-prueba='contacto-no-decir']").click();
 }

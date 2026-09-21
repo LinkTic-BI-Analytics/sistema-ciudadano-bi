@@ -115,6 +115,38 @@ CASOS = [
         values ('0500', 'junio 2026', 'municipio', 'CORTO');""",
      True, "R1"),
 
+    ("catálogo · un país con código de dígitos se rechaza",
+     """insert into participacion.territorio (codigo, version, nivel, nombre)
+        values ('05', 'CLDR 48.0', 'pais', 'INVENTADO');""",
+     True, "Q5"),
+
+    ("catálogo · un departamento con código de letras se rechaza",
+     """insert into participacion.territorio (codigo, version, nivel, nombre)
+        values ('ES', 'junio 2026', 'departamento', 'INVENTADO');""",
+     True, "Q5"),
+
+    ("contacto · internacional con código de municipio se rechaza",
+     """insert into participacion.aporte
+          (proceso_id, clave_envio, relato_original, canal,
+           contacto_ambito, contacto_codigo, contacto_version)
+        select id, 'k-con-1', 'la vía está rota', 'web', 'internacional', '05001', 'junio 2026'
+        from participacion.proceso limit 1;""",
+     True, "I2"),
+
+    ("contacto · un código sin versión de catálogo se rechaza",
+     """insert into participacion.aporte
+          (proceso_id, clave_envio, relato_original, canal,
+           contacto_ambito, contacto_codigo)
+        select id, 'k-con-2', 'la vía está rota', 'web', 'internacional', 'ES'
+        from participacion.proceso limit 1;""",
+     True, "Q5"),
+
+    ("contacto · un aporte sin decir desde dónde se acepta",
+     """insert into participacion.aporte (proceso_id, clave_envio, relato_original, canal)
+        select id, 'k-con-3', 'la vía está rota', 'web'
+        from participacion.proceso limit 1;""",
+     False, "N02"),
+
     ("proceso · un compromiso fuera de los tres se rechaza",
      """insert into participacion.proceso (nombre, compromiso)
         values ('otro', 'vinculante');""",

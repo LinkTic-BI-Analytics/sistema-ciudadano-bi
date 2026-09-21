@@ -4,6 +4,7 @@ import { procesoVigente } from "../datos/proceso.ts";
 import { convocatoriaVigente, proximosEncuentros } from "../convocatoria/agenda.ts";
 import { Calendario } from "./calendario.tsx";
 import { Cabecera, FranjaInstitucional, Pie, Tricolor } from "../producto/marca.tsx";
+import { NOMBRE_SISTEMA } from "../producto/nombre.ts";
 import {
   IconoAviso, IconoBases, IconoInstalacion, IconoMesas, IconoPlenaria, IconoRegistro, IconoSinCuenta,
 } from "../producto/iconos.tsx";
@@ -27,7 +28,7 @@ const orden = (n: number) => ({ "--pc-orden": n }) as CSSProperties;
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Participación Ciudadana · Plan Nacional de Desarrollo",
+  title: `${NOMBRE_SISTEMA} · Plan Nacional de Desarrollo`,
   description:
     "Cuéntanos qué necesita mejorar donde vives. Sin cuenta y sin correo. Consulta las convocatorias y los próximos encuentros.",
 };

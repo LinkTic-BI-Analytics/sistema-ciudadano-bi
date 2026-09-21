@@ -21,10 +21,8 @@ test("se puede crear un encuentro desde administración", async ({ page }) => {
   // estando donde se la busca.
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/encuentros y materiales/i);
   await expect(page.getByRole("heading", { name: /crear un encuentro/i })).toBeVisible();
-  // Una pantalla interna sin autorización es aceptable en desarrollo; que nadie
-  // se entere, no.
-  await expect(page.locator(".bo-sidebar")).toContainText(/sin permisos/i);
-  await expect(page.locator(".bo-sidebar")).toContainText(/no desplegar/i);
+  // El token es uno para todo el equipo; que nadie se entere, no.
+  await expect(page.locator(".bo-sidebar")).toContainText(/token compartido/i);
 
   await page.fill("#enc-titulo", titulo);
   await page.selectOption("#enc-modalidad", "presencial");

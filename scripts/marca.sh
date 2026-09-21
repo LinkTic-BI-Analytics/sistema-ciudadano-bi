@@ -14,13 +14,16 @@
 #
 # Lo que NO se copia, y por qué está escrito aquí y no en la cabeza de nadie:
 #
-#   · `escudo-colombia.png` y `logo-gobierno-blanco.png` — son el escudo
-#     nacional y la marca del Gobierno. `direccion-visual.md` del sistema 0.5 lo
-#     dice con todas las letras: «No se inventa un escudo, un sello, una entidad
-#     receptora real ni una campaña de gobierno… La integración del encabezado,
-#     pie y activos institucionales deberá seguir la versión del manual que
-#     confirme el cliente». Nadie ha confirmado ese manual todavía: es la `Q34`
-#     de `negocio/vacios.md`. El día que se confirme, se añaden aquí.
+#   · `logo-gobierno-blanco.png` — es la marca del Gobierno.
+#     `direccion-visual.md` del sistema 0.5 lo dice con todas las letras: «No se
+#     inventa un escudo, un sello, una entidad receptora real ni una campaña de
+#     gobierno… La integración del encabezado, pie y activos institucionales
+#     deberá seguir la versión del manual que confirme el cliente». Nadie ha
+#     confirmado ese manual todavía: es la `Q34` de `negocio/vacios.md`.
+#
+#     **El escudo sí se copia desde el 2026-09-21**: lo pidió el equipo junto con
+#     el nombre nuevo del sistema (`V29` de `negocio/vacios.md`). La marca del
+#     Gobierno sigue esperando el manual.
 #
 #   · `logo-defensores-*`, `logo-banco-talentos-*`, `icono-*` — son marcas de
 #     **otras** campañas del mismo ecosistema. Ponerlas en esta plataforma le
@@ -28,7 +31,9 @@
 #     una autoría que no tiene.
 #
 # La bandera sí: es un símbolo nacional, no un sello institucional, y es de
-# donde sale la paleta entera del sistema.
+# donde sale la paleta entera del sistema. El escudo va tal cual, en PNG: tiene
+# transparencia, pesa 148 KB y `next/image` lo sirve ya reducido al tamaño en
+# que se pinta.
 #
 # ## Por qué esto convierte en vez de copiar
 #
@@ -81,10 +86,28 @@ else
   echo "  ya al día    $(basename "$SERVIDO")"
 fi
 
+#   escudo-colombia.png → escudo-colombia.png   cabecera ciudadana, barra lateral
+#                                               interna y /ingresar (`escudo.tsx`)
+ESCUDO_FUENTE="$ORIGEN/escudo-colombia.png"
+ESCUDO="$DESTINO/escudo-colombia.png"
+
+if [ ! -f "$ESCUDO_FUENTE" ]; then
+  echo "  FALTA        $(basename "$ESCUDO_FUENTE") — no está en la entrega"
+  exit 1
+fi
+
+if [ "$ESCUDO_FUENTE" -nt "$ESCUDO" ] || [ ! -f "$ESCUDO" ]; then
+  cp "$ESCUDO_FUENTE" "$ESCUDO"
+  echo "  copiado      $(basename "$ESCUDO") · $(du -h "$ESCUDO" | cut -f1)"
+else
+  echo "  ya al día    $(basename "$ESCUDO")"
+fi
+
 # Lo que sobre en el destino se dice, no se borra: puede ser algo que alguien
 # puso a propósito y hay que preguntarle, no algo que este guion deba limpiar.
 for f in "$DESTINO"/*; do
   [ -e "$f" ] || continue
   [ "$f" = "$SERVIDO" ] && continue
+  [ "$f" = "$ESCUDO" ] && continue
   echo "  sobra        $(basename "$f") — está servido y este guion no lo puso"
 done

@@ -58,12 +58,78 @@ test("la consola trae su hoja de estilos puesta", async ({ page }) => {
   await expect(page.locator(".bo-shell")).toHaveCSS("display", "grid");
 });
 
-test("la consola avisa que no tiene permisos", async ({ page }) => {
-  // Una pantalla interna sin autorización en un servidor de desarrollo es
-  // aceptable; que nadie se entere, no.
+test("la consola avisa que el token es compartido", async ({ page }) => {
+  // Decía «sin permisos» y «no desplegar». Desde el login la puerta pide un
+  // token, pero es uno para todo el equipo: nada dice quién hizo qué, y quien
+  // revisa tiene que saberlo.
   await page.goto("/consola");
-  await expect(page.locator(".bo-sidebar")).toContainText(/sin permisos/i);
-  await expect(page.locator(".bo-sidebar")).toContainText(/no desplegar/i);
+  await expect(page.locator(".bo-sidebar")).toContainText(/token compartido/i);
+  await expect(page.locator(".bo-sidebar")).toContainText(/quién es quién/i);
+});
+
+test("al cambiar de vista la consola dice que está cargando, y deja de decirlo al llegar", async ({ page }) => {
+  // Las vistas del menú son la misma `/consola` con otro filtro en la
+  // dirección, y ahí Next no muestra `loading.tsx`: deja la pantalla vieja
+  // hasta que el servidor contesta. La queja fue literal — «se queda congelado
+  // sin saber qué pasó». En local contesta tan rápido que no da tiempo de ver
+  // nada, así que la respuesta se frena a propósito.
+  await page.goto("/consola");
+  await expect(page.locator(".bo-topbar")).toBeVisible();
+  await page.route(/\/consola\?.*_rsc=/, async (ruta) => {
+    await new Promise((listo) => setTimeout(listo, 1500));
+    await ruta.continue();
+  });
+
+  // En teléfono el menú vive detrás de «Menú».
+  const menu = page.getByRole("button", { name: /^menú$/i });
+  if (await menu.isVisible()) await menu.click();
+  await page.locator("#navegacion-interna").getByRole("link", { name: /con alerta/i }).click();
+
+  const cargando = page.locator(".bo-cargando");
+  await expect(cargando).toBeVisible();
+  await expect(cargando).toContainText(/cargando/i);
+  // Y un lector de pantalla lo oye, no solo lo ve.
+  await expect(page.getByRole("status").filter({ hasText: /^cargando…$/i })).toHaveCount(1);
+  await expect(page).toHaveURL(/alerta=1/);
+  await expect(cargando).toBeHidden();
+});
+
+test("filtrar también dice que está cargando", async ({ page }) => {
+  // «Filtrar» es un formulario GET: una navegación entera del navegador, y
+  // `esqueleto.tsx` ya lo tenía escrito — «la pantalla se queda con los
+  // resultados viejos, sin una sola señal».
+  await page.goto("/consola");
+  await page.route(/\/consola\?.*q=/, async (ruta) => {
+    if (ruta.request().resourceType() === "document") await new Promise((listo) => setTimeout(listo, 1500));
+    await ruta.continue();
+  });
+  // **Playwright no ve la página vieja mientras la nueva carga**: cualquier
+  // consulta espera a la nueva, y en la nueva el velo ya no está. Así que la
+  // vieja anota lo que mostró en `sessionStorage`, que sobrevive a la
+  // navegación. Medido así: el velo sale a los 150 ms del envío y la página
+  // vieja se va a los 1,7 s.
+  await page.evaluate(() => {
+    sessionStorage.removeItem("velo");
+    new MutationObserver(() => {
+      if (document.querySelector(".bo-cargando")) sessionStorage.setItem("velo", "visto");
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  await page.fill("#q", "agua");
+  await page.getByRole("button", { name: /^filtrar$/i }).click();
+  await expect(page).toHaveURL(/q=agua/);
+  expect(await page.evaluate(() => sessionStorage.getItem("velo")), "la página vieja nunca mostró «Cargando…»").toBe("visto");
+  await expect(page.locator(".bo-cargando")).toHaveCount(0);
+});
+
+test("la barra de arriba lleva al tablero, en otra pestaña, y ya no hay «abrir el siguiente»", async ({ page }) => {
+  await page.goto("/consola");
+  const tablero = page.locator(".bo-topbar").getByRole("link", { name: /ver tablero/i });
+  await expect(tablero).toHaveAttribute("href", "https://dev-front-patria-milagros.vercel.app/");
+  await expect(tablero).toHaveAttribute("target", "_blank");
+  // Al lado del botón de tema, que es donde se pidió.
+  await expect(page.locator(".bo-topbar .bo-inline > a.bo-pildora + .pc-tema")).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /abrir el siguiente/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /abrir el siguiente/i })).toHaveCount(0);
 });
 
 test("abrir un aporte muestra el relato original y dice que no se edita", async ({ page }) => {
@@ -209,21 +275,6 @@ test("se puede buscar, y el orden no cambia al filtrar", async ({ page }) => {
   await page.getByRole("button", { name: /^filtrar$/i }).click();
   await expect(page.locator("[data-prueba='sin-resultados']")).toBeVisible();
   await expect(page.getByRole("link", { name: /ver todos/i })).toBeVisible();
-});
-
-test("«abrir siguiente» abre el más antiguo, no el más grave", async ({ page }) => {
-  // No hay puntuación de prioridad, y no haberla es la decisión (`BI-02`).
-  await page.goto("/participar");
-  await page.fill("#relato", "el primero que llegó, hace rato");
-  await page.getByRole("button", { name: /continuar/i }).click();
-  await expect(page.locator("[data-prueba='codigo']")).toBeVisible({ timeout: 25_000 });
-
-  await page.goto("/consola");
-  const primero = await page.locator(".bo-table-desktop .bo-record-link").first().getAttribute("href");
-  // El rótulo pasó a «Abrir el siguiente» al salir del formulario de filtros y
-  // subir a la cabecera de la página, que es donde va la acción de la pantalla.
-  const siguiente = await page.getByRole("link", { name: /abrir el siguiente/i }).getAttribute("href");
-  expect(siguiente).toBe(primero);
 });
 
 test("ningún campo de la consola lleva un ejemplo que parezca el dato", async ({ page }) => {

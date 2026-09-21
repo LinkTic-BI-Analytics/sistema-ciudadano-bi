@@ -12,6 +12,8 @@ import {
   type Candidato, type Departamento,
 } from "../../territorio/emparejar.ts";
 import { declararVoceria } from "../../captura/vocero.ts";
+import { declararDesdeDonde } from "../../captura/contacto.ts";
+import { paises, type Pais } from "../../territorio/paises.ts";
 import type { ContextoHeredado } from "../../captura/contexto.ts";
 import { resolverUbicacion, corregirUbicacionDelCiudadano } from "../../revision/ubicacion.ts";
 import { leerConIA } from "../../captura/lectura-ia.ts";
@@ -467,6 +469,53 @@ export async function declararGrupo(codigo: string, colectivo: string): Promise<
 
 
 /**
+ * Los países, para cuando la persona dice que nos escribe desde fuera.
+ *
+ * **Colombia no sale en esta lista, y no es un olvido.** La pregunta ya se
+ * partió en dos antes de llegar aquí: quien está en Colombia contesta por el
+ * otro camino, con el mismo selector de departamento y municipio de siempre.
+ * Dejar «Colombia» en el desplegable de «otro país» daría dos formas de decir lo
+ * mismo, y una de ellas guardaría el país donde debería ir el municipio — un
+ * aporte que después nadie puede sumar a ningún territorio.
+ */
+export async function listarPaises(): Promise<Pais[]> {
+  try {
+    return (await paises()).filter((p) => p.codigo !== "CO");
+  } catch (e) {
+    console.error("listarPaises", e);
+    return [];
+  }
+}
+
+/**
+ * La persona dice desde dónde nos contacta.
+ *
+ * Es su respuesta, no una deducción nuestra: **nada de esto sale de la IP ni del
+ * idioma del navegador**. `I2` prohíbe inferir lo que falta, y una bandera
+ * puesta por geolocalización es una inferencia con pinta de dato.
+ *
+ * No contestar es una respuesta (`N02`): quien prefiere no decirlo no llama a
+ * esto y las columnas se quedan vacías.
+ */
+export async function declararContacto(
+  codigo: string,
+  ambito: "nacional" | "internacional",
+  territorio: string,
+  version: string,
+): Promise<PasoAfinado> {
+  try {
+    const aporteId = await aporteDelCodigo(codigo);
+    if (!aporteId) return { ok: false, error: "No encontramos ese aporte." };
+    await declararDesdeDonde({ aporteId, ambito, codigo: territorio, version });
+    return { ok: true };
+  } catch (e) {
+    console.error("declararContacto", e);
+    return { ok: false, error: "No pudimos guardarlo. Tu aporte ya quedó registrado." };
+  }
+}
+
+
+/**
  * Aplica al aporte nuevo lo que la persona confirmó que vale también aquí.
  *
  * **Confirmado, no heredado.** Se llama solo después de que ella diga que sí:
@@ -493,6 +542,16 @@ export async function aplicarContexto(codigo: string, c: ContextoHeredado): Prom
       });
     }
     if (c.colectivo) await declararVoceria({ aporteId, colectivo: c.colectivo });
+    // Desde dónde escribe la persona **sí es lo mismo entre un aporte y el
+    // siguiente**: es dónde está ella, y no se movió entre una pantalla y otra.
+    // Aun así se propone y no se hereda, como todo lo demás de este contexto:
+    // la pantalla se lo enseñó y ella dijo que sí.
+    if (c.contacto) {
+      await declararDesdeDonde({
+        aporteId, ambito: c.contacto.ambito,
+        codigo: c.contacto.codigo, version: c.contacto.version,
+      });
+    }
     return { ok: true };
   } catch (e) {
     console.error("aplicarContexto", e);

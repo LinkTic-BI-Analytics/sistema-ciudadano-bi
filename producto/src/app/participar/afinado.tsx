@@ -4,14 +4,16 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import {
   confirmarLectura, guardarPrecisiones, prepararLectura, confirmarMunicipio,
   listarDepartamentos, listarMunicipios, declararGrupo, aplicarContexto, anotarLugar, ubicarTexto,
+  listarPaises, declararContacto,
   type PasoAfinado,
 } from "./acciones.ts";
 import type { Candidato, Departamento } from "../../territorio/emparejar.ts";
+import type { Pais } from "../../territorio/paises.ts";
 import { guardarContexto, tomarContexto, tieneAlgo, type ContextoHeredado } from "../../captura/contexto.ts";
 import { loQueFalta, COMO_SE_PREGUNTA, COMO_SE_RESUME, PREGUNTABLES, TEMAS, type Lectura, type Preguntable, type Tema } from "../../captura/lectura.ts";
 import { Progreso } from "./progreso.tsx";
 import { Comprobante } from "./comprobante.tsx";
-import { IconoGrupo, IconoIdea } from "../../producto/iconos.tsx";
+import { IconoGrupo, IconoIdea, IconoLugar } from "../../producto/iconos.tsx";
 
 // La captura, después de la narrativa. **Sigue siendo capturar, no un trámite
 // añadido** (ADR 0012).
@@ -31,6 +33,19 @@ import { IconoGrupo, IconoIdea } from "../../producto/iconos.tsx";
 //      suyo guardado.
 
 const POR_VUELTA = 3;
+
+/**
+ * Minúsculas y sin tildes, para buscar en una lista de municipios.
+ *
+ * **Vive fuera del componente a propósito.** Estaba declarada en mitad del
+ * cuerpo, después de las salidas anticipadas de los últimos pasos, así que el
+ * paso que se agregó arriba —«desde dónde nos contactas»— no la tenía todavía
+ * inicializada al dibujarse: una constante declarada más abajo no existe en el
+ * camino que retorna antes de llegar a ella. Es pura, no depende de nada del
+ * componente, y aquí no puede volver a pasar.
+ */
+const sinTildes = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 function Error_({ paso }: { paso: PasoAfinado | null }) {
   if (!paso || paso.ok) return null;
@@ -71,7 +86,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [leyendo, setLeyendo] = useState(true);
   const [paso, setPaso] = useState<
     "escoger" | "entendimos" | "heredado" | "falta" | "municipio"
-    | "confirmar-residencia" | "voceria" | "listo"
+    | "confirmar-residencia" | "voceria" | "contacto" | "listo"
   >("entendimos");
   // Lo que contó en el aporte anterior y puede valer también para este. Se le
   // enseña y ella dice si vale: heredarlo en silencio sería inferir.
@@ -96,6 +111,28 @@ export function Afinado({ codigo }: { codigo: string }) {
   const [huboEscoger, setHuboEscoger] = useState(false);
   const [grupo, setGrupo] = useState("");
   const [porGrupo, setPorGrupo] = useState(false);
+  // **Desde dónde nos contacta**, que no es dónde ocurre el problema. Va en su
+  // propio estado y no en el del municipio del paso anterior: son dos
+  // respuestas distintas y compartir las variables haría que corregir una
+  // moviera la otra sin que nadie lo pidiera.
+  //
+  // El ámbito es lo primero que se pregunta, y arranca sin escoger: suponer que
+  // quien escribe está en Colombia es una inferencia (`I2`), aunque acierte casi
+  // siempre.
+  const [ambito, setAmbito] = useState<"nacional" | "internacional" | null>(null);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [pais, setPais] = useState("");
+  const [deptoC, setDeptoC] = useState("");
+  const [delDeptoC, setDelDeptoC] = useState<Candidato[]>([]);
+  const [filtroC, setFiltroC] = useState("");
+  const [munC, setMunC] = useState<Candidato | null>(null);
+  const [guardandoCon, setGuardandoCon] = useState(false);
+  const [contactoPuesto, setContactoPuesto] = useState<ContextoHeredado["contacto"]>(null);
+  // **Si vino contestado del aporte anterior, el paso no existe.** Y tiene que
+  // saberse *antes* de contar los pasos: si el total bajara al contestar, el
+  // hilo de puntos perdería uno bajo los dedos de la persona — que es
+  // exactamente la queja que el indicador vino a arreglar.
+  const [contactoHeredado, setContactoHeredado] = useState(false);
   const [guardandoVoz, setGuardandoVoz] = useState(false);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [guardandoMun, setGuardandoMun] = useState(false);
@@ -198,8 +235,19 @@ export function Afinado({ codigo }: { codigo: string }) {
   // Los 33 departamentos, al entrar al paso del municipio. No antes: la mayoría
   // de la gente nombra su municipio al contar y nunca llega aquí.
   useEffect(() => {
-    if (paso === "municipio" && deptos.length === 0) listarDepartamentos().then(setDeptos);
+    if ((paso === "municipio" || paso === "contacto") && deptos.length === 0) {
+      listarDepartamentos().then(setDeptos);
+    }
   }, [paso, deptos.length]);
+
+  // Los países, solo cuando alguien dice que nos escribe desde fuera. Son 249 y
+  // la inmensa mayoría de la gente no va a pasar por aquí: traerlos antes sería
+  // cobrarle esa consulta a todo el mundo para que la use uno de cada cien.
+  useEffect(() => {
+    if (paso === "contacto" && ambito === "internacional" && paises.length === 0) {
+      listarPaises().then(setPaises);
+    }
+  }, [paso, ambito, paises.length]);
 
   // **Lo que escribe con sus palabras busca solo.** Es lo que hace que la
   // pregunta pueda ser una: escribe «la vereda La Martinita, Rionegro Antioquia»
@@ -278,9 +326,6 @@ export function Afinado({ codigo }: { codigo: string }) {
     });
   }, [r2]);
 
-  const sinTildes = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
   // Nadie escribe «ABRIAQUÍ» con tilde ni en mayúsculas.
   const filtrados = filtro.trim()
     ? delDepto.filter((m) => sinTildes(m.nombre).includes(sinTildes(filtro.trim())))
@@ -340,6 +385,13 @@ export function Afinado({ codigo }: { codigo: string }) {
       return () => setPaso("entendimos");
     }
     if (paso === "confirmar-residencia") return () => { setElegido(null); setPaso("municipio"); };
+    if (paso === "contacto") {
+      // Dentro del paso primero se deshace lo escogido, y solo después se sale:
+      // quien se equivocó de país no quiere volver a la pregunta anterior.
+      if (munC) return () => setMunC(null);
+      if (ambito) return () => { setAmbito(null); setPais(""); setDeptoC(""); setDelDeptoC([]); setFiltroC(""); };
+      return () => setPaso("voceria");
+    }
     if (paso === "falta" || paso === "voceria") {
       // A la vuelta anterior; desde la primera, al municipio. Volver al
       // municipio no repregunta desde cero: lo confirmado sigue puesto y
@@ -381,21 +433,25 @@ export function Afinado({ codigo }: { codigo: string }) {
   //
   // Los pasos son fijos desde el principio: escoger (si contó varias cosas) ·
   // lo que entendimos · el contexto heredado (si viene de otro aporte) · dónde
-  // ocurre · las vueltas de lo que falta · quién habla.
+  // ocurre · las vueltas de lo que falta · quién habla · desde dónde escribe.
   //
   // **Sube aquí desde más abajo, y eso es lo que arregla la queja.** Estaba
   // calculado después de las salidas de `voceria` y de `listo`, así que en esos
   // dos pasos no existía: el indicador se apagaba justo al final, que es donde
   // alguien se pregunta cuánto falta.
   const antes = (huboEscoger ? 1 : 0) + (tieneAlgo(heredado) ? 1 : 0);
-  const total = antes + 3 + vueltas.length;
+  const total = antes + (contactoHeredado ? 3 : 4) + vueltas.length;
   const actual =
     paso === "escoger" ? 1
     : paso === "entendimos" ? (huboEscoger ? 2 : 1)
     : paso === "heredado" ? (huboEscoger ? 3 : 2)
     : paso === "falta" ? antes + 3 + vuelta
-    // La vocería es el último de los pasos fijos; el municipio, el anterior.
-    : paso === "voceria" ? total
+    // Desde dónde nos contacta es el último de los pasos fijos; la vocería, el
+    // anterior; el municipio, el de antes. Si el contacto vino contestado del
+    // aporte anterior, ese paso no se dibuja y la vocería vuelve a ser el
+    // último.
+    : paso === "contacto" ? total
+    : paso === "voceria" ? (contactoHeredado ? total : total - 1)
     : antes + 2;
 
   if (leyendo) {
@@ -433,6 +489,16 @@ export function Afinado({ codigo }: { codigo: string }) {
   }
 
   const volverDeVoceria = atras();
+  /**
+   * A dónde va la vocería.
+   *
+   * **Una sola puerta**, por lo mismo que `haciaElFinal()`: hay tres botones
+   * que salen de esa pantalla —hablo por mí, guardar el grupo y «mejor no»— y
+   * si cada uno decidiera por su cuenta, el día que alguien agregue un cuarto
+   * se le olvidaría uno. Si el contacto ya vino contestado del aporte anterior,
+   * no se vuelve a preguntar.
+   */
+  const trasLaVoceria = (): "contacto" | "listo" => (contactoHeredado ? "listo" : "contacto");
   if (paso === "voceria") {
     return (
       <section className="pc-section pc-tarjeta pc-entra" key="voceria" data-prueba="voceria">
@@ -444,7 +510,7 @@ export function Afinado({ codigo }: { codigo: string }) {
             También aquí se puede volver: es la última pantalla antes de
             terminar, y es justo donde alguien se acuerda de que escribió mal el
             municipio. */}
-        <Progreso actual={total} total={total} volver={volverDeVoceria && (
+        <Progreso actual={total - 1} total={total} volver={volverDeVoceria && (
           <button type="button" className="pc-text-action" data-prueba="volver"
                   onClick={volverDeVoceria}>
             Volver
@@ -470,7 +536,7 @@ export function Afinado({ codigo }: { codigo: string }) {
               una mesa de trabajo. Saberlo cambia a quién hay que responderle.
             </p>
             <div className="pc-actions">
-              <button type="button" className="pc-action" onClick={() => setPaso("listo")}>
+              <button type="button" className="pc-action" onClick={() => setPaso(trasLaVoceria())}>
                 Hablo por mí
               </button>
               <button type="button" className="pc-text-action" onClick={() => setPorGrupo(true)}>
@@ -498,16 +564,196 @@ export function Afinado({ codigo }: { codigo: string }) {
                         await declararGrupo(codigo, grupo);
                         setGrupoPuesto(grupo);
                         setGuardandoVoz(false);
-                        setPaso("listo");
+                        setPaso(trasLaVoceria());
                       }}>
                 {guardandoVoz ? "Guardando…" : "Listo"}
               </button>
-              <button type="button" className="pc-text-action" onClick={() => setPaso("listo")}>
+              <button type="button" className="pc-text-action" onClick={() => setPaso(trasLaVoceria())}>
                 Mejor no
               </button>
             </div>
           </>
         )}
+        </div>
+      </section>
+    );
+  }
+
+  if (paso === "contacto") {
+    const volverDeContacto = atras();
+    /** Lo único que escribe desde dónde nos contacta. Escoger no guarda. */
+    const anotarContacto = async (
+      a: "nacional" | "internacional",
+      donde: { codigo: string; version: string; nombre: string },
+    ) => {
+      setGuardandoCon(true);
+      await declararContacto(codigo, a, donde.codigo, donde.version);
+      setContactoPuesto({ ambito: a, ...donde });
+      setGuardandoCon(false);
+      setPaso("listo");
+    };
+    const filtradosC = filtroC.trim()
+      ? delDeptoC.filter((m) => sinTildes(m.nombre).includes(sinTildes(filtroC.trim())))
+      : delDeptoC;
+
+    return (
+      <section className="pc-section pc-tarjeta pc-entra" key="contacto" data-prueba="contacto">
+        <Progreso actual={total} total={total} volver={volverDeContacto && (
+          <button type="button" className="pc-text-action" data-prueba="volver"
+                  onClick={volverDeContacto}>
+            Volver
+          </button>
+        )} />
+        <Guardado codigo={codigo} />
+
+        {/* **La última pregunta, y es sobre ella y no sobre el problema.** Va
+            con el mismo realce que la vocería porque decide algo: quién está
+            contando esto y desde dónde. Un aporte escrito desde Madrid sobre
+            una vereda de Caldas no es un error de ubicación — es alguien que
+            sigue siendo de ahí, y hoy no teníamos dónde ponerlo. */}
+        <div className="pc-destacada">
+          <span className="pc-label-display">
+            <IconoLugar />
+            Lo último
+          </span>
+          <h2>¿Desde dónde nos contactas?</h2>
+
+          {/* **No es dónde ocurre el problema, y eso se dice antes de nada.**
+              Es la misma confusión que `GEO-01` ya nombra para la residencia:
+              preguntar dónde está alguien no autoriza a dar por hecho que el
+              problema pasa ahí. Si no lo decimos, media pantalla va a volver a
+              escribir su municipio. */}
+          <p className="pc-note" data-prueba="no-es-el-problema">
+            <strong>No es dónde ocurre el problema</strong> — eso ya nos lo contaste. Es dónde
+            estás tú ahora: sirve para saber a quién llega esta convocatoria y desde dónde.
+          </p>
+
+          {ambito === null ? (
+            <>
+              <div className="pc-actions">
+                <button type="button" className="pc-action" onClick={() => setAmbito("nacional")}>
+                  Desde Colombia
+                </button>
+                <button type="button" className="pc-action" data-variant="secondary"
+                        onClick={() => setAmbito("internacional")}>
+                  Desde otro país
+                </button>
+              </div>
+              {/* `N02`: no contestar es una respuesta, y se puede terminar sin
+                  esto. Un dato que se exige es un dato que excluye a quien no
+                  lo quiere dar. */}
+              <button type="button" className="pc-text-action" data-prueba="contacto-no-decir"
+                      onClick={() => setPaso("listo")}>
+                Prefiero no decirlo
+              </button>
+            </>
+          ) : ambito === "nacional" ? (
+            <div data-prueba="contacto-nacional">
+              {/* El mismo camino de siempre: departamento y después municipio.
+                  No se reusa lo que escogió para el problema —son dos
+                  respuestas— pero sí el mismo catálogo y el mismo orden, que es
+                  el orden en que la gente sabe dónde está. */}
+              <div className="pc-field">
+                <label className="pc-label" htmlFor="contacto-departamento">Departamento</label>
+                <select id="contacto-departamento" className="pc-input" value={deptoC}
+                        onChange={async (e) => {
+                          const d = e.target.value;
+                          setDeptoC(d); setDelDeptoC([]); setFiltroC(""); setMunC(null);
+                          if (d) setDelDeptoC(await listarMunicipios(d));
+                        }}>
+                  <option value="">Escoge uno…</option>
+                  {deptos.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
+                </select>
+              </div>
+
+              {deptoC && !munC && (
+                <div className="pc-field">
+                  <label className="pc-label" htmlFor="contacto-municipio">Municipio</label>
+                  <input id="contacto-municipio" className="pc-input" type="text" value={filtroC}
+                         onChange={(e) => setFiltroC(e.target.value)}
+                         aria-describedby="contacto-municipio-ayuda" />
+                  <p className="pc-help" id="contacto-municipio-ayuda">
+                    {delDeptoC.length
+                      ? `Escribe las primeras letras. Hay ${delDeptoC.length} en ${deptos.find((d) => d.codigo === deptoC)?.nombre ?? "este departamento"}.`
+                      : "Cargando…"}
+                  </p>
+                  <div className="pc-actions">
+                    {filtradosC.slice(0, 8).map((m) => (
+                      <button key={m.codigo} type="button" className="pc-action"
+                              onClick={() => setMunC(m)}>
+                        {m.nombre}
+                      </button>
+                    ))}
+                  </div>
+                  {filtroC.trim() && filtradosC.length === 0 && (
+                    <p className="pc-note">Ninguno se llama así en ese departamento.</p>
+                  )}
+                </div>
+              )}
+
+              {/* **Escoger no guarda**, igual que en el municipio del problema:
+                  con 125 nombres en una lista es fácil tocar la fila de al
+                  lado, y un dato equivocado es peor que ninguno. */}
+              {munC && (
+                <>
+                  <p className="pc-note">
+                    Nos escribes desde <strong>{munC.nombre}, {munC.departamento}</strong>.
+                  </p>
+                  <div className="pc-actions">
+                    <button type="button" className="pc-action" disabled={guardandoCon}
+                            onClick={() => anotarContacto("nacional", {
+                              codigo: munC.codigo, version: munC.version,
+                              nombre: `${munC.nombre}, ${munC.departamento}`,
+                            })}>
+                      {guardandoCon ? "Guardando…" : "Sí, desde ahí"}
+                    </button>
+                    <button type="button" className="pc-text-action" onClick={() => setMunC(null)}>
+                      No, cambiar
+                    </button>
+                  </div>
+                </>
+              )}
+              {/* `N02` también aquí: quien entró por este camino y prefiere no
+                  decir su municipio no tiene que volver atrás para poder
+                  terminar. */}
+              <button type="button" className="pc-text-action"
+                      onClick={() => setPaso("listo")}>
+                Prefiero no decirlo
+              </button>
+            </div>
+          ) : (
+            <div data-prueba="contacto-internacional">
+              <div className="pc-field">
+                <label className="pc-label" htmlFor="contacto-pais">País</label>
+                {/* Un desplegable nativo y no una lista de botones: son 249, y
+                    en el teléfono el selector del sistema se busca escribiendo.
+                    Colombia no está — quien esté aquí contesta por el otro
+                    camino, y tenerlo dos veces guardaría el país donde debería
+                    ir el municipio. */}
+                <select id="contacto-pais" className="pc-input" value={pais}
+                        onChange={(e) => setPais(e.target.value)}>
+                  <option value="">{paises.length ? "Escoge uno…" : "Cargando…"}</option>
+                  {paises.map((p) => <option key={p.codigo} value={p.codigo}>{p.nombre}</option>)}
+                </select>
+                <p className="pc-help">
+                  Si estás en Colombia, <strong>vuelve atrás</strong>: ahí te preguntamos el
+                  municipio, que es lo que permite sumarte a tu territorio.
+                </p>
+              </div>
+              <div className="pc-actions">
+                <button type="button" className="pc-action" disabled={guardandoCon || !pais}
+                        onClick={() => {
+                          const p = paises.find((x) => x.codigo === pais);
+                          if (p) void anotarContacto("internacional", p);
+                        }}>
+                  {guardandoCon ? "Guardando…" : "Listo"}
+                </button>
+                <button type="button" className="pc-text-action" onClick={() => setPaso("listo")}>
+                  Prefiero no decirlo
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     );
@@ -568,6 +814,7 @@ export function Afinado({ codigo }: { codigo: string }) {
                             afectados: lect?.afectados ?? null,
                             desdeCuando: lect?.desdeCuando ?? null,
                             colectivo: grupoPuesto,
+                            contacto: contactoPuesto,
                           });
                           location.href = "/participar";
                         }}>
@@ -980,6 +1227,7 @@ export function Afinado({ codigo }: { codigo: string }) {
             {heredado.afectados && (<><dt>A quiénes les pasa</dt><dd>{heredado.afectados}</dd></>)}
             {heredado.desdeCuando && (<><dt>Desde cuándo</dt><dd>{heredado.desdeCuando}</dd></>)}
             {heredado.colectivo && (<><dt>Hablas por</dt><dd>{heredado.colectivo}</dd></>)}
+            {heredado.contacto && (<><dt>Nos escribes desde</dt><dd>{heredado.contacto.nombre}</dd></>)}
           </dl>
           <Error_ paso={r2} />
           <div className="pc-actions">
@@ -1001,6 +1249,11 @@ export function Afinado({ codigo }: { codigo: string }) {
                       }
                       setMunicipioPuesto(heredado.municipio);
                       setGrupoPuesto(heredado.colectivo);
+                      // Ya lo dijo para el aporte anterior y acaba de confirmar
+                      // que vale también aquí: volver a preguntárselo al final
+                      // sería preguntárselo dos veces en la misma sesión.
+                      setContactoPuesto(heredado.contacto);
+                      setContactoHeredado(!!heredado.contacto);
                       setHeredado(null);
                       setRutear(true);
                     }}>

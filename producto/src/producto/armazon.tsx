@@ -1,9 +1,14 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { BotonTema } from "./tema.tsx";
 import { BarraLateral, type VistaInterna } from "./barra-lateral.tsx";
-import { IconoSiguiente } from "./iconos.tsx";
+import { IconoSalir, IconoSiguiente, IconoTablero } from "./iconos.tsx";
+import { salir } from "../app/ingresar/acciones.ts";
+import { Cargando } from "./cargando.tsx";
 
 export type { VistaInterna };
+
+/** El tablero de BI, que vive en otro despliegue. */
+const TABLERO = "https://dev-front-patria-milagros.vercel.app/";
 
 /**
  * El armazón de las pantallas internas: barra lateral, barra superior y pie.
@@ -19,8 +24,11 @@ export type { VistaInterna };
  *
  * Lleva el rastro —«Consola › Bandeja de calidad»— y no solo la versalita: en
  * una pantalla de detalle, saber de dónde se viene es la mitad de saber dónde
- * se está. A la derecha, lo que cada pantalla tenga que decir y el botón de
- * tema, que el interno no tenía.
+ * se está. A la derecha, lo que cada pantalla tenga que decir, el enlace al
+ * tablero, el botón de tema, que el interno no tenía, y la salida.
+ *
+ * **El tablero abre en otra pestaña.** Es otro sitio, y quien está a mitad de
+ * una revisión no debería perder la bandeja por ir a mirar una cifra.
  */
 export function Armazon({
   seccion, vista, volver, kicker, meta, pie, children,
@@ -51,11 +59,23 @@ export function Armazon({
             </p>
             <div className="bo-inline">
               {meta}
+              <a className="bo-pildora" href={TABLERO} target="_blank" rel="noopener noreferrer"
+                 title="Abre el tablero en una pestaña nueva">
+                <IconoTablero />Ver tablero
+                <span className="bo-visualmente-oculto"> (abre en una pestaña nueva)</span>
+              </a>
               <BotonTema />
+              <form action={salir}>
+                <button type="submit" className="bo-pildora"><IconoSalir />Salir</button>
+              </form>
             </div>
           </header>
 
           <main className="bo-main">{children}</main>
+
+          {/* El velo de «Cargando…» al ir a otra pantalla (`cargando.tsx`).
+              `Suspense` porque lee la dirección con `useSearchParams`. */}
+          <Suspense fallback={null}><Cargando /></Suspense>
 
           {pie && <footer className="bo-footer">{pie}</footer>}
         </div>

@@ -192,16 +192,95 @@
 .pc-backoffice .bo-rastro strong { color: var(--bo-ink); font-weight: 700; }
 .pc-backoffice .bo-rastro svg { width: 14px; height: 14px; }
 
-/* El botón de tema dentro del interno (`.pc-tema` vive en marco.css bajo .pc-ui). */
-.pc-backoffice .pc-tema {
+/* El botón de tema dentro del interno (`.pc-tema` vive en marco.css bajo .pc-ui).
+   `.bo-pildora` es la misma forma para lo que va a su lado en la barra superior
+   —«Ver tablero» y «Salir»—: tres controles vecinos con tres formas distintas
+   se leen como tres cosas de distinta importancia, y no lo son. */
+.pc-backoffice .pc-tema, .pc-backoffice .bo-pildora {
   display: inline-flex; align-items: center; gap: .5rem;
   min-height: var(--pc-component-backoffice-button-height); padding: .375rem .875rem;
   font-size: .75rem; font-weight: 600; font-family: inherit;
   color: var(--bo-ink); background: var(--bo-paper);
   border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-pill);
 }
-.pc-backoffice .pc-tema:hover { border-color: var(--pc-semantic-color-border-accent); }
-.pc-backoffice .pc-tema svg { width: 16px; height: 16px; }
+.pc-backoffice .bo-pildora { text-decoration: none; cursor: pointer; }
+.pc-backoffice .pc-tema:hover, .pc-backoffice .bo-pildora:hover { border-color: var(--pc-semantic-color-border-accent); }
+.pc-backoffice .pc-tema svg, .pc-backoffice .bo-pildora svg { width: 16px; height: 16px; }
+
+/* El escudo en la barra lateral, en el sitio del tricolor. Plegada, es lo
+   único de la marca que queda. */
+.pc-backoffice .bo-brand-escudo { display: block; width: auto; height: 1.625rem; flex-shrink: 0; }
+/* El escudo es seis veces más ancho que el tricolor que reemplazó, y
+   «Administración» se partía en «Administraci / ón»: pedía 134 px y la columna
+   dejaba 119. Se recuperan con un escudo algo menor, menos aire y el rótulo un
+   punto más chico. */
+.pc-backoffice .bo-brand { column-gap: .5rem; }
+.pc-backoffice .bo-brand > .bo-brand-texto { font-size: 1rem; }
+
+/* ── «Cargando…» al cambiar de pantalla (`cargando.tsx`) ───────────────────
+   Un velo sobre el área de trabajo —la barra lateral queda libre— y una
+   tarjeta con un círculo que gira. Es el tercer gesto que la entrega Patria
+   permite, «decir que algo está pasando», y por eso gira **solo** dentro de
+   `prefers-reduced-motion: no-preference`; fuera de ahí el círculo se queda
+   quieto y el texto dice lo mismo. El velo es `absolute`: no empuja nada, y
+   nada se mueve de sitio después de ser tocable. */
+.pc-backoffice .bo-workspace { position: relative; }
+.pc-backoffice .bo-cargando {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; justify-content: center; align-items: flex-start;
+  padding-top: min(28vh, 14rem);
+  background: color-mix(in srgb, var(--pc-semantic-color-internal-canvas) 60%, transparent);
+  cursor: progress;
+}
+.pc-backoffice .bo-cargando-tarjeta {
+  position: sticky; top: min(28vh, 14rem);
+  display: flex; align-items: center; gap: .875rem;
+  padding: 1rem 1.5rem;
+  background: var(--bo-paper); border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+  box-shadow: var(--pc-semantic-elevation-card);
+  font-weight: 600;
+}
+.pc-backoffice .bo-cargando-circulo {
+  width: 1.75rem; height: 1.75rem; flex-shrink: 0; border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--pc-semantic-color-brand-accentText) 22%, transparent);
+  border-top-color: var(--pc-semantic-color-brand-accentText);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pc-backoffice .bo-cargando { animation: bo-cargando-entra var(--pc-semantic-motion-fast) var(--bo-ease) both; }
+  .pc-backoffice .bo-cargando-circulo { animation: bo-cargando-gira .8s linear infinite; }
+}
+@keyframes bo-cargando-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bo-cargando-gira { to { transform: rotate(360deg); } }
+
+/* ── La puerta: /ingresar ─────────────────────────────────────────────────
+   Una tarjeta sola en el lienzo interno. Sin barra lateral: quien no ha puesto
+   el token no tiene a dónde navegar. */
+.pc-backoffice .bo-ingreso {
+  min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 1.25rem;
+  padding: 2rem 1rem;
+}
+.pc-backoffice .bo-ingreso-tarjeta {
+  width: min(26rem, calc(100vw - 2rem)); padding: 1.75rem;
+  background: var(--bo-paper); border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+  box-shadow: var(--pc-semantic-elevation-card);
+}
+.pc-backoffice .bo-ingreso-tarjeta h1 { margin: 1.25rem 0 .375rem; }
+.pc-backoffice .bo-ingreso-tarjeta .bo-button { width: 100%; }
+.pc-backoffice .bo-ingreso-marca {
+  display: flex; align-items: center; gap: .875rem;
+  padding-bottom: 1.25rem; border-bottom: 1px solid var(--bo-line);
+}
+.pc-backoffice .bo-ingreso-marca img { flex-shrink: 0; }
+.pc-backoffice .bo-ingreso-marca p {
+  font-family: var(--pc-semantic-fontFamily-heading); font-size: 1.0625rem; font-weight: 800; line-height: 1.2;
+}
+.pc-backoffice .bo-ingreso-marca p span {
+  display: block; margin-top: .25rem;
+  font-family: var(--pc-semantic-internal-fontFamily); font-size: .6875rem; font-weight: 600;
+  letter-spacing: var(--pc-primitive-letterSpacing-label); text-transform: uppercase; color: var(--bo-muted);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    3 · SECTORES Y ESTADOS

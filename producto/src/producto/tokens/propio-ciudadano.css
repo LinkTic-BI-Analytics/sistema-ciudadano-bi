@@ -434,3 +434,15 @@
   .pc-ui .pc-progreso-barra { background: Highlight; }
   .pc-ui .pc-destacada, .pc-ui .pc-comprobante { border: 1px solid CanvasText; }
 }
+
+/* El escudo en la cabecera, en el sitio del tricolor (`marca.tsx`). En teléfono
+   el tricolor se retira de la cabecera; el escudo se queda, un escalón menor,
+   porque es lo único que dice de quién es esto. */
+.pc-ui .pc-brand-escudo { display: block; width: auto; height: 2.5rem; flex-shrink: 0; }
+/* Con el nombre nuevo, que es el doble de largo, el botón de tema se partía en
+   «Modo / claro» a 390 px. Cede el nombre, que puede ir en dos líneas; el
+   botón no. */
+.pc-ui .pc-header .pc-tema { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 30rem) {
+  .pc-ui .pc-brand-escudo { height: 2rem; }
+}

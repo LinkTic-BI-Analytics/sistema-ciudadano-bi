@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { exigirSesion } from "../../acceso/servidor.ts";
 import {
   resolverUbicacion, devolverAPorAclarar, corregirUbicacionDelCiudadano,
 } from "../../revision/ubicacion.ts";
@@ -16,8 +17,14 @@ import { registrarPrioridad } from "../../priorizacion/prioridad.ts";
 //
 // Se deja explícito aquí en vez de en un comentario suelto: quien lea este
 // archivo tiene que tropezarse con ello.
+//
+// Desde el 2026-09-21 cada acción exige la sesión del token compartido
+// (`exigirSesion`, primera línea de cada una). Eso cierra la puerta a quien no
+// es del equipo, pero **no dice quién del equipo**: el autor se sigue
+// escribiendo a mano, y `T032` sigue pendiente.
 
 export async function accionResolver(datos: FormData) {
+  await exigirSesion();
   await resolverUbicacion({
     aporteId: String(datos.get("aporteId")),
     codigo: String(datos.get("codigo")),
@@ -29,6 +36,7 @@ export async function accionResolver(datos: FormData) {
 }
 
 export async function accionDevolver(datos: FormData) {
+  await exigirSesion();
   await devolverAPorAclarar({
     aporteId: String(datos.get("aporteId")),
     autor: String(datos.get("autor") || "revisor sin identificar"),
@@ -38,6 +46,7 @@ export async function accionDevolver(datos: FormData) {
 }
 
 export async function accionCrearExpediente(datos: FormData) {
+  await exigirSesion();
   await crearExpediente({
     procesoId: String(datos.get("procesoId")),
     descripcion: String(datos.get("descripcion") ?? ""),
@@ -50,6 +59,7 @@ export async function accionCrearExpediente(datos: FormData) {
 }
 
 export async function accionPriorizar(datos: FormData) {
+  await exigirSesion();
   const v = (k: string) => (String(datos.get(k) ?? "") || undefined) as never;
   await registrarPrioridad({
     expedienteId: String(datos.get("expedienteId")),
@@ -76,6 +86,7 @@ export async function accionPriorizar(datos: FormData) {
  * contaría dos veces.
  */
 export async function accionCorregirMunicipio(datos: FormData) {
+  await exigirSesion();
   const motivo = String(datos.get("motivo") ?? "").trim();
   await corregirUbicacionDelCiudadano({
     aporteId: String(datos.get("aporteId")),
@@ -99,6 +110,7 @@ export async function accionCorregirMunicipio(datos: FormData) {
  * honesto que ofrecer una lista inventada.
  */
 export async function accionRemitir(datos: FormData) {
+  await exigirSesion();
   const destino = String(datos.get("destino") ?? "").trim();
   if (!destino) return;
   await registrarActuacion({
@@ -113,6 +125,7 @@ export async function accionRemitir(datos: FormData) {
 
 /** La destinataria confirmó que lo recibió. Es un hecho aparte, con su fecha. */
 export async function accionAceptarRemision(datos: FormData) {
+  await exigirSesion();
   await aceptarRemision({
     actuacionId: String(datos.get("actuacionId")),
     autor: String(datos.get("autor") || "revisor sin identificar"),
@@ -134,6 +147,7 @@ export async function accionAceptarRemision(datos: FormData) {
  * se toca, porque es lo único que permite medir cuánto se equivoca la máquina.
  */
 export async function accionCambiarTema(datos: FormData) {
+  await exigirSesion();
   const aporteId = String(datos.get("aporteId"));
   const tema = String(datos.get("tema") ?? "").trim();
   const motivo = String(datos.get("motivo") ?? "").trim();

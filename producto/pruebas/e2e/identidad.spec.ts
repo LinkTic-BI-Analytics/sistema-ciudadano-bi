@@ -76,17 +76,20 @@ test("el titular del hero se lee sobre la bandera, en los dos modos", async ({ p
 });
 
 test("la firma tricolor está en la página, y en el orden de la bandera", async ({ page }) => {
-  // Amarillo, azul, rojo. Es la firma gráfica de la entrega y lo único que
-  // afirma de dónde viene esto — **no el escudo**, que espera el manual
-  // institucional (`Q34`). Un orden cambiado no es un detalle: es otra bandera.
+  // Amarillo, azul, rojo. Es la firma gráfica de la entrega. Un orden cambiado
+  // no es un detalle: es otra bandera.
   await page.goto("/");
   const colores = await page.locator(".pc-tricolor").first().evaluate((el) =>
     [...el.children].map((c) => getComputedStyle(c).backgroundColor));
   expect(colores).toEqual(["rgb(255, 200, 0)", "rgb(0, 49, 137)", "rgb(216, 0, 37)"]);
 
-  // Y el escudo no está servido: ponerlo afirmaría una autoría que nadie confirmó.
-  const respuesta = await page.request.get("/marca/escudo-colombia.png");
-  expect(respuesta.status(), "el escudo nacional está servido y la Q34 sigue abierta").toBe(404);
+  // El escudo sí, desde el 2026-09-21: lo pidió el equipo con el nombre nuevo
+  // (`V29`). **La marca del Gobierno no**: esa sigue esperando el manual
+  // institucional (`Q34`), y servirla afirmaría una autoría que nadie confirmó.
+  const escudo = await page.request.get("/marca/escudo-colombia.png");
+  expect(escudo.status(), "el escudo se pidió el 2026-09-21 (V29) y no está servido").toBe(200);
+  const gobierno = await page.request.get("/marca/logo-gobierno-blanco.png");
+  expect(gobierno.status(), "la marca del Gobierno está servida y la Q34 sigue abierta").toBe(404);
 });
 
 test("la vista del harness NO toma la línea gráfica del negocio", async ({ page }) => {

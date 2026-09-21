@@ -109,7 +109,7 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const p = clienteServidor().schema("participacion");
 
   const { data: a } = await p.from("aporte")
-    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas, tema, tema_propuesto")
+    .select("id, relato_original, lugar_declarado, afectados, desde_cuando, es_colectivo, colectivo_declarado, canal, recibido_en, estado_clasificacion, estado_confirmacion, estado_revision, grabacion_id, enlace_id, evento_confirmado_id, estado_contexto, utms_recibidas, tema, tema_propuesto, contacto_ambito, contacto_codigo, contacto_version")
     .eq("id", aporteId).single();
   // **Sin armazón, esto era una frase suelta sobre el fondo de la página**: sin
   // barra lateral, sin forma de volver y sin nada que dijera dónde estabas. Un
@@ -207,6 +207,19 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const nombreDelMunicipio = aceptada?.territorio_codigo
     ? (await p.from("territorio").select("nombre").eq("codigo", aceptada.territorio_codigo)
         .eq("nivel", "municipio").limit(1).maybeSingle()).data?.nombre ?? null
+    : null;
+
+  /**
+   * Desde dónde nos escribió, que **no es dónde ocurre el problema**.
+   *
+   * Se lee con su versión de catálogo, no solo con el código: la de los países
+   * no es la de DIVIPOLA, y buscar por código a secas devolvería la fila de otra
+   * versión el día que se siembre una nueva (`Q5`).
+   */
+  const desdeDonde = a.contacto_codigo && a.contacto_version
+    ? (await p.from("territorio").select("nombre, nivel")
+        .eq("codigo", a.contacto_codigo).eq("version", a.contacto_version)
+        .limit(1).maybeSingle()).data
     : null;
 
   // Los 1.122 municipios, por páginas. `.limit(1200)` no los traía: PostgREST
@@ -356,6 +369,30 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                 {a.lugar_declarado && (
                   <span className="bo-small"> · dijo: «{a.lugar_declarado}»</span>
                 )}
+              </dd>
+
+              {/* **Desde dónde escribió, en su propia fila y no pegado a la de
+                  arriba.** Son dos hechos distintos y juntarlos es el error que
+                  `GEO-01` nombra para la residencia: quien escribe desde Madrid
+                  sobre su vereda de Caldas no está diciendo que el problema sea
+                  de Madrid.
+
+                  Que esto salga aquí importa para revisar: un aporte del
+                  exterior no se atiende igual —no hay a quién llamar en el
+                  municipio de quien escribe— y hasta hoy no había forma de
+                  saberlo. */}
+              <dt className="bo-small">Desde dónde escribe</dt>
+              <dd>
+                {desdeDonde
+                  ? (
+                    <>
+                      <strong>{desdeDonde.nombre}</strong>
+                      <span className="bo-small">
+                        {" "}· {a.contacto_ambito === "internacional" ? "fuera del país" : "en Colombia"}
+                      </span>
+                    </>
+                  )
+                  : <span className="bo-muted">no lo dijo · no se infiere</span>}
               </dd>
 
               <dt className="bo-small">A quiénes</dt>

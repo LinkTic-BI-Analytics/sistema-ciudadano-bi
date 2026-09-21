@@ -37,7 +37,7 @@ mkdir -p "$M"
 ORDEN="01_pertenencia.sql 02_territorio.sql 02b_grabacion.sql 14_convocatoria.sql
        16_enlace.sql 03_aporte.sql 04_expediente.sql 05_auditoria.sql
        06_identidad.sql 07_conteo.sql 08_comprobante.sql 10_estados.sql
-       11_gestion.sql 12_alerta.sql 13_prioridad.sql 99_acceso.sql"
+       11_gestion.sql 12_alerta.sql 13_prioridad.sql 17_llamada.sql 99_acceso.sql"
 # En una línea: los saltos de arriba son para leerlo, y `case` compara contra
 # espacios. Sin esto, el primero de cada línea no coincidía con nada.
 # shellcheck disable=SC2086
