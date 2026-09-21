@@ -107,6 +107,9 @@ test("un aporte hablado se distingue en la bandeja de revisión", async ({ page 
   const fila = page.locator(".bo-record-card, .bo-table-desktop tr")
     .filter({ hasText: marca }).filter({ visible: true }).first();
   await expect(fila).toBeVisible({ timeout: 15_000 });
-  await expect(fila.locator(".bo-badge")).toContainText(/por voz/i);
-  await expect(fila.locator(".bo-badge")).toContainText(/puede estar mal/i);
+  // Desde la ronda 2 la fila lleva más de una píldora —la gestión también es
+  // una— y las señales del aporte viven en `.bo-senales`. Se mira la de voz.
+  const voz = fila.locator(".bo-badge[data-state='voz']");
+  await expect(voz).toContainText(/por voz/i);
+  await expect(voz).toContainText(/puede estar mal/i);
 });

@@ -16,13 +16,15 @@
 
    ## Las cuatro reglas que esta hoja no rompe
 
-   1. **Cero literales.** Ni un color, ni una sombra, ni una duración escritos a
-      mano. Todo `var(--pc-…)`. La compuerta de contraste valida 108 pares sobre
-      el JSON, y un `#hex` aquí se le escapa entero.
-   2. **Solo pares de texto que el generador ya validó.** El texto de estos
-      bloques es `text.default`, y el fondo es `surface.subtle` o `surface.base`
-      —los dos pares están en `generar_tokens.py`—. El énfasis lo dan el borde,
-      el icono y la versalita, que **no son texto** y no arrastran umbral.
+   1. **Los colores viven en `globals.css`, no aquí.** La ronda 1 decía «cero
+      literales»; la ronda 2 trajo una paleta propia —el lienzo casi negro, los
+      estados con hue, los sectores, la bandera— y esa paleta se declara como
+      variables en `globals.css` y la valida `pruebas/paleta.test.ts` par por
+      par, en los dos modos. Esta hoja solo las consume. La única excepción es
+      el filo del hero, que es decorativo y lo dice su comentario.
+   2. **Solo pares de texto validados.** Los del paquete los valida su
+      generador; los nuestros, la prueba de paleta. Un par que no está en
+      ninguna de las dos no se escribe.
    3. **Todo cuelga de `.pc-ui`.** Ni una regla suelta: las vistas del harness
       comparten documento y tienen su propia línea gráfica (`interfaz.md` I5).
    4. **El movimiento vive dentro de `prefers-reduced-motion: no-preference`**,
@@ -177,6 +179,225 @@
 .pc-ui .pc-text-action svg { width: 16px; height: 16px; }
 .pc-ui .pc-callout svg { width: 16px; height: 16px; vertical-align: -3px; }
 .pc-ui .pc-voice-status svg { width: 16px; height: 16px; vertical-align: -3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RONDA 2 — el lienzo casi negro, las tarjetas, el calendario y el encuentro
+   El criterio de la cabecera («cero literales») se relajó: los colores nuevos
+   viven en `globals.css` y los valida `pruebas/paleta.test.ts`. Aquí solo hay
+   reglas que los consumen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* El hero es ahora el único bloque navy sobre un lienzo casi negro, y su borde
+   izquierdo —navy al 94 %— se fundía con el fondo (1.05:1). Un filo de un píxel
+   lo delimita sin tocar el degradado del paquete. */
+.pc-ui .pc-hero { box-shadow: 0 0 0 1px #1C2B4B, var(--pc-semantic-elevation-deep); }
+
+/* La tarjeta genérica: superficie un escalón más clara que el lienzo, borde
+   sutil, radio grande. Es lo que separa «una pantalla» de «texto sobre un
+   fondo», y era lo que faltaba en /participar y /mis-aportes. */
+.pc-ui .pc-tarjeta {
+  background: var(--pc-semantic-color-surface-base);
+  border: 1px solid var(--pc-semantic-color-border-subtle);
+  border-radius: var(--pc-primitive-radius-lg);
+  box-shadow: var(--pc-semantic-elevation-card);
+  padding: 1.5rem 1.75rem;
+}
+.pc-ui .pc-tarjeta > :last-child { margin-bottom: 0; }
+.pc-ui .pc-tarjeta + .pc-tarjeta { margin-top: 1rem; }
+.pc-ui .pc-tarjeta[data-tono=dorado] { border-left: 3px solid var(--pc-semantic-color-brand-accent); }
+.pc-ui .pc-dos-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; margin: 1.25rem 0; }
+.pc-ui .pc-dos-columnas > .pc-tarjeta + .pc-tarjeta { margin-top: 0; }
+.pc-ui .pc-tarjeta > h3:first-child { margin-top: 0; }
+.pc-ui .pc-tarjeta .pc-history { margin-top: 1rem; }
+/* El icono del hito va en la misma línea que su dato, no encima. */
+.pc-ui .pc-history .pc-meta { display: flex; align-items: flex-start; gap: .375rem; }
+.pc-ui .pc-history .pc-meta svg { flex-shrink: 0; margin-top: .15em; }
+/* Un paso del afinado como tarjeta: el `.pc-section` del paquete le pone 3.5rem
+   por encima, que es el aire entre bloques de la portada, no entre una pregunta
+   y la siguiente. */
+.pc-ui .pc-section.pc-tarjeta { margin-top: 2rem; }
+.pc-ui .pc-section.pc-tarjeta > .pc-topline { margin-top: -.25rem; }
+/* El formulario de contar dentro de su tarjeta: el selector de modo arriba
+   pierde su margen externo y el botón de enviar el suyo de abajo. */
+.pc-ui .pc-tarjeta > .pc-modes { margin-top: 0; }
+.pc-ui .pc-tarjeta > form > .pc-action:last-child { margin-bottom: 0; }
+
+/* Los sectores, la misma paleta que el interno. */
+.pc-ui [data-sector="1"] { --pc-sector-fg: var(--pc-sector-1-fg); --pc-sector-bg: var(--pc-sector-1-bg); --pc-sector-rail: var(--pc-sector-1-rail); }
+.pc-ui [data-sector="2"] { --pc-sector-fg: var(--pc-sector-2-fg); --pc-sector-bg: var(--pc-sector-2-bg); --pc-sector-rail: var(--pc-sector-2-rail); }
+.pc-ui [data-sector="3"] { --pc-sector-fg: var(--pc-sector-3-fg); --pc-sector-bg: var(--pc-sector-3-bg); --pc-sector-rail: var(--pc-sector-3-rail); }
+.pc-ui [data-sector="4"] { --pc-sector-fg: var(--pc-sector-4-fg); --pc-sector-bg: var(--pc-sector-4-bg); --pc-sector-rail: var(--pc-sector-4-rail); }
+.pc-ui [data-sector="5"] { --pc-sector-fg: var(--pc-sector-5-fg); --pc-sector-bg: var(--pc-sector-5-bg); --pc-sector-rail: var(--pc-sector-5-rail); }
+.pc-ui [data-sector="6"] { --pc-sector-fg: var(--pc-sector-6-fg); --pc-sector-bg: var(--pc-sector-6-bg); --pc-sector-rail: var(--pc-sector-6-rail); }
+.pc-ui [data-sector="7"] { --pc-sector-fg: var(--pc-sector-7-fg); --pc-sector-bg: var(--pc-sector-7-bg); --pc-sector-rail: var(--pc-sector-7-rail); }
+.pc-ui [data-sector="8"] { --pc-sector-fg: var(--pc-sector-8-fg); --pc-sector-bg: var(--pc-sector-8-bg); --pc-sector-rail: var(--pc-sector-8-rail); }
+.pc-ui .pc-event-category[data-sector] { color: var(--pc-sector-fg); }
+.pc-ui .pc-event-category[data-sector]::before { content: ''; width: 3px; height: 1em; border-radius: 2px; background: var(--pc-sector-rail); }
+
+/* Los estados del ciudadano, con hue. `.pc-status` del paquete es una píldola
+   azul para todo; con `data-estado` toma el par que le toca. */
+.pc-ui .pc-status[data-estado=ok] { background: var(--pc-semantic-color-feedback-success-background); color: var(--pc-semantic-color-feedback-success-foreground); }
+.pc-ui .pc-status[data-estado=aviso] { background: var(--pc-semantic-color-feedback-warning-background); color: var(--pc-semantic-color-feedback-warning-foreground); }
+.pc-ui .pc-status[data-estado=neutro] { background: var(--pc-semantic-color-feedback-neutral-background); color: var(--pc-semantic-color-feedback-neutral-foreground); }
+.pc-ui .pc-history li[data-estado=ok]::before { background: var(--pc-semantic-color-feedback-success-foreground); }
+.pc-ui .pc-history li[data-estado=aviso]::before { background: var(--pc-semantic-color-feedback-warning-foreground); }
+.pc-ui .pc-history li[data-estado=neutro]::before { background: var(--pc-semantic-color-text-secondary); }
+
+/* ── El hilo de pasos del afinado ─────────────────────────────────────────────
+   Además de la barra: puntos numerados, el actual en dorado, los hechos con
+   un check. Bajo 40rem se esconde (la barra ya lo dice). */
+.pc-ui .pc-hilo { display: flex; align-items: center; gap: .375rem; flex: 1 1 100%; margin-top: .25rem; }
+.pc-ui .pc-hilo span {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; border-radius: 50%; flex-shrink: 0;
+  font-size: .6875rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--pc-semantic-color-text-secondary);
+  border: 1px solid var(--pc-semantic-color-border-control);
+}
+.pc-ui .pc-hilo span[data-hecho] { background: var(--pc-semantic-color-feedback-success-background); color: var(--pc-semantic-color-feedback-success-foreground); border-color: transparent; }
+.pc-ui .pc-hilo span[aria-current=step] { background: var(--pc-semantic-color-brand-accent); color: var(--pc-primitive-color-blue-800); border-color: transparent; }
+.pc-ui .pc-hilo i { flex: 1 1 .5rem; height: 1px; background: var(--pc-semantic-color-border-subtle); }
+@media (max-width: 40rem) { .pc-ui .pc-hilo { display: none; } }
+
+/* ── El calendario de encuentros ──────────────────────────────────────────────
+   Del cronograma del DNP: semanas como filas con su rótulo, cinco días, y los
+   encuentros como bloques con los tres colores de la bandera rotando por
+   posición dentro de la semana. Sin equipos ni alistamiento: eso es logística
+   interna y a quien va a ir no le dice nada. */
+.pc-ui .pc-calendario { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 1.25rem; overflow-wrap: anywhere; }
+.pc-ui .pc-semana {
+  display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1rem;
+  background: var(--pc-semantic-color-surface-base);
+  border: 1px solid var(--pc-semantic-color-border-subtle);
+  border-radius: var(--pc-primitive-radius-lg);
+  padding: 1rem; min-width: 0;
+}
+/* El rótulo de semana: el bloque navy de la imagen, con el número en versalita
+   dorada y el tema en Montserrat. Texto onNavy sobre navy: validado por el
+   paquete («Bloque navy»). */
+.pc-ui .pc-semana-rotulo {
+  display: flex; flex-direction: column; justify-content: center; gap: .25rem;
+  padding: 1rem 1.125rem; border-radius: var(--pc-primitive-radius-md);
+  background: var(--pc-semantic-color-surface-navy); color: var(--pc-semantic-color-text-onNavy);
+}
+.pc-ui .pc-semana-rotulo .pc-eyebrow { margin: 0; color: var(--pc-semantic-color-brand-accent); }
+.pc-ui .pc-semana-rotulo h3 { margin: 0; color: inherit; font-size: 1.0625rem; line-height: 1.25; overflow-wrap: normal; }
+.pc-ui .pc-semana-rotulo p { margin: 0; font-size: .75rem; color: var(--pc-semantic-color-text-onNavySecondary); }
+.pc-ui .pc-semana[data-extra] .pc-semana-rotulo { background: var(--pc-semantic-color-surface-subtle); color: var(--pc-semantic-color-text-default); }
+.pc-ui .pc-semana[data-extra] .pc-semana-rotulo p { color: var(--pc-semantic-color-text-secondary); }
+.pc-ui .pc-dias { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--pc-dias, 5), minmax(0, 1fr)); gap: .5rem; }
+.pc-ui .pc-dia {
+  display: grid; align-content: start; gap: .5rem; min-width: 0; min-height: 7.5rem;
+  padding: .5rem; border-radius: var(--pc-primitive-radius-md);
+  background: var(--pc-semantic-color-surface-canvas);
+}
+.pc-ui .pc-dia[data-festivo] { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--pc-semantic-color-border-subtle) 6px 7px); }
+.pc-ui .pc-dia-numero {
+  display: inline-flex; align-items: center; gap: .375rem; justify-self: start; margin: 0;
+  min-width: 2.25rem; height: 2rem; padding: 0 .5rem;
+  border: 1px solid var(--pc-semantic-color-border-subtle); border-radius: var(--pc-primitive-radius-sm);
+  font: 800 .8125rem/1 var(--pc-semantic-fontFamily-heading); font-variant-numeric: tabular-nums;
+  color: var(--pc-semantic-color-text-secondary);
+}
+.pc-ui .pc-dia-numero small { font-weight: 600; font-size: .6875rem; text-transform: uppercase; letter-spacing: var(--pc-primitive-letterSpacing-label); }
+.pc-ui .pc-festivo { margin: 0; display: inline-flex; align-items: center; gap: .375rem; font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: var(--pc-primitive-letterSpacing-label); color: var(--pc-semantic-color-text-secondary); }
+.pc-ui .pc-festivo svg { width: 14px; height: 14px; }
+/* La bandera en el número del día que tiene encuentro. Texto validado en
+   `paleta.test.ts`: navy sobre dorado, blanco sobre azul, blanco sobre rojo. */
+.pc-ui .pc-dia[data-bandera] .pc-dia-numero { border-color: transparent; box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent); }
+.pc-ui .pc-dia[data-bandera="1"] .pc-dia-numero { background: var(--pc-x-bandera-1); color: var(--pc-x-bandera-1-texto); }
+.pc-ui .pc-dia[data-bandera="2"] .pc-dia-numero { background: var(--pc-x-bandera-2); color: var(--pc-x-bandera-2-texto); }
+.pc-ui .pc-dia[data-bandera="3"] .pc-dia-numero { background: var(--pc-x-bandera-3); color: var(--pc-x-bandera-3-texto); }
+.pc-ui .pc-dia-encuentros { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; min-width: 0; }
+/* La tarjeta del paquete, apretada para caber en una celda, con el riel del
+   color de la bandera de su día. (0,3,0) gana a la del paquete (0,2,0). */
+.pc-ui .pc-calendario .pc-event-row {
+  grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .75rem .875rem .875rem;
+  background: var(--pc-semantic-color-surface-subtle); border-radius: var(--pc-primitive-radius-md);
+  border-left: 3px solid var(--pc-x-bandera-actual, var(--pc-semantic-color-border-subtle));
+}
+.pc-ui .pc-dia[data-bandera="1"] { --pc-x-bandera-actual: var(--pc-x-bandera-1); }
+.pc-ui .pc-dia[data-bandera="2"] { --pc-x-bandera-actual: var(--pc-x-bandera-2); }
+.pc-ui .pc-dia[data-bandera="3"] { --pc-x-bandera-actual: var(--pc-x-bandera-3); }
+.pc-ui .pc-calendario .pc-event-row::before { content: none; }
+.pc-ui .pc-calendario .pc-event-row:hover { transform: none; box-shadow: var(--pc-semantic-elevation-card); }
+.pc-ui .pc-calendario .pc-event-category { font-size: .625rem; margin: 0 0 .25rem; }
+.pc-ui .pc-calendario .pc-event-title { font-size: 1rem; line-height: 1.3; min-height: 0; margin: 0 0 .25rem; }
+/* «Encuentro regional · Pereira» en una celda de 200 px son tres renglones. La
+   ciudad es lo que se busca; el prefijo va pequeño encima. El texto sigue
+   siendo el título entero. */
+.pc-ui .pc-calendario .pc-event-title small {
+  display: block; font-size: .625rem; font-weight: 700; letter-spacing: var(--pc-primitive-letterSpacing-label);
+  text-transform: uppercase; color: var(--pc-semantic-color-text-secondary); margin-bottom: .125rem;
+}
+.pc-ui .pc-calendario .pc-event-when { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-ui .pc-calendario .pc-event-row :is(.pc-event-when, .pc-event-where) { font-size: .75rem; }
+.pc-ui .pc-calendario .pc-event-state { font-size: .75rem; margin-top: .5rem; }
+.pc-ui .pc-calendario .pc-event-row[data-status=cancelled] { opacity: 1; border-left-color: var(--pc-semantic-color-feedback-error-foreground); }
+.pc-ui .pc-calendario .pc-event-row[data-status=cancelled] :is(.pc-event-title, .pc-event-where) { text-decoration: line-through; opacity: .75; }
+.pc-ui .pc-leyenda { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .5rem 0 0; padding: 0; list-style: none; font-size: .75rem; color: var(--pc-semantic-color-text-secondary); }
+.pc-ui .pc-leyenda li { display: inline-flex; align-items: center; gap: .5rem; }
+.pc-ui .pc-leyenda i { width: 1rem; height: .375rem; border-radius: 2px; }
+.pc-ui .pc-leyenda i[data-bandera="1"] { background: var(--pc-x-bandera-1); }
+.pc-ui .pc-leyenda i[data-bandera="2"] { background: var(--pc-x-bandera-2); }
+.pc-ui .pc-leyenda i[data-bandera="3"] { background: var(--pc-x-bandera-3); }
+.pc-ui .pc-leyenda i[data-cancelado] { background: var(--pc-semantic-color-feedback-error-foreground); }
+
+/* ── Cómo es un encuentro: cinco pasos con flecha ─────────────────────────── */
+.pc-ui .pc-pasos-encuentro { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; counter-reset: paso; }
+.pc-ui .pc-pasos-encuentro li { position: relative; counter-increment: paso; padding: 0 .5rem 0 0; min-width: 0; }
+.pc-ui .pc-paso-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 3.5rem; height: 3.5rem; border-radius: 50%;
+  background: var(--pc-semantic-color-brand-accent); color: var(--pc-primitive-color-blue-800);
+  margin-bottom: 1rem;
+}
+.pc-ui .pc-paso-icono svg { width: 26px; height: 26px; }
+.pc-ui .pc-pasos-encuentro li:not(:last-child)::after {
+  content: ''; position: absolute; top: 1.75rem; left: 3.75rem; right: .25rem; height: 2px;
+  background: var(--pc-primitive-color-blue-700);
+  clip-path: polygon(0 40%, calc(100% - 8px) 40%, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, calc(100% - 8px) 60%, 0 60%);
+}
+.pc-ui .pc-pasos-encuentro h3 { font-size: 1rem; margin: 0 0 .5rem; color: var(--pc-semantic-color-text-link); }
+.pc-ui .pc-pasos-encuentro h3::before { content: counter(paso) ". "; }
+.pc-ui .pc-pasos-encuentro p { margin: 0; font-size: .8125rem; line-height: 1.55; color: var(--pc-semantic-color-text-secondary); }
+
+/* ── Los seis caminos ─────────────────────────────────────────────────────── */
+.pc-ui .pc-caminos { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.pc-ui .pc-camino {
+  padding: 1.125rem 1.25rem; min-width: 0;
+  background: var(--pc-semantic-color-surface-base);
+  border: 1px solid var(--pc-semantic-color-border-subtle);
+  border-left: 4px solid var(--pc-sector-rail, var(--pc-semantic-color-brand-accent));
+  border-radius: var(--pc-primitive-radius-md);
+}
+.pc-ui .pc-camino .pc-eyebrow { margin: 0 0 .375rem; color: var(--pc-sector-fg); }
+.pc-ui .pc-camino h3 { margin: 0; font-size: 1rem; line-height: 1.35; }
+
+@media (max-width: 64rem) {
+  .pc-ui .pc-pasos-encuentro { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 1.75rem; }
+  .pc-ui .pc-pasos-encuentro li:nth-child(3)::after { content: none; }
+}
+@media (max-width: 52rem) {
+  .pc-ui .pc-semana { grid-template-columns: 1fr; padding: .875rem; }
+  .pc-ui .pc-semana-rotulo { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: .25rem .75rem; padding: .75rem 1rem; }
+  .pc-ui .pc-dias { grid-template-columns: 1fr; gap: .625rem; }
+  .pc-ui .pc-dia { grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .75rem; min-height: 0; padding: 0; background: none; }
+  .pc-ui .pc-dia[data-vacio]:not([data-festivo]) { display: none; }
+  .pc-ui .pc-dia[data-festivo] { background: none; }
+  .pc-ui .pc-dia-numero { min-width: 3.5rem; }
+  .pc-ui .pc-caminos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pc-ui .pc-dos-columnas { grid-template-columns: 1fr; }
+}
+@media (max-width: 40rem) {
+  .pc-ui .pc-tarjeta { padding: 1.125rem 1.125rem 1.25rem; }
+  .pc-ui .pc-pasos-encuentro { grid-template-columns: 1fr; gap: 1.25rem; }
+  .pc-ui .pc-pasos-encuentro li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem 1rem; align-items: start; }
+  .pc-ui .pc-paso-icono { grid-row: span 2; width: 2.75rem; height: 2.75rem; margin: 0; }
+  .pc-ui .pc-paso-icono svg { width: 20px; height: 20px; }
+  .pc-ui .pc-pasos-encuentro li::after { content: none !important; }
+  .pc-ui .pc-caminos { grid-template-columns: 1fr; }
+}
 
 /* ── Movimiento ───────────────────────────────────────────────────────────────
    Un solo gesto propio: la barra que avanza. Todo lo demás reutiliza `.pc-entra`

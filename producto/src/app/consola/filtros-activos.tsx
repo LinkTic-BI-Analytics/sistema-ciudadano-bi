@@ -82,13 +82,12 @@ function comoSeLee(
   }
 }
 
-/** La misma dirección sin ese parámetro. Y sin `ver`: al cambiar el filtro, la
- *  paginación acumulada deja de tener sentido y traer 300 filas de otra cosa
- *  es lento y confunde. */
+/** La misma dirección sin ese parámetro. Y sin `pagina`: al cambiar el filtro
+ *  cambia el universo, y la página 4 de otra cosa casi nunca existe. */
 function sin(consulta: Consulta, clave: string): Consulta {
   const resto: Consulta = {};
   for (const [k, v] of Object.entries(consulta)) {
-    if (k !== clave && k !== "ver") resto[k] = v;
+    if (k !== clave && k !== "pagina" && k !== "ver") resto[k] = v;
   }
   return resto;
 }

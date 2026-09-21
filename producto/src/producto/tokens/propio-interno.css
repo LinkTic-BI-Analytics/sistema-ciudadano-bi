@@ -1,270 +1,655 @@
 /* Lo que este proyecto le agrega al perfil interno del sistema de diseño.
    Importar DESPUÉS de backoffice.css.
 
-   **Esta hoja es nuestra, no del paquete v0.5.** Misma relación que
-   `propio-ciudadano.css`: `scripts/tokens.sh` copia seis archivos y esta no
-   está en la lista, así que no la pisa. Y va aparte de la ciudadana a
-   propósito — `scripts/paralelismo.sh --duro` falla si dos tareas activas
-   declaran el mismo archivo, y así los dos carriles pueden avanzar a la vez.
+   **Esta hoja es nuestra, no del paquete v0.5.** `scripts/tokens.sh` copia seis
+   archivos y esta no está en la lista, así que no la pisa. Va aparte de la
+   ciudadana a propósito: `scripts/paralelismo.sh --duro` falla si dos tareas
+   activas declaran el mismo archivo.
 
-   Cada clase de aquí es una que hay que pedirle al equipo de diseño para la
-   v0.6. Queda anotado en `negocio/vacios.md`.
+   ## Qué cambió en la ronda 2, y por qué
 
-   ## Lo que esta hoja NO hereda de la cara ciudadana, y es a propósito
+   La ronda 1 aplicó el paquete tal cual, y el cliente no vio la mejora: todo
+   seguía azul, la bandeja parecía un informe largo, los filtros no tenían una
+   distribución lógica, la barra lateral «se veía horrible». Tenía razón en lo
+   de fondo, y estaba medido: 20 de los 24 tokens internos caían en la rampa
+   azul y tres estados distintos eran el mismo color. La paleta se corrigió en
+   `globals.css`; esta hoja pone encima **los componentes que el paquete no
+   trae**: navegación como píldoras, tabla con riel de color, sectores,
+   pestañas, paneles, segmentos, paginación.
 
-   Lo dice la cabecera de `backoffice.css` y sigue valiendo: ni el halo dorado
-   —en una pantalla con veinte controles deja de señalar— ni las entradas
-   animadas: *«una bandeja que se reordena delante de quien está leyendo una
-   fila es una bandeja que hace perder el sitio»*. Aquí pesa el doble, porque
-   los filtros viajan en la dirección: **cada filtro es una carga de página**, y
-   una cascada de filas se repetiría en cada clic.
+   Con eso cambia el criterio de esta hoja. Antes: «cero literales de color».
+   Ahora: **se permite lo que haga falta para que se lea**, con una condición
+   que no se negocia: cada par texto/fondo pasa por `pruebas/paleta.test.ts`,
+   que recalcula WCAG desde los hex resueltos en los dos modos. Lo que no está
+   en esa prueba no se escribe aquí como literal: se usa un token.
 
-   Por eso el esqueleto de carga es **estático**: un brillo que recorre es un
-   pulso continuo, y `direccion-visual.md` los prohíbe por su nombre.
+   Todo cuelga de `.pc-backoffice`: las vistas del harness comparten documento
+   y tienen su propia línea gráfica (`harness/interfaz.md` I5). */
 
-   Cero literales de color, sombra o duración: todo `var(--pc-…)`. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · LA BARRA LATERAL
+   Navy casi negro en los dos modos, como el pie de la portada: es el único
+   sitio del interno donde la marca conserva su azul, y por eso se distingue
+   del lienzo —que ya no es navy— sin necesitar un borde. Sus textos llevan
+   tokens propios porque `--bo-ink` sigue al modo y en claro sería tinta
+   oscura sobre navy.
 
-/* ── Navegación lateral, para enlaces ─────────────────────────────────────────
-   `backoffice.css:80-97` tiene el contrato entero del renglón de navegación
-   —incluida la barra dorada a la izquierda del activo, que existe porque *«el
-   fondo solo, sobre navy, se confunde con el hover»*— pero escrito contra
-   `nav button`. La consola navega entre vistas con `<Link>`, que es un `<a>`.
-
-   Esto replica el mismo contrato para el elemento correcto. Si el paquete lo
-   incorpora, esta sección se borra entera. */
-.pc-backoffice nav a {
-  position: relative; display: flex; align-items: center; gap: .625rem; width: 100%;
-  min-height: 44px; border: 0; background: transparent; color: var(--bo-muted);
-  padding: .625rem; border-radius: var(--pc-primitive-radius-sm);
-  text-align: left; font-size: .8125rem; font-weight: 600; text-decoration: none;
+   Es un menú desplegable: cada grupo tiene cabecera con flecha y se recoge;
+   la barra entera se pliega a un riel de iconos con el botón de la marca.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-shell { grid-template-columns: 15rem minmax(0, 1fr); }
+.pc-backoffice .bo-shell:has(> .bo-sidebar[data-plegada]) { grid-template-columns: 4.5rem minmax(0, 1fr); }
+.pc-backoffice .bo-sidebar {
+  background: var(--pc-x-sidebar);
+  color: var(--pc-x-sidebar-texto);
+  border-right: 1px solid var(--pc-x-sidebar-linea);
+  padding: 1rem .75rem 1rem;
+  gap: 0;
+  /* Pegada y a la altura de la ventana: la tabla se desplaza, el menú no. */
+  position: sticky; top: 0; align-self: start; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
-.pc-backoffice nav a[aria-current=page] {
-  background: var(--pc-component-backoffice-navigation-background);
-  color: var(--pc-component-backoffice-navigation-foreground); font-weight: 700;
+
+/* La marca: tricolor, sección y el botón de plegar a la derecha. */
+.pc-backoffice .bo-brand {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .625rem;
+  color: var(--pc-x-sidebar-texto);
+  padding: .25rem .25rem 1rem .5rem; margin-bottom: .5rem;
+  border-bottom: 1px solid var(--pc-x-sidebar-linea);
+  font-size: 1rem;
 }
-.pc-backoffice nav a[aria-current=page]::before {
+.pc-backoffice .bo-brand .bo-tricolor { flex-direction: column; gap: 2px; }
+.pc-backoffice .bo-brand .bo-tricolor i { width: 4px; height: 8px; border-radius: 2px; }
+.pc-backoffice .bo-brand > .bo-brand-texto {
+  display: block; min-width: 0; line-height: 1.15;
+  font-family: var(--pc-semantic-fontFamily-heading); font-size: 1.0625rem; font-weight: 800;
+  letter-spacing: var(--pc-primitive-letterSpacing-heading); text-transform: none; color: var(--pc-x-sidebar-texto);
+}
+.pc-backoffice .bo-brand > .bo-brand-texto > span { display: block; margin-top: .125rem; color: var(--pc-x-sidebar-suave); font-size: .5625rem; letter-spacing: .06em; }
+.pc-backoffice .bo-plegar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: var(--pc-primitive-radius-sm);
+  border: 1px solid transparent; background: transparent; color: var(--pc-x-sidebar-suave); cursor: pointer;
+}
+.pc-backoffice .bo-plegar:hover { background: color-mix(in srgb, var(--pc-x-sidebar-texto) 8%, transparent); color: var(--pc-x-sidebar-texto); }
+.pc-backoffice .bo-plegar svg { width: 16px; height: 16px; }
+.pc-backoffice .bo-visualmente-oculto {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* La navegación: una columna de grupos con aire entre ellos. */
+.pc-backoffice .bo-sidebar nav { display: flex; flex-direction: column; gap: .25rem; }
+.pc-backoffice .bo-nav-grupo { margin-top: .75rem; }
+.pc-backoffice .bo-nav-grupo:first-of-type { margin-top: .25rem; }
+/* La cabecera del grupo: versalita, y la flecha que gira al abrir. */
+.pc-backoffice .bo-nav-label {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin: 0 0 .25rem; padding: .5rem .625rem; min-height: 2.25rem;
+  border-radius: var(--pc-primitive-radius-sm); cursor: pointer; list-style: none; user-select: none;
+  color: var(--pc-x-sidebar-suave); font-size: .6875rem; font-weight: 700;
+  letter-spacing: var(--pc-primitive-letterSpacing-label); text-transform: uppercase;
+}
+.pc-backoffice .bo-nav-label::-webkit-details-marker { display: none; }
+.pc-backoffice .bo-nav-label:hover { color: var(--pc-x-sidebar-texto); background: color-mix(in srgb, var(--pc-x-sidebar-texto) 6%, transparent); }
+.pc-backoffice .bo-nav-label svg { width: 14px; height: 14px; flex-shrink: 0; transition: transform var(--pc-semantic-motion-fast) var(--bo-ease); }
+.pc-backoffice .bo-nav-grupo[open] > .bo-nav-label svg { transform: rotate(180deg); }
+.pc-backoffice .bo-nav-items { display: flex; flex-direction: column; gap: .125rem; }
+
+/* El renglón: icono en un disco tintado, aire, rótulo. Dorado para revisión,
+   azul para convocatoria. El activo se llena de dorado oscuro con el texto
+   dorado claro (10.7:1) y lleva una barra dorada al borde izquierdo. */
+.pc-backoffice .bo-nav-item {
+  position: relative; display: flex; align-items: center; gap: .75rem;
+  padding: .4375rem .625rem .4375rem .5rem; min-height: 2.625rem;
+  border-radius: var(--pc-primitive-radius-md);
+  color: var(--pc-x-sidebar-suave); text-decoration: none;
+  font-weight: 600; font-size: .8125rem; line-height: 1.3;
+}
+.pc-backoffice .bo-nav-item:hover { background: color-mix(in srgb, var(--pc-x-sidebar-texto) 7%, transparent); color: var(--pc-x-sidebar-texto); }
+.pc-backoffice .bo-nav-item[aria-current=page] {
+  background: var(--pc-x-nav-activo-bg); color: var(--pc-x-nav-activo-fg); font-weight: 700;
+}
+.pc-backoffice .bo-nav-item[aria-current=page]::before {
   content: ''; position: absolute; left: 0; top: .5rem; bottom: .5rem; width: 3px;
-  border-radius: 0 3px 3px 0; background: var(--pc-semantic-color-brand-accent);
+  border-radius: 0 3px 3px 0; background: var(--pc-x-nav-tinte, var(--pc-primitive-color-gold-500));
 }
-.pc-backoffice nav a:hover { background: var(--pc-semantic-color-surface-subtle); color: var(--bo-ink); }
-.pc-backoffice nav a svg { width: 16px; height: 16px; }
-.pc-backoffice nav a span { margin-left: auto; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.pc-backoffice .bo-nav-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-backoffice .bo-nav-icono {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 1.875rem; height: 1.875rem; border-radius: var(--pc-primitive-radius-sm);
+  background: color-mix(in srgb, var(--pc-x-nav-tinte, var(--pc-primitive-color-gold-500)) 14%, transparent);
+  color: var(--pc-x-nav-tinte, var(--pc-primitive-color-gold-500));
+}
+.pc-backoffice .bo-nav-icono svg { width: 16px; height: 16px; }
+.pc-backoffice .bo-nav-item[aria-current=page] .bo-nav-icono {
+  background: var(--pc-x-nav-tinte, var(--pc-primitive-color-gold-500));
+  color: var(--pc-primitive-color-blue-800);
+}
+.pc-backoffice [data-grupo=convocatoria] .bo-nav-item { --pc-x-nav-tinte: var(--pc-primitive-color-blue-300); }
+.pc-backoffice [data-grupo=convocatoria] .bo-nav-item[aria-current=page] .bo-nav-icono { color: var(--pc-primitive-color-blue-950); }
+/* «Volver a la bandeja» es un renglón más, gris, encima de los grupos. */
+.pc-backoffice .bo-sidebar .bo-back { --pc-x-nav-tinte: var(--pc-x-sidebar-suave); margin: 0 0 .25rem; font-size: .75rem; }
+.pc-backoffice .bo-sidebar .bo-back .bo-nav-icono { background: color-mix(in srgb, var(--pc-x-sidebar-texto) 8%, transparent); color: var(--pc-x-sidebar-suave); }
 
-/* ── El botón de tema, dentro del perfil interno ──────────────────────────────
-   `.pc-tema` está declarado en `marco.css` bajo `.pc-ui`, así que dentro de
-   `.pc-backoffice` no lo alcanza ninguna regla. La clase existe y es la misma;
-   lo que cambia son los alias de la hoja.
+/* Plegada: un riel de 4.5rem con los iconos centrados; los rótulos, las
+   cabeceras y el texto del aviso desaparecen y cada renglón conserva su
+   `title`, que es lo que el navegador enseña al pasar por encima. */
+.pc-backoffice .bo-sidebar[data-plegada] { padding-inline: .625rem; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-brand { grid-template-columns: 1fr; justify-items: center; padding-inline: 0; gap: .5rem; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-brand-texto,
+.pc-backoffice .bo-sidebar[data-plegada] .bo-nav-label span,
+.pc-backoffice .bo-sidebar[data-plegada] .bo-nav-texto,
+.pc-backoffice .bo-sidebar[data-plegada] .bo-aviso p { display: none; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-nav-label { justify-content: center; padding: .25rem; min-height: 1.5rem; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-nav-item { justify-content: center; padding: .375rem; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-aviso { grid-template-columns: 1fr; justify-items: center; padding: .625rem; }
+.pc-backoffice .bo-sidebar[data-plegada] .bo-aviso > svg { margin: 0; }
 
-   Y hace falta: quien revisa pasa horas aquí y el interno **no tenía forma de
-   cambiar de tema**, aunque el sistema traiga los dos modos completos. */
+/* El botón del menú. Solo existe bajo 48rem; arriba la navegación siempre se
+   ve y el botón se esconde. */
+.pc-backoffice .bo-menu-boton {
+  display: none; align-items: center; gap: .5rem;
+  min-height: 40px; padding: .375rem .75rem;
+  border: 1px solid var(--pc-x-sidebar-linea); border-radius: var(--pc-primitive-radius-pill);
+  background: transparent; color: var(--pc-x-sidebar-texto);
+  font-size: .8125rem; font-weight: 600;
+}
+.pc-backoffice .bo-menu-boton svg { width: 16px; height: 16px; }
+
+/* El aviso de permisos: era un párrafo suelto al fondo. Ahora es una tarjeta
+   ámbar con icono — se lee como lo que es, una advertencia, no como pie de
+   página. Texto sobre fondo: el par de advertencia, validado. */
+.pc-backoffice .bo-sidebar-bottom { padding: 1rem 0 0; }
+.pc-backoffice .bo-aviso {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem .625rem; align-items: start;
+  padding: .75rem .875rem;
+  background: var(--pc-semantic-color-feedback-warning-background);
+  color: var(--pc-semantic-color-feedback-warning-foreground);
+  border-radius: var(--pc-primitive-radius-md);
+  font-size: .75rem; line-height: 1.5;
+}
+.pc-backoffice .bo-aviso > svg { width: 16px; height: 16px; margin-top: .125rem; }
+.pc-backoffice .bo-aviso p { margin: 0; color: inherit; }
+.pc-backoffice .bo-aviso strong { color: inherit; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRA SUPERIOR
+   Un rastro «Consola › Bandeja de calidad» a la izquierda; a la derecha lo
+   que la pantalla tenga que decir y el botón de tema. La línea de abajo es de
+   acento y no del gris apagado del paquete.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-topbar {
+  background: var(--pc-semantic-color-surface-base);
+  border-bottom: 1px solid var(--pc-semantic-color-border-subtle);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--pc-primitive-color-gold-500) 55%, transparent);
+  min-height: 3.5rem; padding: .625rem var(--pc-semantic-internal-pagePadding);
+}
+.pc-backoffice .bo-rastro {
+  display: flex; align-items: center; gap: .5rem; margin: 0;
+  font-size: .75rem; color: var(--bo-muted);
+}
+.pc-backoffice .bo-rastro strong { color: var(--bo-ink); font-weight: 700; }
+.pc-backoffice .bo-rastro svg { width: 14px; height: 14px; }
+
+/* El botón de tema dentro del interno (`.pc-tema` vive en marco.css bajo .pc-ui). */
 .pc-backoffice .pc-tema {
   display: inline-flex; align-items: center; gap: .5rem;
-  min-height: var(--pc-component-backoffice-button-height);
-  padding: .375rem .875rem;
+  min-height: var(--pc-component-backoffice-button-height); padding: .375rem .875rem;
   font-size: .75rem; font-weight: 600; font-family: inherit;
   color: var(--bo-ink); background: var(--bo-paper);
-  border: 1px solid var(--bo-line);
-  border-radius: var(--pc-primitive-radius-pill);
+  border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-pill);
 }
 .pc-backoffice .pc-tema:hover { border-color: var(--pc-semantic-color-border-accent); }
 .pc-backoffice .pc-tema svg { width: 16px; height: 16px; }
 
-/* ── El resumen de la bandeja ─────────────────────────────────────────────────
-   Los tres conteos —cuántos en la lista, cuántos aportes, cuántos expedientes—
-   iban en un `<span class="bo-results-line">` dentro de la barra superior, en
-   12 px y separados por puntos medios. `.bo-results-line` no es eso: es un
-   bloque flex con margen vertical, diseñado para ir **entre los filtros y la
-   tabla** (`backoffice.css:198`), que es donde ahora vuelve.
-
-   Las cifras van en la tipografía de cifras con numerales tabulares, que es lo
-   que la línea gráfica pide para un dato que se compara.
-
-   **No es un ranking.** `BI-02` prohíbe ordenar por popularidad, y esto no
-   ordena nada: son totales del universo que la persona está mirando. */
-.pc-backoffice .bo-resumen {
-  display: grid; gap: .75rem; margin-bottom: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · SECTORES Y ESTADOS
+   El sector es texto con un riel de 3 px al lado; el estado es una píldora con
+   punto. Dos formas distintas para dos cosas distintas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice [data-sector="1"] { --pc-sector-fg: var(--pc-sector-1-fg); --pc-sector-bg: var(--pc-sector-1-bg); --pc-sector-rail: var(--pc-sector-1-rail); }
+.pc-backoffice [data-sector="2"] { --pc-sector-fg: var(--pc-sector-2-fg); --pc-sector-bg: var(--pc-sector-2-bg); --pc-sector-rail: var(--pc-sector-2-rail); }
+.pc-backoffice [data-sector="3"] { --pc-sector-fg: var(--pc-sector-3-fg); --pc-sector-bg: var(--pc-sector-3-bg); --pc-sector-rail: var(--pc-sector-3-rail); }
+.pc-backoffice [data-sector="4"] { --pc-sector-fg: var(--pc-sector-4-fg); --pc-sector-bg: var(--pc-sector-4-bg); --pc-sector-rail: var(--pc-sector-4-rail); }
+.pc-backoffice [data-sector="5"] { --pc-sector-fg: var(--pc-sector-5-fg); --pc-sector-bg: var(--pc-sector-5-bg); --pc-sector-rail: var(--pc-sector-5-rail); }
+.pc-backoffice [data-sector="6"] { --pc-sector-fg: var(--pc-sector-6-fg); --pc-sector-bg: var(--pc-sector-6-bg); --pc-sector-rail: var(--pc-sector-6-rail); }
+.pc-backoffice [data-sector="7"] { --pc-sector-fg: var(--pc-sector-7-fg); --pc-sector-bg: var(--pc-sector-7-bg); --pc-sector-rail: var(--pc-sector-7-rail); }
+.pc-backoffice [data-sector="8"] { --pc-sector-fg: var(--pc-sector-8-fg); --pc-sector-bg: var(--pc-sector-8-bg); --pc-sector-rail: var(--pc-sector-8-rail); }
+/* Sin sector (sin tema): gris neutro, y el riel punteado dice «falta». */
+.pc-backoffice .bo-sector {
+  display: inline-flex; align-items: center; gap: .5rem; max-width: 100%;
+  padding: .25rem .625rem .25rem .5rem;
+  border-radius: var(--pc-primitive-radius-sm);
+  background: var(--pc-sector-bg, var(--pc-semantic-color-feedback-neutral-background));
+  color: var(--pc-sector-fg, var(--pc-semantic-color-feedback-neutral-foreground));
+  font-size: .75rem; font-weight: 700; line-height: 1.35;
 }
-.pc-backoffice .bo-resumen > div {
-  padding: .875rem 1rem;
-  background: var(--pc-semantic-color-surface-editorial);
+.pc-backoffice .bo-sector::before {
+  content: ''; width: 3px; height: 1.1em; flex-shrink: 0; border-radius: 2px;
+  background: var(--pc-sector-rail, currentColor);
+}
+.pc-backoffice .bo-sector[data-sector="0"]::before,
+.pc-backoffice .bo-sector:not([data-sector])::before {
+  background: repeating-linear-gradient(to bottom, currentColor 0 3px, transparent 3px 5px);
+}
+
+/* Los estados, con hue. Los nombres `data-state` son los del paquete; `alert`
+   es nuevo: la alerta de urgencia iba mapeada a `review` y con hue real
+   habría salido azul. */
+.pc-backoffice .bo-badge[data-state=alert] {
+  background: var(--pc-semantic-color-feedback-error-background);
+  color: var(--pc-semantic-color-feedback-error-foreground);
+}
+.pc-backoffice .bo-badge[data-state=voz] { background: var(--pc-x-remitido-bg); color: var(--pc-x-remitido-fg); }
+.pc-backoffice .bo-badge[data-state=info] {
+  background: var(--pc-semantic-color-feedback-info-background);
+  color: var(--pc-semantic-color-feedback-info-foreground);
+}
+.pc-backoffice .bo-badge[data-state=ok] {
+  background: var(--pc-semantic-color-feedback-success-background);
+  color: var(--pc-semantic-color-feedback-success-foreground);
+}
+.pc-backoffice .bo-badge svg { width: 12px; height: 12px; }
+/* «Qué falta»: ámbar con icono cuando falta algo, verde cuando no. */
+.pc-backoffice .bo-falta { display: inline-flex; align-items: flex-start; gap: .375rem; color: var(--pc-semantic-color-feedback-warning-foreground); font-weight: 600; }
+.pc-backoffice .bo-falta[data-nada] { color: var(--pc-semantic-color-feedback-success-foreground); font-weight: 500; }
+.pc-backoffice .bo-falta svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: .1rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · EL RESUMEN
+   Tres tarjetas con un disco de color y su cifra en la tipografía de cifras.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-resumen {
+  display: grid; gap: .875rem; margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+.pc-backoffice .bo-resumen > :is(div, a) {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .875rem; align-items: center;
+  padding: 1rem 1.125rem;
+  background: var(--pc-semantic-color-surface-base);
+  border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+  box-shadow: var(--pc-semantic-elevation-card);
+}
+.pc-backoffice .bo-resumen > :is(div, a)[data-foco=true] { border-color: var(--pc-semantic-color-border-accent); }
+.pc-backoffice .bo-resumen-icono {
+  grid-row: span 3; display: inline-flex; align-items: center; justify-content: center;
+  width: 2.75rem; height: 2.75rem; border-radius: var(--pc-primitive-radius-md);
+  background: color-mix(in srgb, var(--pc-x-resumen-tinte, var(--pc-primitive-color-gold-500)) 16%, transparent);
+  color: var(--pc-x-resumen-tinte, var(--pc-primitive-color-gold-500));
+}
+.pc-backoffice .bo-resumen-icono svg { width: 22px; height: 22px; }
+.pc-backoffice .bo-resumen > :is(div, a)[data-tinte=azul] { --pc-x-resumen-tinte: var(--pc-primitive-color-blue-300); }
+.pc-backoffice .bo-resumen > :is(div, a)[data-tinte=verde] { --pc-x-resumen-tinte: var(--pc-semantic-color-feedback-success-foreground); }
+.pc-backoffice .bo-resumen > :is(div, a)[data-tinte=violeta] { --pc-x-resumen-tinte: var(--pc-x-remitido-fg); }
+.pc-backoffice .bo-resumen strong {
+  display: block;
+  font-family: var(--pc-semantic-fontFamily-mono);
+  font-size: 1.75rem; font-weight: 700; line-height: 1.1;
+  font-variant-numeric: tabular-nums; color: var(--bo-ink);
+}
+.pc-backoffice .bo-resumen p { margin: 0; font-size: .6875rem; color: var(--bo-muted); line-height: 1.5; }
+.pc-backoffice .bo-resumen > a { text-decoration: none; color: inherit; }
+.pc-backoffice .bo-resumen > a:hover { border-color: var(--pc-semantic-color-border-accent); box-shadow: var(--pc-semantic-elevation-deep); }
+.pc-backoffice .bo-event-list p svg { width: 14px; height: 14px; vertical-align: -2px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · LOS FILTROS EN TRES NIVELES
+   Buscar → vistas rápidas → afinar. Diez selectores en una rejilla plana no
+   tienen jerarquía: todos pesan lo mismo y nadie sabe por dónde empezar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-filters {
+  display: grid; grid-template-columns: 1fr; gap: .875rem; margin-bottom: 1rem;
+  padding: 1rem 1.125rem;
+  background: var(--pc-semantic-color-surface-base);
   border: 1px solid var(--bo-line);
   border-radius: var(--pc-component-backoffice-panel-radius);
 }
-/* El borde dorado marca **dónde está el trabajo**, no un estado. El rótulo lo
-   dice con palabras, que es lo que `interfaz.md` exige: el color nunca solo. */
-.pc-backoffice .bo-resumen > div[data-foco=true] {
-  border-left: 3px solid var(--pc-semantic-color-brand-accent);
+.pc-backoffice .bo-filters .bo-field, .pc-backoffice .bo-filters .bo-check { margin: 0; }
+/* Fila 1: la búsqueda ancha, el orden, y el botón. */
+.pc-backoffice .bo-filtros-buscar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .75rem; align-items: end;
 }
-.pc-backoffice .bo-resumen strong {
-  display: block; margin-top: .25rem;
-  font-family: var(--pc-semantic-fontFamily-mono);
-  font-size: 1.625rem; font-weight: 700; line-height: 1.15;
+.pc-backoffice .bo-filtros-buscar select { min-width: 14rem; }
+/* Fila 2: las vistas rápidas. */
+.pc-backoffice .bo-filtros-rapidos { display: flex; flex-wrap: wrap; gap: .625rem 1.25rem; align-items: center; }
+.pc-backoffice .bo-segmento { display: inline-flex; align-items: center; gap: .5rem; max-width: 100%; }
+.pc-backoffice .bo-segmento > .bo-label-tag { margin-right: .125rem; white-space: nowrap; }
+/* Las píldoras envuelven; las palabras, nunca. En un teléfono, «Sin expediente»
+   partido en «Sin expedi / ente» dentro de un botón se lee como un error. */
+.pc-backoffice .bo-segmento > div {
+  display: inline-flex; flex-wrap: wrap; padding: .1875rem; gap: .125rem;
+  background: var(--pc-semantic-color-surface-subtle);
+  border: 1px solid var(--bo-line); border-radius: 1.125rem;
+}
+.pc-backoffice .bo-segmento input { position: absolute; width: 1px; height: 1px; margin: -1px; opacity: 0; }
+.pc-backoffice .bo-segmento label {
+  display: inline-flex; align-items: center; gap: .375rem; margin: 0;
+  min-height: 1.875rem; padding: .25rem .75rem; white-space: nowrap;
+  border-radius: var(--pc-primitive-radius-pill);
+  font-size: .75rem; font-weight: 600; color: var(--bo-muted); cursor: pointer;
+}
+.pc-backoffice .bo-segmento label:hover { color: var(--bo-ink); }
+.pc-backoffice .bo-segmento input:checked + label {
+  background: var(--pc-semantic-color-surface-floating); color: var(--bo-ink);
+  box-shadow: var(--pc-semantic-elevation-card);
+}
+.pc-backoffice .bo-segmento input:focus-visible + label {
+  outline: 2px solid var(--pc-semantic-color-focus-ring); outline-offset: 1px;
+}
+/* El conmutador de alerta: un chip que se enciende en rojo. */
+.pc-backoffice .bo-conmutador { display: inline-flex; align-items: center; gap: .5rem; margin: 0; min-height: 1.875rem; padding: .25rem .75rem .25rem .5rem; border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-pill); font-size: .75rem; font-weight: 600; color: var(--bo-muted); cursor: pointer; }
+.pc-backoffice .bo-conmutador input { width: 16px; height: 16px; margin: 0; accent-color: var(--pc-semantic-color-feedback-error-foreground); }
+.pc-backoffice .bo-conmutador:has(input:checked) {
+  background: var(--pc-semantic-color-feedback-error-background);
+  color: var(--pc-semantic-color-feedback-error-foreground);
+  border-color: transparent;
+}
+.pc-backoffice .bo-conmutador svg { width: 14px; height: 14px; }
+/* Fila 3: afinar, plegable y abierto por defecto. */
+.pc-backoffice .bo-filters .bo-plegable { margin: 0; background: transparent; border-color: var(--bo-line); }
+.pc-backoffice .bo-filters .bo-plegable > summary { font-size: .75rem; color: var(--bo-muted); min-height: 40px; padding: .5rem .75rem; }
+.pc-backoffice .bo-filters .bo-plegable > summary svg { width: 14px; height: 14px; }
+.pc-backoffice .bo-afinar {
+  display: grid; gap: .75rem; padding: .25rem .875rem .875rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.pc-backoffice .bo-afinar .bo-field .bo-small { margin-top: .25rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · LA TABLA QUE SÍ SE DIFERENCIA
+   Cabecera con superficie propia, riel de sector en la primera celda, cebra,
+   y una fila que se levanta al pasar por encima. Las píldoras de estado ya
+   traen su hue de `globals.css`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Sin `overflow: hidden` para redondear: convertiría la tabla en su propio
+   contenedor de desplazamiento y la cabecera pegajosa del paquete dejaría de
+   pegarse a la ventana. Las esquinas se redondean celda por celda. */
+.pc-backoffice .bo-table {
+  border: 1px solid var(--bo-line); border-radius: var(--pc-component-backoffice-panel-radius);
+  border-spacing: 0; border-collapse: separate;
+  background: var(--pc-semantic-color-surface-base);
+}
+.pc-backoffice .bo-table th {
+  background: var(--pc-semantic-color-surface-subtle);
+  color: var(--bo-muted); padding: .625rem .875rem;
+  border-bottom: 1px solid var(--bo-line);
+}
+.pc-backoffice .bo-table th:first-child { border-top-left-radius: var(--pc-component-backoffice-panel-radius); }
+.pc-backoffice .bo-table th:last-child { border-top-right-radius: var(--pc-component-backoffice-panel-radius); }
+.pc-backoffice .bo-table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--pc-component-backoffice-panel-radius); }
+.pc-backoffice .bo-table tbody tr:last-child td:last-child { border-bottom-right-radius: var(--pc-component-backoffice-panel-radius); }
+.pc-backoffice .bo-table td { padding: .875rem; border-bottom: 1px solid var(--bo-line); }
+.pc-backoffice .bo-table tbody tr:last-child td { border-bottom: 0; }
+.pc-backoffice .bo-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--pc-semantic-color-surface-subtle) 45%, transparent); }
+.pc-backoffice .bo-table tbody tr:hover td { background: var(--pc-semantic-color-surface-subtle); }
+/* El riel: 3 px del color del sector, pegado al borde izquierdo de la fila. */
+.pc-backoffice .bo-table tbody tr[data-sector] td:first-child { box-shadow: inset 3px 0 0 var(--pc-sector-rail); }
+.pc-backoffice .bo-table tbody tr:not([data-sector]) td:first-child { box-shadow: inset 3px 0 0 var(--bo-line); }
+.pc-backoffice .bo-record-link { font-size: .9375rem; }
+.pc-backoffice .bo-table .bo-small { margin-top: .375rem; }
+.pc-backoffice .bo-fecha { display: inline-flex; align-items: center; gap: .375rem; font-size: .75rem; color: var(--bo-muted); font-variant-numeric: tabular-nums; }
+.pc-backoffice .bo-fecha svg { width: 12px; height: 12px; }
+.pc-backoffice .bo-senales { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .5rem; }
+.pc-backoffice .bo-table[data-columnas="5"] th:first-child { width: 36%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(2) { width: 15%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(3) { width: 19%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(4) { width: 15%; }
+.pc-backoffice .bo-table[data-columnas="5"] th:last-child { width: 15%; }
+
+/* Las tarjetas del teléfono: la misma tarjeta, con su riel y sus chips. */
+.pc-backoffice .bo-card-list { display: none; gap: .75rem; }
+.pc-backoffice .bo-record-card {
+  padding: 1rem 1rem 1rem 1.125rem; border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+  background: var(--pc-semantic-color-surface-base);
+  box-shadow: inset 3px 0 0 var(--pc-sector-rail, var(--bo-line));
+}
+.pc-backoffice .bo-record-card > p { margin-top: .5rem; }
+.pc-backoffice .bo-card-meta { margin: .625rem 0 .25rem; }
+.pc-backoffice .bo-record-card .bo-inline { align-items: flex-start; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · PAGINACIÓN
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-paginacion {
+  display: flex; align-items: center; gap: .375rem; flex-wrap: wrap; margin: 1rem 0;
+}
+.pc-backoffice .bo-paginacion a, .pc-backoffice .bo-paginacion span {
+  display: inline-flex; align-items: center; justify-content: center; gap: .25rem;
+  min-width: 2.25rem; min-height: 2.25rem; padding: 0 .625rem;
+  border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-sm);
+  font-size: .8125rem; font-weight: 600; color: var(--bo-ink); text-decoration: none;
   font-variant-numeric: tabular-nums;
-  color: var(--bo-ink);
 }
-.pc-backoffice .bo-resumen p { margin: .25rem 0 0; font-size: .6875rem; color: var(--bo-muted); line-height: 1.5; }
-
-/* ── Los filtros que están puestos ────────────────────────────────────────────
-   Había diez controles y ninguna forma de saber cuáles estaban aplicados sin
-   recorrerlos uno por uno: la bandeja salía con nueve aportes y la explicación
-   estaba tres pantallas más arriba, dentro de un `<select>`.
-
-   Cada píldora dice **el campo y su valor**, y su «×» es un enlace a la misma
-   dirección sin ese parámetro — así quitar un filtro es un clic y sigue siendo
-   una dirección que se puede guardar y mandar, que es media razón de que los
-   filtros vivan en la URL.
-
-   **No se usa `.bo-badge`**, que se le parece: su punto `::before` significa
-   *estado del aporte*, y un filtro no es un estado de nada. */
-.pc-backoffice .bo-chips {
-  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
-  margin: 0 0 1rem;
+.pc-backoffice .bo-paginacion a:hover { border-color: var(--pc-semantic-color-border-accent); background: var(--pc-semantic-color-surface-subtle); }
+.pc-backoffice .bo-paginacion a[aria-current=page] {
+  background: var(--pc-semantic-color-action-primary-default);
+  color: var(--pc-semantic-color-action-primary-foreground); border-color: transparent;
 }
+.pc-backoffice .bo-paginacion span[aria-disabled=true] { color: var(--bo-muted); opacity: .6; }
+.pc-backoffice .bo-paginacion .bo-puntos { border: 0; min-width: auto; padding: 0 .25rem; color: var(--bo-muted); }
+.pc-backoffice .bo-paginacion svg { width: 14px; height: 14px; }
+.pc-backoffice .bo-paginacion .bo-muted { margin-left: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · PANELES Y PESTAÑAS
+   El panel es la tarjeta con cabecera de la ficha y de administración; las
+   pestañas son enlaces (van por la dirección) o `<details name>` exclusivos.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-panel {
+  background: var(--pc-semantic-color-surface-base);
+  border: 1px solid var(--bo-line);
+  border-radius: var(--pc-component-backoffice-panel-radius);
+  padding: 1.125rem 1.25rem 1.25rem; margin: 0 0 1rem;
+}
+.pc-backoffice .bo-panel[data-tono=aviso] { border-color: var(--pc-semantic-color-feedback-warning-foreground); }
+.pc-backoffice .bo-panel[data-tono=ok] { border-color: color-mix(in srgb, var(--pc-semantic-color-feedback-success-foreground) 55%, transparent); }
+.pc-backoffice .bo-panel[data-tono=dorado] { border-left: 3px solid var(--pc-semantic-color-brand-accent); }
+.pc-backoffice .bo-panel-cabecera {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;
+  margin-bottom: .875rem; padding-bottom: .75rem; border-bottom: 1px solid var(--bo-line);
+}
+.pc-backoffice .bo-panel-cabecera h2, .pc-backoffice .bo-panel-cabecera h3 { margin: 0; display: inline-flex; align-items: center; gap: .5rem; }
+.pc-backoffice .bo-panel-cabecera svg { width: 16px; height: 16px; color: var(--pc-semantic-color-brand-accent); }
+.pc-backoffice .bo-panel > :last-child { margin-bottom: 0; }
+.pc-backoffice .bo-panel .bo-history-section { border-top: 0; padding-top: 0; margin-top: 0; }
+/* La tira de estado de la ficha: chips en fila bajo el titular. */
+.pc-backoffice .bo-tira { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .875rem 0 1.5rem; }
+.pc-backoffice .bo-tira .bo-badge { font-size: .75rem; padding: .375rem .75rem; }
+.pc-backoffice .bo-tira .bo-badge svg { width: 13px; height: 13px; }
+.pc-backoffice .bo-record-head { margin-bottom: 0; }
+.pc-backoffice .bo-record-head h1 { max-width: 40ch; }
+
+/* El relato, dentro de su panel dorado: un punto más grande que el resto,
+   porque es lo único de la ficha que no escribió nadie de aquí. */
+.pc-backoffice .bo-relato {
+  margin: 0; padding: 0; font-size: 1.0625rem; line-height: 1.7; white-space: pre-wrap;
+  color: var(--pc-component-backoffice-original-foreground);
+}
+.pc-backoffice .bo-panel .bo-observation { margin: 1rem 0 0; }
+.pc-backoffice .bo-panel .bo-plegable:last-child { margin-bottom: 0; }
+.pc-backoffice .bo-panel > form { margin-top: .5rem; }
+.pc-backoffice .bo-panel > form > .bo-small { margin-top: .75rem; }
+.pc-backoffice .bo-panel [data-prueba=territorio] { margin: 0 0 .75rem; font-size: .8125rem; display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .5rem; }
+
+/* La línea de tiempo con el color de cada hecho. El punto crece y lleva un
+   anillo del color del panel para despegarse de la línea. */
+.pc-backoffice .bo-history li::before {
+  width: 10px; height: 10px; left: -5.5px; top: .3rem;
+  box-shadow: 0 0 0 3px var(--pc-semantic-color-surface-base);
+}
+.pc-backoffice .bo-history li[data-estado=info]::before { background: var(--pc-semantic-color-feedback-info-foreground); }
+.pc-backoffice .bo-history li[data-estado=aviso]::before { background: var(--pc-semantic-color-feedback-warning-foreground); }
+.pc-backoffice .bo-history li[data-estado=ok]::before { background: var(--pc-semantic-color-feedback-success-foreground); }
+.pc-backoffice .bo-history li[data-estado=neutro]::before { background: var(--pc-semantic-color-brand-accent); }
+.pc-backoffice .bo-history li[data-estado=vacio]::before { background: var(--pc-semantic-color-surface-base); border: 2px solid var(--bo-muted); box-sizing: border-box; }
+.pc-backoffice .bo-history li[data-estado=vacio] strong { color: var(--bo-muted); }
+
+/* Un chip con icono no necesita además el punto. */
+.pc-backoffice .bo-badge:has(> svg)::before { display: none; }
+
+/* Una remisión dentro de Escalar: tarjeta con su estado, destino y, si
+   nadie la ha aceptado, el formulario para confirmar que la recibieron. Iba
+   en `.bo-check`, que es una casilla: su regla achicaba el campo a 18 px. */
+.pc-backoffice .bo-remision { margin: .75rem 0 0; padding: .75rem; border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-md); font-size: .8125rem; }
+.pc-backoffice .bo-remision > p { margin: .5rem 0 0; }
+.pc-backoffice .bo-remision form { margin-top: .5rem; }
+
+/* El inspector es un panel más: misma superficie, misma cabecera. Y cuando
+   los tres bloques de gestión están abiertos puede medir más que la ventana,
+   así que desplaza por dentro en vez de dejar el final fuera de alcance. */
+.pc-backoffice .bo-inspector {
+  background: var(--pc-semantic-color-surface-base); box-shadow: none;
+  border-color: var(--bo-line); padding: 1.125rem 1.25rem 1.25rem;
+  max-height: calc(100dvh - 2rem); overflow-y: auto; overscroll-behavior: contain;
+}
+.pc-backoffice .bo-inspector > .bo-panel-cabecera { margin-bottom: .5rem; }
+.pc-backoffice .bo-inspector > .bo-small { margin: 0 0 1rem; }
+.pc-backoffice .bo-inspector h3 { margin-top: .25rem; }
+.pc-backoffice .bo-inspector .bo-acordeon .bo-plegable { margin: .875rem 0 0; }
+.pc-backoffice .bo-inspector .bo-acordeon .bo-context-grid { display: block; margin: 0; }
+.pc-backoffice .bo-inspector .bo-acordeon .bo-context-grid > p { margin: 0 0 .375rem; }
+
+.pc-backoffice .bo-tabs {
+  display: flex; gap: .25rem; margin: 0 0 1.25rem; padding: .25rem;
+  background: var(--pc-semantic-color-surface-subtle);
+  border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-md);
+  width: fit-content; max-width: 100%; overflow-x: auto;
+}
+.pc-backoffice .bo-tab {
+  display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap;
+  min-height: 2.5rem; padding: .375rem 1rem;
+  border-radius: var(--pc-primitive-radius-sm);
+  font-size: .8125rem; font-weight: 600; color: var(--bo-muted); text-decoration: none;
+}
+.pc-backoffice .bo-tab:hover { color: var(--bo-ink); }
+.pc-backoffice .bo-tab[aria-current=page] {
+  background: var(--pc-semantic-color-surface-base); color: var(--bo-ink);
+  box-shadow: var(--pc-semantic-elevation-card);
+}
+.pc-backoffice .bo-tab svg { width: 16px; height: 16px; }
+.pc-backoffice .bo-tab span { font-size: .6875rem; color: var(--bo-muted); font-variant-numeric: tabular-nums; }
+/* Pestañas sin JS dentro del inspector: `<details name>` exclusivos. El
+   summary se ve como pestaña; el contenido cae debajo de la fila. */
+.pc-backoffice .bo-acordeon { display: grid; gap: .5rem; }
+.pc-backoffice .bo-acordeon > details { border: 1px solid var(--bo-line); border-radius: var(--pc-primitive-radius-md); background: var(--pc-semantic-color-surface-base); }
+.pc-backoffice .bo-acordeon > details > summary {
+  display: flex; align-items: center; gap: .625rem; cursor: pointer; list-style: none;
+  padding: .75rem .875rem; min-height: 44px; font-size: .8125rem; font-weight: 700; color: var(--bo-ink);
+}
+.pc-backoffice .bo-acordeon > details > summary::-webkit-details-marker { display: none; }
+.pc-backoffice .bo-acordeon > details > summary svg { width: 16px; height: 16px; color: var(--pc-semantic-color-brand-accent); }
+.pc-backoffice .bo-acordeon > details > summary .bo-badge { margin-left: auto; }
+.pc-backoffice .bo-acordeon > details[open] > summary { border-bottom: 1px solid var(--bo-line); background: var(--pc-semantic-color-surface-subtle); border-radius: var(--pc-primitive-radius-md) var(--pc-primitive-radius-md) 0 0; }
+.pc-backoffice .bo-acordeon > details > .bo-plegado { padding: .875rem; }
+
+/* Dos columnas para «lista + panel de creación» en administración. */
+.pc-backoffice .bo-dos-columnas { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 1fr); gap: 1.5rem; align-items: start; }
+.pc-backoffice .bo-dos-columnas > .bo-panel { position: sticky; top: 1rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · LO QUE YA ESTABA (ronda 1), ajustado a la paleta
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pc-backoffice .bo-chips { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 0 0 1rem; }
 .pc-backoffice .bo-chip {
   display: inline-flex; align-items: center; gap: .5rem; max-width: 100%;
-  padding: .25rem .25rem .25rem .625rem;
-  font-size: .75rem; line-height: 1.4;
-  color: var(--bo-ink);
-  background: var(--pc-semantic-color-surface-subtle);
-  border: 1px solid var(--pc-semantic-color-border-control);
-  border-radius: var(--pc-primitive-radius-pill);
+  padding: .25rem .25rem .25rem .625rem; font-size: .75rem; line-height: 1.4;
+  color: var(--bo-ink); background: var(--pc-semantic-color-surface-subtle);
+  border: 1px solid var(--pc-semantic-color-border-control); border-radius: var(--pc-primitive-radius-pill);
 }
 .pc-backoffice .bo-chip b { font-weight: 700; }
-/* La «×» es el objetivo táctil de verdad: 28 px dentro de una píldora de 12 px
-   de texto. Debajo de eso no se acierta con el pulgar. */
-.pc-backoffice .bo-chip a {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 1.75rem; height: 1.75rem; flex-shrink: 0;
-  border-radius: 50%; color: var(--bo-muted); text-decoration: none;
-}
+.pc-backoffice .bo-chip a { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; flex-shrink: 0; border-radius: 50%; color: var(--bo-muted); text-decoration: none; }
 .pc-backoffice .bo-chip a:hover { background: var(--pc-semantic-color-surface-base); color: var(--bo-ink); }
 .pc-backoffice .bo-chip a svg { width: 14px; height: 14px; }
 
-/* ── La carga ─────────────────────────────────────────────────────────────────
-   Filtrar es una navegación entera —los filtros van en la dirección— y no había
-   ninguna señal de que estuviera pasando algo: la pantalla se quedaba con los
-   resultados viejos hasta que llegaban los nuevos.
-
-   **Sin brillo que recorre.** Un esqueleto animado es un pulso continuo, y esos
-   están prohibidos por nombre. Lo que comunica aquí es la forma, no el
-   movimiento: bloques del tamaño de lo que va a llegar. */
-/* El contenedor de la espera. **No es `.bo-main`, y no puede serlo**: mientras
-   React cambia lo de espera por lo de verdad los dos árboles conviven en el
-   documento, y dos `.bo-main` son dos `<main>` — un documento tiene uno. El
-   porqué entero está en `src/producto/esqueleto.tsx`. */
 .pc-backoffice .bo-espera { padding: var(--pc-semantic-internal-pagePadding); }
-.pc-backoffice .bo-esqueleto {
-  display: block;
-  background: var(--pc-semantic-color-surface-subtle);
-  border-radius: var(--pc-primitive-radius-sm);
-  height: 1rem; margin-bottom: .625rem;
-}
+.pc-backoffice .bo-esqueleto { display: block; background: var(--pc-semantic-color-surface-subtle); border-radius: var(--pc-primitive-radius-sm); height: 1rem; margin-bottom: .625rem; }
 .pc-backoffice .bo-esqueleto[data-alto=titular] { height: 2rem; margin-bottom: 1rem; }
 .pc-backoffice .bo-esqueleto[data-alto=fila] { height: 3.5rem; margin-bottom: 1px; }
 .pc-backoffice .bo-esqueleto[data-alto=panel] { height: 12rem; }
 
-/* ── La barra de filtros, compacta ────────────────────────────────────────────
-   Diez controles en una rejilla de tres columnas son cuatro filas, y cada
-   `.bo-field` trae `margin: 1.25rem 0` pensado para un formulario en columna.
-   Sumado al `gap` de la rejilla, la barra medía **440 px de alto**: entre las
-   cifras y la tabla había una pantalla de teléfono entera en blanco, y había
-   que desplazarse para ver el primer aporte.
-
-   El `gap` ya separa. Los márgenes sobran y se quitan **solo aquí**. */
-.pc-backoffice .bo-filters .bo-field { margin: 0; }
-.pc-backoffice .bo-filters .bo-check { margin: 0; }
-/* El botón se alinea con la base de los campos de su fila, no con su tapa. */
-.pc-backoffice .bo-filters .bo-field:last-child { align-self: end; }
-/* Con sitio de sobra, cuatro columnas: diez controles pasan de cuatro filas a
-   tres, y ninguno queda más ancho de lo que su contenido necesita. */
-@media (min-width: 82rem) {
-  .pc-backoffice .bo-filters {
-    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
-  }
-}
-
-/* El rótulo de un `<details>` es `display:flex`, así que el espacio entre el
-   texto y el conteo que va al lado **se colapsa**: salía «Expedientes
-   abiertos· 0». En una caja flex la separación es el `gap`, no un espacio. */
 .pc-backoffice .bo-plegable > summary { gap: .375rem; }
-
-/* ── La rejilla de contexto de la ficha ───────────────────────────────────────
-   Va a `1fr 1fr`, y sus celdas son una etiqueta en versalita —«DE QUÉ», cinco
-   caracteres— y un dato. Con las dos columnas iguales, la etiqueta se queda
-   con la mitad del ancho de la ficha y el dato empieza a 370 px del borde: se
-   lee como una tabla con una columna vacía.
-
-   La etiqueta ocupa lo que mide, y el dato el resto. */
-.pc-backoffice .bo-context-grid {
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 2rem;
-}
-@media (max-width: 36rem) {
-  .pc-backoffice .bo-context-grid { grid-template-columns: 1fr; column-gap: 0; }
-}
-
-/* ── El tercer nivel de titular ───────────────────────────────────────────────
-   La hoja del paquete define `h1` y `h2` y se detiene ahí. Una ficha con
-   secciones dentro de secciones —o una lista de encuentros dentro de una
-   sección— necesita el tercero, y sin regla sale con el tamaño por defecto del
-   navegador: 1.17em en negrita, que es **más grande que el `h2` de esta hoja**
-   (1rem). La jerarquía queda al revés justo donde más se nota. */
-.pc-backoffice h3 {
-  margin: 0 0 .5rem;
-  font-size: .9375rem; font-weight: 700; line-height: 1.4;
-  color: var(--bo-ink);
-}
-
-/* ── El código QR de un material ──────────────────────────────────────────────
-   La hoja pone todo `svg` del perfil interno a 18 px, que es lo que hace falta
-   para un icono y es exactamente lo que **no** hace falta para un QR. Se
-   resolvía con un `style` en línea de 128 px sobre el contenedor; aquí es una
-   regla, y el ancho se escribe una vez.
-
-   `[data-qr]` y no una clase: el atributo dice qué contiene el elemento, no
-   cómo se ve, y no hay que pedirle un nombre nuevo al sistema de diseño para
-   decir «aquí va un QR». */
+.pc-backoffice .bo-context-grid { grid-template-columns: max-content minmax(0, 1fr); column-gap: 2rem; row-gap: .75rem; margin: .25rem 0 .5rem; }
+.pc-backoffice h3 { margin: 0 0 .5rem; font-size: .9375rem; font-weight: 700; line-height: 1.4; color: var(--bo-ink); }
 .pc-backoffice [data-qr] { width: 8rem; flex-shrink: 0; }
 .pc-backoffice [data-qr] svg { width: 100%; height: auto; }
-/* Un QR alto al lado de un bloque de texto: centrarlos deja el texto flotando. */
-.pc-backoffice .bo-record-card .bo-inline { align-items: flex-start; }
 
-/* ── La tabla de cinco columnas ───────────────────────────────────────────────
-   `backoffice.css:210-219` reparte anchos contando desde los dos extremos, así
-   que una tabla con un número de columnas distinto del previsto hereda el ancho
-   de una columna que no existe. Ya pasó con la de tres —era «el último cuadro
-   está descuadrado»— y `pruebas/e2e/consola.spec.ts` lo vigila desde entonces:
-   si las columnas no son cuatro, exige `data-columnas` con el número correcto.
-
-   Cinco, porque «qué falta» y «en manos de quién está» son dos preguntas y
-   estaban en la misma celda. */
-.pc-backoffice .bo-table[data-columnas="5"] th:first-child { width: 34%; }
-.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(2) { width: 14%; }
-.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(3) { width: 20%; }
-.pc-backoffice .bo-table[data-columnas="5"] th:nth-child(4) { width: 16%; }
-.pc-backoffice .bo-table[data-columnas="5"] th:last-child { width: 16%; }
-
-@media (max-width: 60rem) {
-  .pc-backoffice .bo-resumen { grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
-}
-/* Bajo 48rem la barra lateral se acuesta y `nav` pasa a ser una fila que
-   envuelve. La hoja del paquete ya lo hace para `nav button`; esto es lo mismo
-   para el enlace, que es lo que la navegación usa de verdad. Sin esto, cada
-   renglón ocupa el ancho entero y la barra mide cinco filas. */
-@media (max-width: 48rem) {
-  .pc-backoffice nav a { width: auto; min-width: 8rem; }
-}
+/* La entrada en cascada, también en el interno. La regla del paquete la
+   prohibía —«una bandeja que se reordena delante de quien lee»— y el usuario
+   la levantó: aquí entra lo que llega, no se reordena lo que ya está. Solo
+   dentro de la guarda de movimiento reducido, y con el keyframe del paquete. */
 @media (prefers-reduced-motion: no-preference) {
-  .pc-backoffice :is(nav a, .pc-tema, .bo-chip a) {
+  .pc-backoffice .pc-entra {
+    animation: pc-entrada var(--pc-semantic-motion-slow) var(--pc-semantic-motion-easeOut) both;
+    animation-delay: calc(var(--pc-orden, 0) * 60ms);
+  }
+  .pc-backoffice :is(.bo-nav-item, .bo-nav-label, .bo-plegar, .pc-tema, .bo-chip a, .bo-tab, .bo-paginacion a, .bo-segmento label, .bo-table tbody tr td, .bo-resumen > div) {
     transition: background-color var(--pc-semantic-motion-fast) var(--bo-ease),
                 color var(--pc-semantic-motion-fast) var(--bo-ease),
-                border-color var(--pc-semantic-motion-fast) var(--bo-ease);
+                border-color var(--pc-semantic-motion-fast) var(--bo-ease),
+                box-shadow var(--pc-semantic-motion-fast) var(--bo-ease);
   }
 }
+@media print { .pc-backoffice .pc-entra { animation: none !important; opacity: 1 !important; transform: none !important; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10 · ANCHOS
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 64rem) {
+  .pc-backoffice .bo-dos-columnas { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-dos-columnas > .bo-panel { position: static; }
+}
+@media (max-width: 60rem) {
+  /* En una columna el inspector ya no es pegajoso: sin desplazamiento interno. */
+  .pc-backoffice .bo-inspector { max-height: none; overflow: visible; }
+  .pc-backoffice .bo-filtros-buscar { grid-template-columns: 1fr 1fr; }
+  .pc-backoffice .bo-filtros-buscar > :first-child { grid-column: 1 / -1; }
+  .pc-backoffice .bo-filtros-buscar select { min-width: 0; }
+}
+@media (max-width: 48rem) {
+  .pc-backoffice .bo-shell { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-sidebar {
+    display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: .75rem;
+    padding: .75rem 1rem; border-right: 0; border-bottom: 1px solid var(--pc-x-sidebar-linea);
+    position: static; height: auto; overflow: visible;
+  }
+  .pc-backoffice .bo-shell:has(> .bo-sidebar[data-plegada]) { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-brand { display: flex; border: 0; padding: 0; margin: 0; align-items: center; gap: .625rem; }
+  .pc-backoffice .bo-brand .bo-tricolor { flex-direction: row; gap: 3px; }
+  .pc-backoffice .bo-brand .bo-tricolor i { width: 12px; height: 3px; }
+  .pc-backoffice .bo-brand-texto > span, .pc-backoffice .bo-plegar { display: none; }
+  .pc-backoffice .bo-menu-boton { display: inline-flex; margin-left: auto; }
+  /* El menú desplegado ocupa el ancho entero, en una columna, con sus grupos. */
+  .pc-backoffice .bo-sidebar nav { order: 4; width: 100%; display: none; padding-top: .5rem; border-top: 1px solid var(--pc-x-sidebar-linea); }
+  .pc-backoffice .bo-sidebar nav[data-abierta=true] { display: flex; }
+  .pc-backoffice .bo-sidebar-bottom { order: 5; width: 100%; padding: 0; display: none; }
+  .pc-backoffice .bo-sidebar nav[data-abierta=true] ~ .bo-sidebar-bottom { display: block; }
+  /* El paquete esconde el texto del pie en teléfono; el aviso tiene que leerse entero. */
+  .pc-backoffice .bo-sidebar-bottom .bo-aviso p { display: block; }
+  .pc-backoffice .bo-topbar { padding: .625rem 1rem; }
+  .pc-backoffice .bo-main { padding: 1.25rem 1rem; }
+  .pc-backoffice .bo-afinar { grid-template-columns: 1fr 1fr; padding: .25rem .5rem .75rem; }
+  /* En teléfono el rótulo va encima del grupo, no al lado. */
+  .pc-backoffice .bo-filtros-rapidos { flex-direction: column; align-items: stretch; gap: .625rem; }
+  .pc-backoffice .bo-segmento { display: grid; grid-template-columns: 1fr; gap: .25rem; }
+}
+@media (max-width: 36rem) {
+  .pc-backoffice .bo-table-desktop { display: none; }
+  .pc-backoffice .bo-card-list { display: grid; }
+  .pc-backoffice .bo-context-grid { grid-template-columns: 1fr; column-gap: 0; }
+  .pc-backoffice .bo-filtros-buscar { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-afinar { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-resumen { grid-template-columns: 1fr; }
+  .pc-backoffice .bo-tabs { width: 100%; }
+  .pc-backoffice .bo-tab { flex: 1; justify-content: center; }
+  .pc-backoffice .bo-paginacion .bo-muted { margin-left: 0; width: 100%; }
+}
 @media (forced-colors: active) {
-  .pc-backoffice nav a[aria-current=page] { border: 1px solid ButtonText; }
-  .pc-backoffice .bo-chip { border: 1px solid CanvasText; }
-  .pc-backoffice .bo-esqueleto { border: 1px solid CanvasText; }
-  .pc-backoffice .bo-resumen > div { border: 1px solid CanvasText; }
+  .pc-backoffice .bo-nav-item[aria-current=page], .pc-backoffice .bo-tab[aria-current=page],
+  .pc-backoffice .bo-paginacion a[aria-current=page] { border: 2px solid ButtonText; }
+  .pc-backoffice .bo-chip, .pc-backoffice .bo-esqueleto, .pc-backoffice .bo-resumen > :is(div, a),
+  .pc-backoffice .bo-panel, .pc-backoffice .bo-sector, .pc-backoffice .bo-aviso { border: 1px solid CanvasText; }
+  .pc-backoffice .bo-segmento input:checked + label { border: 2px solid ButtonText; }
 }

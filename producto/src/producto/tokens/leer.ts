@@ -28,15 +28,24 @@ export type Modo = "claro" | "oscuro";
 
 const cache = new Map<Modo, Map<string, string>>();
 
-/** Lee un bloque `selector { … }` de la hoja y devuelve sus declaraciones. */
+/**
+ * Lee TODOS los bloques `selector { … }` de una hoja y devuelve sus
+ * declaraciones superpuestas en orden de aparición, como hace el navegador.
+ *
+ * Todos y no el primero: `globals.css` abre `[data-tema="claro"]` dos veces
+ * —una para `color-scheme`, otra para la paleta— y leer solo la primera dejaba
+ * la paleta entera fuera sin que nada fallara.
+ */
 function declaraciones(css: string, inicio: string): Map<string, string> {
-  const desde = css.indexOf(inicio);
   const m = new Map<string, string>();
-  if (desde < 0) return m;
-  const hasta = css.indexOf("}", desde);
-  for (const c of css.slice(desde, hasta).matchAll(/(--pc-[\w-]+):\s*([^;]+);/g)) {
-    const [, nombre, valor] = c;
-    if (nombre && valor) m.set(nombre, valor.trim());
+  let desde = css.indexOf(inicio);
+  while (desde >= 0) {
+    const hasta = css.indexOf("}", desde);
+    for (const c of css.slice(desde, hasta).matchAll(/(--pc-[\w-]+):\s*([^;]+);/g)) {
+      const [, nombre, valor] = c;
+      if (nombre && valor) m.set(nombre, valor.trim());
+    }
+    desde = css.indexOf(inicio, hasta);
   }
   return m;
 }
@@ -52,6 +61,17 @@ function cargar(modo: Modo): Map<string, string> {
   if (modo === "claro") {
     for (const [k, v] of declaraciones(css, '[data-tema="claro"] {')) crudos.set(k, v);
   }
+
+  // **Y encima, lo que este proyecto le corrige y le agrega al paquete.** La
+  // paleta extendida vive en `globals.css` y redefine semánticos del oscuro
+  // —el lienzo dejó de ser navy— y añade estados y sectores en los dos modos.
+  // Sin leerla aquí, una pieza descargada y esta misma prueba de paleta
+  // trabajarían con colores que el navegador ya no pinta.
+  const globales = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf-8");
+  const propio = modo === "claro"
+    ? declaraciones(globales, '[data-tema="claro"] {')
+    : declaraciones(globales, ':root:not([data-tema="claro"]) {');
+  for (const [k, v] of propio) crudos.set(k, v);
 
   // Los alias se resuelven en cadena: `brand-ink` → `blue-850` → `#0A2C46`.
   //

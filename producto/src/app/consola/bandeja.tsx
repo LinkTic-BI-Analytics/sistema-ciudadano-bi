@@ -1,7 +1,10 @@
 import type { FilaBandeja, Opciones } from "../../revision/bandeja.ts";
 import { Territorio } from "./territorio.tsx";
-import { esTema, TEMAS } from "../../captura/lectura.ts";
-import { IconoBuscar } from "../../producto/iconos.tsx";
+import { TEMAS } from "../../captura/lectura.ts";
+import { sectorDe } from "../../producto/sectores.ts";
+import {
+  IconoAlertaCirculo, IconoBuscar, IconoCuando, IconoFiltro, IconoHechoCirculo, IconoUrgencia,
+} from "../../producto/iconos.tsx";
 import {
   COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE, ALCANCES,
 } from "../../revision/normalizar.ts";
@@ -11,45 +14,43 @@ import {
 // No son decoración: cada una dice **qué hacer distinto**. Una transcripción
 // puede estar mal y hay audio que oír; un grupo tiene a quién responderle y
 // nadie verificó que hable por él; una urgencia se mira antes.
+//
+// **Con hue de verdad desde la ronda 2.** La urgencia iba mapeada a `review`,
+// que con la paleta corregida es azul: una alerta azul no alerta a nadie. Cada
+// señal lleva ahora el color de lo que significa: rojo la urgencia, violeta la
+// voz (la transcripción es una lectura de máquina), azul el grupo, verde el
+// encuentro. El texto lo dice entero; el color solo acompaña.
 const COMO_SE_LEE = {
-  voz: { texto: "por voz · la transcripción puede estar mal", estado: "clarify" },
-  grupo: { texto: "dice hablar por un grupo · sin verificar", estado: "referred" },
-  urgencia: { texto: "alerta de urgencia", estado: "review" },
-  evento: { texto: "viene de un encuentro", estado: "validated" },
+  voz: { texto: "por voz · la transcripción puede estar mal", estado: "voz" },
+  grupo: { texto: "dice hablar por un grupo · sin verificar", estado: "info" },
+  urgencia: { texto: "alerta de urgencia", estado: "alert" },
+  evento: { texto: "viene de un encuentro", estado: "ok" },
 } as const;
 
 /**
- * De qué habla el aporte.
+ * De qué habla el aporte, con el color de su sector.
  *
  * **Sin tema no se puede enrutar a ninguna mesa**, y por eso se dice en vez de
  * dejar la celda vacía: un hueco parece un fallo de la pantalla; «sin tema» es
- * un dato sobre el aporte.
+ * un dato sobre el aporte. Sale gris con el riel punteado: es «falta», no un
+ * noveno color.
  */
 export function DeQue({ tema }: { tema: string | null }) {
-  if (!tema || !esTema(tema)) return <span className="bo-muted">sin tema</span>;
-  return <strong>{tema}</strong>;
+  const sector = sectorDe(tema);
+  if (!sector) return <span className="bo-sector">sin tema</span>;
+  return <span className="bo-sector" data-sector={sector}>{tema}</span>;
 }
 
 /**
  * Dónde ocurre: municipio y **departamento**.
- *
- * El departamento se capturaba y no se enseñaba en ninguna parte —la ficha lo
- * traía de la base y no lo usaba—, así que para saber si un aporte era de
- * Boyacá había que saberse los municipios de memoria.
  *
  * Sin municipio aceptado se muestra lo que la persona dijo, **en cursiva y
  * marcado como suyo**: enseñarlo como si fuera un municipio aceptado sería la
  * inferencia que `I2` prohíbe.
  */
 export function Donde({ fila }: { fila: FilaBandeja }) {
-  // **Solo contenido de frase, y `<br>` para el salto.** Llevaba un `<div>`, y
-  // en la lista de tarjetas esto va dentro de un `<p>`: HTML inválido, y React
-  // lo canta como error de hidratación. El navegador además cierra el párrafo
-  // por su cuenta, así que lo que se ve no es lo que se escribió.
-  //
-  // Es el mismo fallo que el `<div>` dentro del `<dl>`, por otro camino: un
-  // componente que decide su propia estructura de bloque no sabe dónde lo van a
-  // meter.
+  // **Solo contenido de frase, y `<br>` para el salto.** En la lista de
+  // tarjetas esto va dentro de un `<p>`: un `<div>` aquí es HTML inválido.
   if (fila.territorio) {
     return (
       <>
@@ -71,37 +72,39 @@ export function Donde({ fila }: { fila: FilaBandeja }) {
 }
 
 /**
- * Dónde va la gestión, en una sola celda.
- *
- * Abrir el expediente y remitirlo son cosas distintas y pasan en momentos
- * distintos, pero en la bandeja la pregunta es una: **¿esto ya está en manos de
- * alguien?**
+ * Dónde va la gestión, en una sola celda: **¿esto ya está en manos de
+ * alguien?** Verde si lo recibieron, ámbar si se remitió y nadie ha aceptado,
+ * azul si hay expediente, gris si no hay nada.
  */
 export function Gestion({ fila }: { fila: FilaBandeja }) {
   if (fila.escalado === "recibido") {
-    return <span className="bo-badge" data-state="validated">lo recibieron</span>;
+    return <span className="bo-badge" data-state="ok">lo recibieron</span>;
   }
   if (fila.escalado === "pendiente") {
     return <span className="bo-badge" data-state="clarify">remitido · sin aceptar</span>;
   }
   if (fila.conExpediente) {
-    return <span className="bo-badge" data-state="draft">expediente abierto</span>;
+    return <span className="bo-badge" data-state="info">expediente abierto</span>;
   }
-  return <span className="bo-muted">sin expediente</span>;
+  return <span className="bo-badge" data-state="draft">sin expediente</span>;
+}
+
+/**
+ * Qué le falta al aporte para poder revisarse: en ámbar con icono cuando
+ * falta algo, en verde cuando no. Antes era texto gris igual que todo.
+ */
+export function Falta({ fila }: { fila: FilaBandeja }) {
+  if (fila.falta.length === 0) {
+    return <span className="bo-falta" data-nada><IconoHechoCirculo />no le falta nada</span>;
+  }
+  return <span className="bo-falta"><IconoAlertaCirculo />{fila.falta.join(", ")}</span>;
 }
 
 /**
  * El aporte, leído en dos líneas, con sus palabras debajo (`NOR-03`).
  *
- * La fila enseñaba los primeros 70 caracteres del relato crudo: había que leer
- * redacción para saber de qué se trataba, y con un relato largo —el único
- * aporte humano de la base mide 226 caracteres, cinco veces la mediana— el
- * corte dejaba fuera justo lo que importa.
- *
- * **El relato no se esconde.** `N03` no admite que la síntesis lo sustituya, ni
- * en la ficha ni en una lista: si lo confirmado va arriba, el original va
- * debajo y se puede leer. Y mientras no haya síntesis confirmada, manda el
- * relato, que es lo único que hay.
+ * **El relato no se esconde.** `N03` no admite que la síntesis lo sustituya:
+ * si lo confirmado va arriba, el original va debajo y se puede leer.
  */
 export function ElAporte({ fila }: { fila: FilaBandeja }) {
   if (!fila.problema) {
@@ -117,8 +120,6 @@ export function ElAporte({ fila }: { fila: FilaBandeja }) {
         </>
       )}
       <br />
-      {/* Sus palabras, en pequeño y en cursiva: se distinguen de lo que
-          escribimos nosotros sin necesitar una clase nueva. */}
       <em className="bo-small bo-muted">«{recortar(fila.relato, 120)}»</em>
     </>
   );
@@ -133,11 +134,28 @@ function recortar(texto: string, largo: number): string {
 }
 
 /**
- * Hace cuánto y a cuántos, en rango (`NOR-01`, `NOR-02`).
- *
- * **El texto declarado va al lado**, porque el rango es una lectura nuestra y
- * lo que ella dijo es el dato. Sin el texto, «más de cuatro años» parece un
- * hecho medido.
+ * Cuándo llegó, corto: «20 sep · 3:41 p. m.». La fecha entera con año y
+ * segundos —«20/9/2026, 3:41:17 p. m.»— ocupaba una línea y no se comparaba
+ * entre filas. Hora de Bogotá siempre, y explícita. El año va en el `title`
+ * para quien lo necesite.
+ */
+export function Fecha({ iso }: { iso: string }) {
+  const f = new Date(iso);
+  const dia = f.toLocaleDateString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short" });
+  const hora = f.toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" });
+  const completa = f.toLocaleString("es-CO", { timeZone: "America/Bogota" });
+  return (
+    <span className="bo-fecha" title={completa}>
+      <IconoCuando />
+      <time dateTime={iso}>{dia.replace(".", "")} · {hora}</time>
+    </span>
+  );
+}
+
+/**
+ * Hace cuánto y a cuántos, en rango (`NOR-01`, `NOR-02`). **El texto declarado
+ * va al lado**, porque el rango es una lectura nuestra y lo que ella dijo es el
+ * dato.
  */
 export function Rangos({ fila }: { fila: FilaBandeja }) {
   return (
@@ -158,22 +176,64 @@ export function Rangos({ fila }: { fila: FilaBandeja }) {
 export function Señales({ fila }: { fila: FilaBandeja }) {
   if (fila.señales.length === 0) return null;
   return (
-    <>
+    <span className="bo-senales">
       {fila.señales.map((s) => (
         <span key={s} className="bo-badge" data-state={COMO_SE_LEE[s].estado}>
           {COMO_SE_LEE[s].texto}
         </span>
       ))}
-    </>
+    </span>
+  );
+}
+
+/** Un control segmentado: radios con nombre, estilizados como pestañas. */
+function Segmento({
+  rotulo, name, valor, opciones,
+}: {
+  rotulo: string;
+  name: string;
+  valor: string;
+  opciones: [string, string][];
+}) {
+  return (
+    <div className="bo-segmento">
+      <span className="bo-label-tag">{rotulo}</span>
+      <div role="group" aria-label={rotulo}>
+        {opciones.map(([v, texto], i) => {
+          // El primero conserva el `id` del selector que había —`#ubicacion`,
+          // `#gestion`— por si alguien lo enlazó; los demás llevan su valor.
+          const id = i === 0 ? name : `${name}-${v || "cualquiera"}`;
+          return (
+            <span key={v}>
+              <input type="radio" id={id} name={name} value={v} defaultChecked={valor === v} />
+              <label htmlFor={id}>{texto}</label>
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 /**
- * Búsqueda y filtros.
+ * Búsqueda y filtros, en tres niveles.
  *
  * Van por la dirección y no por estado de cliente: así un revisor puede
  * **guardar o mandar un enlace a lo que estaba mirando**, que es media razón de
  * que exista una bandeja compartida.
+ *
+ * **Diez selectores en una rejilla plana no tienen jerarquía**: todos pesan lo
+ * mismo y nadie sabe por dónde empezar. Era la queja literal —«no tiene una
+ * distribución lógica»—. Ahora:
+ *
+ *   1. Buscar, con el orden y el botón, en una fila.
+ *   2. Las vistas rápidas —ubicación, gestión, alerta— como pestañas pequeñas:
+ *      son las tres preguntas con las que se entra a revisar.
+ *   3. Afinar por territorio, tema y tiempo, plegable y abierto por defecto.
+ *
+ * Todo sigue dentro de `.bo-filters`, que es lo que los recorridos buscan.
+ * **Y sigue sin enviarse solo al cambiar un control**: un formulario que se
+ * manda al soltar un radio sorprende al teclado.
  */
 export function Filtros({
   texto, ubicacion, orden, opciones, departamento, municipio, tema, gestion,
@@ -193,115 +253,85 @@ export function Filtros({
 }) {
   return (
     <form className="bo-filters" method="get" action="/consola">
-      <div className="bo-field bo-search">
-        <label className="bo-label-tag" htmlFor="q">Buscar</label>
-        {/* **`.bo-search-field` es la envoltura que la hoja pide para esto** y
-            no se estaba usando: coloca la lupa dentro del campo y le deja sitio
-            con `padding-left`. Sin ella, el icono se pondría encima del texto.
-            No confundir con `bo-search`, que es la que hace que el buscador
-            ocupe la fila entera bajo 60rem — son dos cosas, y confundirlas ya
-            costó una vez (ver la cabecera de `campos.tsx`). */}
-        <div className="bo-search-field">
-          <IconoBuscar />
-          {/* Relato, lugar, territorio, departamento o tema. Sin tildes ni
-              mayúsculas: nadie escribe «Abriaquí» con tilde buscando deprisa. */}
-          <input id="q" name="q" defaultValue={texto} type="search"
-                 placeholder="relato, lugar, municipio o tema" />
+      <div className="bo-filtros-buscar">
+        <div className="bo-field">
+          <label className="bo-label-tag" htmlFor="q">Buscar</label>
+          <div className="bo-search-field">
+            <IconoBuscar />
+            {/* Relato, lugar, territorio, departamento o tema. Sin tildes ni
+                mayúsculas: nadie escribe «Abriaquí» con tilde buscando deprisa. */}
+            <input id="q" name="q" defaultValue={texto} type="search"
+                   placeholder="relato, lugar, municipio o tema" />
+          </div>
         </div>
+        <div className="bo-field">
+          <label className="bo-label-tag" htmlFor="orden">Orden</label>
+          {/* **Ninguno de los dos es una puntuación.** El de trabajo manda por
+              defecto —el que lleva más esperando se atiende primero—. `BI-02`
+              prohíbe ordenar por popularidad, y eso no cambia. */}
+          <select id="orden" name="orden" defaultValue={orden}>
+            <option value="antiguos">Los que llevan más esperando</option>
+            <option value="recientes">Los últimos que llegaron</option>
+          </select>
+        </div>
+        <button className="bo-button" data-variant="primary"><IconoFiltro />Filtrar</button>
       </div>
 
-      {/* **El territorio, que es lo que se capturaba y no se podía filtrar.**
-          Solo salen los departamentos y municipios donde de verdad llegó algo:
-          un desplegable con los 1.122 del país no es un filtro.
-
-          Van encadenados y por eso corren en el navegador: la razón entera está
-          en `territorio.tsx`. */}
-      <Territorio opciones={opciones} departamento={departamento} municipio={municipio} />
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="tema">De qué</label>
-        <select id="tema" name="tema" defaultValue={tema}>
-          <option value="">Cualquier tema</option>
-          <option value="sin_tema">Sin tema</option>
-          {TEMAS.map((x) => <option key={x} value={x}>{x}</option>)}
-        </select>
-      </div>
-      {/* **La pregunta del negocio, filtrable.** «Qué comunidades tienen más
-          afectaciones del agua con más de cuatro años» son tres filtros: tema,
-          territorio y hace cuánto. Se contesta filtrando y leyendo el total —no
-          con una tabla ordenada de mayor a menor, que es lo que `BI-02`
-          prohíbe. */}
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="antiguedad">Hace cuánto</label>
-        <select id="antiguedad" name="antiguedad" defaultValue={antiguedad}>
-          <option value="">Cualquiera</option>
-          <option value="mas_de_cuatro">Más de cuatro años</option>
-          <option value="entre_uno_y_cuatro">Entre uno y cuatro años</option>
-          <option value="menos_de_un_ano">Menos de un año</option>
-          <option value="sin_decir">No lo dijo</option>
-        </select>
-      </div>
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="alcance">A cuántos</label>
-        {/* De más a menos, que es como se lee «a cuántos afecta». La lista
-            sale de un sitio para que no se desincronice de los rangos. */}
-        <select id="alcance" name="alcance" defaultValue={alcance}>
-          <option value="">Cualquiera</option>
-          {ALCANCES.map((x) => (
-            <option key={x} value={x}>{COMO_SE_LEE_ALCANCE[x]}</option>
-          ))}
-        </select>
-      </div>
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="gestion">Gestión</label>
-        <select id="gestion" name="gestion" defaultValue={gestion}>
-          <option value="">Como esté</option>
-          <option value="sin_expediente">Sin expediente</option>
-          <option value="con_expediente">Con expediente</option>
-          <option value="pendiente">Remitido · sin aceptar</option>
-          <option value="recibido">Lo recibieron</option>
-        </select>
-      </div>
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="ubicacion">Ubicación</label>
-        <select id="ubicacion" name="ubicacion" defaultValue={ubicacion}>
-          <option value="todos">Todos</option>
-          <option value="por_aclarar">Por aclarar</option>
-          <option value="ubicados">Ya ubicados</option>
-        </select>
-      </div>
-      <div className="bo-field">
-        <label className="bo-label-tag" htmlFor="orden">Orden</label>
-        {/* **Ninguno de los dos es una puntuación.** El de trabajo manda por
-            defecto —el que lleva más esperando se atiende primero— y el otro
-            contesta una pregunta distinta: qué acaba de entrar. `BI-02` prohíbe
-            ordenar por popularidad, y eso no cambia. */}
-        <select id="orden" name="orden" defaultValue={orden}>
-          <option value="antiguos">Los que llevan más esperando</option>
-          <option value="recientes">Los últimos que llegaron</option>
-        </select>
-      </div>
-      {/* Ocho alertas activas y ninguna forma de listarlas: se miran antes que
-          todo lo demás, y hasta ahora había que ir aporte por aporte. */}
-      <div className="bo-field">
-        {/* Una sola etiqueta, la que envuelve la casilla. Poner además un
-            `bo-label-tag` dejaría dos etiquetas apuntando al mismo control. */}
-        <label className="bo-check" htmlFor="alerta">
+      <div className="bo-filtros-rapidos">
+        <Segmento rotulo="Ubicación" name="ubicacion" valor={ubicacion} opciones={[
+          ["todos", "Todos"], ["por_aclarar", "Por aclarar"], ["ubicados", "Ya ubicados"],
+        ]} />
+        <Segmento rotulo="Gestión" name="gestion" valor={gestion} opciones={[
+          ["", "Como esté"], ["sin_expediente", "Sin expediente"], ["con_expediente", "Con expediente"],
+          ["pendiente", "Remitido"], ["recibido", "Recibido"],
+        ]} />
+        {/* Ocho alertas activas y ninguna forma de listarlas: se miran antes
+            que todo lo demás. El chip se enciende en rojo. */}
+        <label className="bo-conmutador" htmlFor="alerta">
           <input id="alerta" name="alerta" type="checkbox" value="1" defaultChecked={soloAlerta} />
+          <IconoUrgencia />
           Solo con alerta de urgencia
         </label>
       </div>
-      {/* **Solo «Filtrar».** Aquí vivía también «Abrir siguiente», que no es un
-          filtro: era un enlace metido dentro de un `<form>` y una segunda acción
-          principal en el mismo grupo, justo lo que la dirección visual prohíbe
-          —«una acción principal por grupo»—. Se fue a la cabecera de la página,
-          que es donde el sistema de diseño pone la acción de una pantalla.
 
-          **Y sigue sin enviarse solo al cambiar un control.** Un formulario que
-          se manda al soltar un `<select>` sorprende a quien navega con el
-          teclado y recarga la pantalla debajo de los dedos. */}
-      <div className="bo-field">
-        <button className="bo-button">Filtrar</button>
-      </div>
+      {/* Abierto por defecto: los recorridos escogen departamento y municipio
+          directamente, y un `<details>` cerrado los deja fuera de alcance. */}
+      <details className="bo-plegable" open>
+        <summary><IconoFiltro />Afinar por territorio, tema y tiempo</summary>
+        <div className="bo-afinar">
+          {/* Solo salen los departamentos y municipios donde de verdad llegó
+              algo. Van encadenados y por eso corren en el navegador
+              (`territorio.tsx`). */}
+          <Territorio opciones={opciones} departamento={departamento} municipio={municipio} />
+          <div className="bo-field">
+            <label className="bo-label-tag" htmlFor="tema">De qué</label>
+            <select id="tema" name="tema" defaultValue={tema}>
+              <option value="">Cualquier tema</option>
+              <option value="sin_tema">Sin tema</option>
+              {TEMAS.map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
+          <div className="bo-field">
+            <label className="bo-label-tag" htmlFor="antiguedad">Hace cuánto</label>
+            <select id="antiguedad" name="antiguedad" defaultValue={antiguedad}>
+              <option value="">Cualquiera</option>
+              <option value="mas_de_cuatro">Más de cuatro años</option>
+              <option value="entre_uno_y_cuatro">Entre uno y cuatro años</option>
+              <option value="menos_de_un_ano">Menos de un año</option>
+              <option value="sin_decir">No lo dijo</option>
+            </select>
+          </div>
+          <div className="bo-field">
+            <label className="bo-label-tag" htmlFor="alcance">A cuántos</label>
+            <select id="alcance" name="alcance" defaultValue={alcance}>
+              <option value="">Cualquiera</option>
+              {ALCANCES.map((x) => (
+                <option key={x} value={x}>{COMO_SE_LEE_ALCANCE[x]}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </details>
     </form>
   );
 }

@@ -173,6 +173,13 @@ const plano = (s: string) =>
 
 export async function bandeja(
   procesoId: string, filtro: Filtro = {}, limite = 50,
+  /**
+   * Desde qué fila se corta. Es lo que permite paginar por páginas en vez de
+   * «traer 50 más»: la dirección lleva la página, y la página es `desde =
+   * (pagina - 1) * limite`. **Cero SQL**: el corte siempre fue en memoria,
+   * sobre el proceso entero ya leído y filtrado.
+   */
+  desde = 0,
 ): Promise<Pagina> {
   const p = clienteServidor().schema("participacion");
 
@@ -386,9 +393,9 @@ export async function bandeja(
   // hubiera más. Es el mismo defecto que dejó 122 municipios fuera del
   // buscador.
   return {
-    filas: ordenadas.slice(0, limite),
+    filas: ordenadas.slice(desde, desde + limite),
     opciones,
     total: ordenadas.length,
-    hayMas: ordenadas.length > limite,
+    hayMas: ordenadas.length > desde + limite,
   };
 }

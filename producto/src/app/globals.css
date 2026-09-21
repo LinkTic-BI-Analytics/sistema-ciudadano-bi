@@ -58,6 +58,190 @@
 :root { color-scheme: dark; }
 [data-tema="claro"] { color-scheme: light; }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * LA PALETA EXTENDIDA — lo que el paquete no trae, y lo que del paquete se corrige
+ *
+ * El diagnóstico está medido, no sentido: en el modo oscuro del paquete v0.5,
+ * 20 de los 24 tokens del perfil interno resuelven a la rampa azul; cinco
+ * azules (#06142A, #0A1A3A, #10264F, #16305E, #003189) hacen de lienzo, panel,
+ * barra lateral, cabecera de tabla, hover, selección y borde; y tres estados
+ * distintos de un aporte —recibido, remitido, borrador— son **el mismo par de
+ * color exacto** (#10264F / #B5D4F4). Los fondos «oscuros» de aviso perdieron
+ * el hue al mezclarse con el navy: el de advertencia es gris azulado y el de
+ * error es violeta. Con eso, cualquier pantalla se lee como un póster azul, y
+ * eso fue lo que dijo el cliente.
+ *
+ * Dos palancas, decididas con quien encarga (2026-09-21):
+ *   1. El lienzo oscuro deja de ser navy. Casi negro neutro, con cuatro
+ *      superficies que sí se distinguen. El navy queda para el hero —donde va
+ *      la bandera— y para la barra lateral, como acento de marca.
+ *   2. Los estados y las categorías llevan hue de verdad: verde, ámbar, rojo,
+ *      violeta, azul, gris, y ocho tonos para los veinticuatro temas.
+ *
+ * ## Cómo entra sin tocar el paquete
+ *
+ * Este bloque va DESPUÉS de todos los `@import` y **redefine variables**, nunca
+ * reglas. Todo lo que en el paquete alias a un semántico —los `component-*`,
+ * los `internal-*`, el puente de shadcn— cambia solo. Los seis archivos
+ * copiados quedan intactos y `tokens.sh` los puede reescribir cuando llegue la
+ * v0.6 sin pisar nada de esto. Las vistas del harness no leen ningún `--pc-*`
+ * (verificado con grep): no cambian.
+ *
+ * ## La compuerta
+ *
+ * Cada par texto/fondo de aquí lo recalcula `scripts/lib/contraste_propio.py`
+ * desde los hex resueltos, en los dos modos, y falla bajo 4.5:1 en texto y
+ * 3:1 en bordes. Es la misma idea que el generador del paquete, aplicada a lo
+ * nuestro. Los ratios anotados al lado son los que dio la última corrida.
+ *
+ * Prefijo `--pc-x-` («extendido») para lo que el paquete no tiene. Lo que sí
+ * tiene se redefine con su propio nombre, y por eso cambia en cascada.
+ * ══════════════════════════════════════════════════════════════════════════ */
+:root:not([data-tema="claro"]) {
+  /* Superficies: cuatro escalones de gris casi negro, ΔL perceptible entre
+     cada uno. Texto #EDF1F7 encima: 17.1 · 15.6 · 14.0 · 12.3. */
+  --pc-semantic-color-surface-canvas: #0B0E13;
+  --pc-semantic-color-surface-page: #0B0E13;
+  --pc-semantic-color-surface-base: #141920;
+  --pc-semantic-color-surface-editorial: #141920;
+  --pc-semantic-color-surface-subtle: #1C232D;
+  --pc-semantic-color-surface-floating: #242D39;
+  /* El secundario deja de ser azul claro: gris frío, 9.2 sobre el lienzo. */
+  --pc-semantic-color-text-secondary: #A9B4C2;
+  --pc-semantic-color-border-subtle: #232B36;
+  --pc-semantic-color-border-control: #5C6B7C;   /* 3.2 sobre base */
+  /* El acento dorado sobre superficie: tinte dorado real, no gris. */
+  --pc-semantic-color-brand-accentSurface: #2A2410;
+  --pc-semantic-color-focus-gap: #0B0E13;
+  /* Los que el paquete ata a primitivos azules en vez de a una superficie, y
+     por eso no seguirían solos al cambiar el lienzo: el selector de modo, el
+     botón secundario, lo deshabilitado, la caja de voz, la síntesis. */
+  --pc-semantic-color-mode-track: #1C232D;
+  --pc-semantic-color-mode-selected: #242D39;
+  --pc-semantic-color-action-secondary-default: #141920;
+  --pc-semantic-color-action-secondary-hover: #1C232D;
+  --pc-semantic-color-action-secondary-pressed: #242D39;
+  --pc-semantic-color-action-disabled-background: #1C232D;
+  --pc-semantic-color-action-disabled-foreground: #A9B4C2;
+  --pc-semantic-color-action-disabled-border: #5C6B7C;
+  --pc-semantic-color-assist-background: #1C232D;
+  --pc-semantic-color-voice-surface: #1C232D;
+  --pc-semantic-color-navigation-selected: #1C232D;
+  --pc-semantic-color-data-noData: #1C232D;
+  --pc-semantic-color-event-category: #A9B4C2;
+
+  /* Estados con hue. Texto sobre su fondo tintado: 8.8 · 8.9 · 6.1 · 7.6 · 9.4 */
+  --pc-semantic-color-feedback-success-background: #0F2A1E;
+  --pc-semantic-color-feedback-success-foreground: #4ADE80;
+  --pc-semantic-color-feedback-warning-background: #2E2110;
+  --pc-semantic-color-feedback-warning-foreground: #FFB454;
+  --pc-semantic-color-feedback-error-background: #33141A;
+  --pc-semantic-color-feedback-error-foreground: #FF6B7A;
+  --pc-semantic-color-feedback-info-background: #12233D;
+  --pc-semantic-color-feedback-info-foreground: #7CB7FF;
+  --pc-semantic-color-feedback-neutral-background: #242A33;
+  --pc-semantic-color-feedback-neutral-foreground: #C9D1DB;
+  /* El séptimo, que el paquete no tiene: remitido, en manos de otro, por voz. 7.9 */
+  --pc-x-remitido-bg: #251C3A;
+  --pc-x-remitido-fg: #C4A7FF;
+
+  /* Los estados internos que el paquete colapsaba en uno. Cada uno a su hue. */
+  --pc-semantic-color-internal-receivedBackground: var(--pc-semantic-color-feedback-info-background);
+  --pc-semantic-color-internal-receivedText: var(--pc-semantic-color-feedback-info-foreground);
+  --pc-semantic-color-internal-referredBackground: var(--pc-x-remitido-bg);
+  --pc-semantic-color-internal-referredText: var(--pc-x-remitido-fg);
+  --pc-semantic-color-internal-draftBackground: var(--pc-semantic-color-feedback-neutral-background);
+  --pc-semantic-color-internal-draftText: var(--pc-semantic-color-feedback-neutral-foreground);
+
+  /* La barra lateral: navy casi negro en los dos modos, como el pie. Es el
+     único sitio del interno donde la marca se queda con su azul. */
+  --pc-x-sidebar: #0E1420;
+  --pc-x-sidebar-texto: #EDF1F7;          /* 16.3 */
+  --pc-x-sidebar-suave: #A9B4C2;          /* 8.8 */
+  --pc-x-sidebar-linea: #1C2536;
+  --pc-x-nav-activo-bg: #2A2410;
+  --pc-x-nav-activo-fg: #FFD166;          /* 10.7 */
+  --pc-component-backoffice-sidebar-background: var(--pc-x-sidebar);
+  --pc-component-backoffice-navigation-background: var(--pc-x-nav-activo-bg);
+  --pc-component-backoffice-navigation-foreground: var(--pc-x-nav-activo-fg);
+
+  /* Sectores: ocho tonos para los veinticuatro temas (índice % 8). Se llaman
+     «sector» y no «tema» porque `.pc-tema` ya es el botón de modo claro/oscuro.
+
+     Escogidos lejos de los hues de estado —el verde de éxito, el ámbar de
+     aviso, el rojo de alerta, el violeta de remitido— para que un sector nunca
+     se lea como un estado: teal, cian, lima, índigo, magenta, coral, ocre y
+     rosa. Y con otra forma: el sector es texto con un riel de 3 px al lado; el
+     estado es una píldora con punto.
+
+     Texto (`fg`) sobre base: 9.6 · 9.1 · 11.9 · 8.1 · 8.6 · 8.4 · 9.3 · 10.1.
+     Texto sobre su tinte (`bg`): 8.3 · 8.3 · 10.0 · 7.3 · 8.0 · 7.4 · 8.2 · 8.8.
+     Riel sobre base: 6.8 · 5.8 · 8.6 · 4.8 · 5.0 · 5.9 · 6.1 · 6.3. */
+  --pc-sector-1-fg: #5FD3C7; --pc-sector-1-bg: #0E2B2A; --pc-sector-1-rail: #2BB5A6;
+  --pc-sector-2-fg: #6FC6F2; --pc-sector-2-bg: #0E2536; --pc-sector-2-rail: #2E9FD8;
+  --pc-sector-3-fg: #C6E26B; --pc-sector-3-bg: #232D10; --pc-sector-3-rail: #9BC53D;
+  --pc-sector-4-fg: #9CADFF; --pc-sector-4-bg: #1B2142; --pc-sector-4-rail: #6B7FEB;
+  --pc-sector-5-fg: #F29BDA; --pc-sector-5-bg: #33192C; --pc-sector-5-rail: #D65BB5;
+  --pc-sector-6-fg: #FF9A78; --pc-sector-6-bg: #34201A; --pc-sector-6-rail: #F0704E;
+  --pc-sector-7-fg: #D9B98C; --pc-sector-7-bg: #2C2417; --pc-sector-7-rail: #B8935A;
+  --pc-sector-8-fg: #FFB0C4; --pc-sector-8-bg: #35202A; --pc-sector-8-rail: #E87A9A;
+
+  /* La bandera, para los bloques del calendario. Texto encima: navy sobre
+     dorado 10.4 · blanco sobre azul 11.7 · blanco sobre rojo 5.3 */
+  --pc-x-bandera-1: #FFC800; --pc-x-bandera-1-texto: #001D54;
+  --pc-x-bandera-2: #003189; --pc-x-bandera-2-texto: #FFFFFF;
+  --pc-x-bandera-3: #D80025; --pc-x-bandera-3-texto: #FFFFFF;
+}
+
+[data-tema="claro"] {
+  /* Los mismos hues, oscuros sobre tinte claro: 6.5 · 6.1 · 5.5 · 8.5 · 9.0 */
+  --pc-semantic-color-feedback-success-background: #DCFCE7;
+  --pc-semantic-color-feedback-success-foreground: #166534;
+  --pc-semantic-color-feedback-warning-background: #FFF1D6;
+  --pc-semantic-color-feedback-warning-foreground: #8A4B08;
+  --pc-semantic-color-feedback-error-background: #FFE4E6;
+  --pc-semantic-color-feedback-error-foreground: #B42318;
+  --pc-semantic-color-feedback-info-background: #DBEAFE;
+  --pc-semantic-color-feedback-info-foreground: #1E3A8A;
+  --pc-semantic-color-feedback-neutral-background: #EEF0F3;
+  --pc-semantic-color-feedback-neutral-foreground: #374151;
+  --pc-x-remitido-bg: #EDE9FE;
+  --pc-x-remitido-fg: #5B3FA6;            /* 6.5 */
+
+  --pc-semantic-color-internal-receivedBackground: var(--pc-semantic-color-feedback-info-background);
+  --pc-semantic-color-internal-receivedText: var(--pc-semantic-color-feedback-info-foreground);
+  --pc-semantic-color-internal-referredBackground: var(--pc-x-remitido-bg);
+  --pc-semantic-color-internal-referredText: var(--pc-x-remitido-fg);
+  --pc-semantic-color-internal-draftBackground: var(--pc-semantic-color-feedback-neutral-background);
+  --pc-semantic-color-internal-draftText: var(--pc-semantic-color-feedback-neutral-foreground);
+
+  /* La barra lateral sigue navy en claro, como el pie de la portada. */
+  --pc-x-sidebar: #0E1420;
+  --pc-x-sidebar-texto: #EDF1F7;
+  --pc-x-sidebar-suave: #A9B4C2;
+  --pc-x-sidebar-linea: #1C2536;
+  --pc-x-nav-activo-bg: #2A2410;
+  --pc-x-nav-activo-fg: #FFD166;
+  --pc-component-backoffice-sidebar-background: var(--pc-x-sidebar);
+  --pc-component-backoffice-navigation-background: var(--pc-x-nav-activo-bg);
+  --pc-component-backoffice-navigation-foreground: var(--pc-x-nav-activo-fg);
+
+  /* Sectores en claro: los mismos hues, oscuros. Texto sobre blanco ≥ 5.9;
+     sobre su tinte ≥ 5.2; riel sobre blanco ≥ 3.6. */
+  --pc-sector-1-fg: #0F6E63; --pc-sector-1-bg: #E3F5F2; --pc-sector-1-rail: #128C7E;
+  --pc-sector-2-fg: #0B5E8A; --pc-sector-2-bg: #E4F2FB; --pc-sector-2-rail: #1A85C4;
+  --pc-sector-3-fg: #4D6A0A; --pc-sector-3-bg: #F0F6DC; --pc-sector-3-rail: #66890F;
+  --pc-sector-4-fg: #3B47B8; --pc-sector-4-bg: #ECEEFC; --pc-sector-4-rail: #5566D8;
+  --pc-sector-5-fg: #9A2278; --pc-sector-5-bg: #FBE9F5; --pc-sector-5-rail: #C2399A;
+  --pc-sector-6-fg: #B23A1C; --pc-sector-6-bg: #FDEBE5; --pc-sector-6-rail: #E0573A;
+  --pc-sector-7-fg: #6E5119; --pc-sector-7-bg: #F7F0E2; --pc-sector-7-rail: #A87F3A;
+  --pc-sector-8-fg: #A82A50; --pc-sector-8-bg: #FDE9EE; --pc-sector-8-rail: #D8547A;
+
+  --pc-x-bandera-1: #FFC800; --pc-x-bandera-1-texto: #001D54;
+  --pc-x-bandera-2: #003189; --pc-x-bandera-2-texto: #FFFFFF;
+  --pc-x-bandera-3: #D80025; --pc-x-bandera-3-texto: #FFFFFF;
+}
+
 body {
   margin: 0;
   background: var(--pc-semantic-color-surface-canvas);

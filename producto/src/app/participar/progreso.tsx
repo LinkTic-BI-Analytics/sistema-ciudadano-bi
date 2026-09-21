@@ -47,6 +47,24 @@ export function Progreso({
         {terminado ? "Listo · terminaste" : `Paso ${actual} de ${total}`}
       </p>
       {volver}
+      {/* El hilo de pasos: puntos numerados, los hechos con check y el actual
+          en dorado. Es lo mismo que dicen el texto y la barra, dicho de forma
+          que se ve de un vistazo cuánto falta; por eso va `aria-hidden` —el
+          lector de pantalla ya oye «Paso 3 de 5»— y se esconde en teléfono,
+          donde no cabe con dignidad. */}
+      {total > 1 && (
+        <div className="pc-hilo" aria-hidden="true">
+          {Array.from({ length: total }, (_, i) => i + 1).map((n) => {
+            const hecho = terminado || n < actual;
+            return (
+              <span key={n} data-hecho={hecho ? "true" : undefined}
+                    aria-current={!terminado && n === actual ? "step" : undefined}>
+                {hecho ? "✓" : n}
+              </span>
+            );
+          }).flatMap((punto, i) => (i === 0 ? [punto] : [<i key={`hilo-${i}`} />, punto]))}
+        </div>
+      )}
       {/* El `aria-label` lleva la misma frase que se ve: quien usa un lector de
           pantalla oye el paso, no un porcentaje que nadie escribió. */}
       <div

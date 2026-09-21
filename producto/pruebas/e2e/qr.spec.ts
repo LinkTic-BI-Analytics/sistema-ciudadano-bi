@@ -40,7 +40,8 @@ test("se puede crear un encuentro desde administración", async ({ page }) => {
 });
 
 test("un encuentro produce un QR con dirección legible, sin servicio externo", async ({ page }) => {
-  await page.goto("/administracion");
+  // Los materiales viven en su pestaña desde la ronda 2.
+  await page.goto("/administracion?seccion=materiales");
   const encuentro = page.locator("#enl-encuentro");
   await expect(encuentro).toBeVisible();
   await encuentro.selectOption({ index: 1 });
@@ -88,7 +89,7 @@ test("un enlace que no existe NO inventa un evento", async ({ page }) => {
  * fallos y solo uno real.
  */
 async function unMaterial(page: import("@playwright/test").Page): Promise<string> {
-  await page.goto("/administracion");
+  await page.goto("/administracion?seccion=materiales");
   await page.locator("#enl-encuentro").selectOption({ index: 1 });
   await page.selectOption("#enl-pieza", "afiche");
   await page.getByRole("button", { name: /generar enlace y qr/i }).click();
@@ -121,7 +122,7 @@ test("de un enlace sale su pieza gráfica, con los datos del registro", async ({
   // `PIE-01`: la pieza sale **del mismo registro** que alimenta la agenda. Es
   // toda la razón de que exista: hasta ahora alguien la armaba aparte copiando
   // los datos, y un afiche con la fecha equivocada no se corrige.
-  await page.goto("/administracion");
+  await page.goto("/administracion?seccion=materiales");
   const material = page.locator(".bo-record-card").first();
   await expect(material).toBeVisible();
 

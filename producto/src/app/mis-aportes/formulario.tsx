@@ -65,9 +65,16 @@ export function Consultar() {
     if (r?.estado === "encontrado") resultado.current?.focus();
   }, [r]);
 
+  // El chip del estado, con su color: verde cuando ya está ubicado, ámbar
+  // mientras se aclara, gris cuando no se pudo. Es el mismo criterio que la
+  // consola —el color acompaña al texto, nunca lo sustituye—.
+  const tono = r?.estado === "encontrado"
+    ? ({ confirmada: "ok", por_aclarar: "aviso", desconocida: "neutro" } as const)[r.estadoUbicacion ?? ""] ?? "neutro"
+    : "neutro";
+
   return (
     <>
-      <form action={accion} noValidate>
+      <form action={accion} noValidate className="pc-tarjeta">
         <div className="pc-field">
           <label className="pc-label" htmlFor="codigo">Tu código</label>
           {/* **En la tipografía de cifras y en mayúscula.** El alfabeto del
@@ -123,76 +130,86 @@ export function Consultar() {
               recorrido del tabulador. */}
           <div className="pc-summary-head">
             <h2 tabIndex={-1} ref={resultado}>Esto fue lo que nos contaste</h2>
-            <p className="pc-status">{COMO_VA[r.estadoUbicacion ?? ""] ?? "Está en revisión."}</p>
+            <p className="pc-status" data-estado={tono}>{COMO_VA[r.estadoUbicacion ?? ""] ?? "Está en revisión."}</p>
           </div>
 
-          <p className="pc-summary-text" data-prueba="relato">{r.relato}</p>
-          {r.canal === "voz_transcrita" && (
-            // Que sepa que lo suyo entró hablando: el texto de arriba es lo que
-            // entendió una máquina, y su grabación es el original (ADR 0013).
-            <p className="pc-meta">
-              Lo contaste hablando. <strong>Tu grabación es el original</strong>; lo de arriba es
-              lo que entendimos de ella.
-            </p>
-          )}
+          {/* **Dos tarjetas, lado a lado en escritorio**: lo que la persona
+              contó —sus palabras, en dorado— y cómo va. Iba todo en una sola
+              columna de texto sobre el lienzo, y era «la pantalla más muerta
+              del producto» dos veces seguidas. */}
+          <div className="pc-dos-columnas">
+            <div className="pc-tarjeta" data-tono="dorado">
+              <h3>Lo que contaste</h3>
+              <p className="pc-summary-text" data-prueba="relato">{r.relato}</p>
+              {r.canal === "voz_transcrita" && (
+                // Que sepa que lo suyo entró hablando: el texto de arriba es lo
+                // que entendió una máquina, y su grabación es el original
+                // (ADR 0013).
+                <p className="pc-meta">
+                  Lo contaste hablando. <strong>Tu grabación es el original</strong>; lo de arriba
+                  es lo que entendimos de ella.
+                </p>
+              )}
 
-          {/* **Todo lo que quedó registrado, devuelto.** Antes solo veía el
-              relato y el lugar, y había contestado el doble. No poder ver lo
-              que uno mismo contó es lo que hace dejar de creer que sirvió. */}
-          <dl className="pc-detail-facts" data-prueba="lo-registrado">
-            <dt>Cuándo lo recibimos</dt>
-            <dd>{fecha(r.recibidoEn)}</dd>
-            {r.municipio && (<><dt>Municipio</dt><dd>{r.municipio}</dd></>)}
-            {r.lugarDeclarado && (<><dt>Dónde dijiste que ocurre</dt><dd>{r.lugarDeclarado}</dd></>)}
-            {r.afectados && (<><dt>A quiénes les pasa</dt><dd>{r.afectados}</dd></>)}
-            {r.desdeCuando && (<><dt>Desde cuándo</dt><dd>{r.desdeCuando}</dd></>)}
-            {r.colectivo && (<><dt>Dijiste hablar por</dt><dd>{r.colectivo}</dd></>)}
-            {r.sintesis && (<><dt>Lo que quedó escrito</dt><dd>{r.sintesis}</dd></>)}
-          </dl>
+              {/* **Todo lo que quedó registrado, devuelto.** No poder ver lo
+                  que uno mismo contó es lo que hace dejar de creer que sirvió. */}
+              <dl className="pc-detail-facts" data-prueba="lo-registrado">
+                <dt>Cuándo lo recibimos</dt>
+                <dd>{fecha(r.recibidoEn)}</dd>
+                {r.municipio && (<><dt>Municipio</dt><dd>{r.municipio}</dd></>)}
+                {r.lugarDeclarado && (<><dt>Dónde dijiste que ocurre</dt><dd>{r.lugarDeclarado}</dd></>)}
+                {r.afectados && (<><dt>A quiénes les pasa</dt><dd>{r.afectados}</dd></>)}
+                {r.desdeCuando && (<><dt>Desde cuándo</dt><dd>{r.desdeCuando}</dd></>)}
+                {r.colectivo && (<><dt>Dijiste hablar por</dt><dd>{r.colectivo}</dd></>)}
+                {r.sintesis && (<><dt>Lo que quedó escrito</dt><dd>{r.sintesis}</dd></>)}
+              </dl>
+            </div>
 
-          {/* ── El seguimiento ─────────────────────────────────────────────
-              **Tres hitos, y el tercero dice que todavía no.** La tentación
-              aquí es dibujar cinco pasos con palomitas y dejar el último en
-              gris, que es como se ve un envío de paquetería. Pero eso
-              prometería una secuencia que nadie acordó: no hay plazo escrito
-              para responder, y el sistema **no puede cerrar por silencio**.
-              Lo único que se puede afirmar es lo que pasó, con su fecha, y que
-              lo que falta todavía no ha pasado. */}
-          <h3>Cómo va</h3>
-          <ul className="pc-history">
-            <li>
-              <strong>Recibido</strong>
-              <p className="pc-meta">
-                <IconoCuando /> {fecha(r.recibidoEn)}
-              </p>
-              <p className="pc-help">
-                Quedó guardado con tus palabras. El código que tienes es lo que lo recupera.
-              </p>
-            </li>
-            <li>
-              <strong>Dónde ocurre</strong>
-              <p className="pc-meta">
-                <IconoLugar />{" "}
-                {r.municipio ?? (r.lugarDeclarado ? `«${r.lugarDeclarado}»` : "sin registrar")}
-              </p>
-              <p className="pc-help">
-                {HITO_UBICACION[r.estadoUbicacion ?? ""] ?? "Sin registrar todavía."}
-              </p>
-            </li>
-            <li>
-              <strong>Revisión</strong>
-              <p className="pc-meta"><IconoRevisar /> todavía sin respuesta registrada</p>
-              <p className="pc-help">
-                Un equipo lo revisa junto con los demás aportes del territorio.{" "}
-                <strong>No hay una fecha comprometida</strong>, y esta página no la va a inventar.
-              </p>
-            </li>
-          </ul>
+            {/* ── El seguimiento ───────────────────────────────────────────
+                **Tres hitos, y el tercero dice que todavía no.** Dibujar cinco
+                pasos con palomitas prometería una secuencia que nadie acordó:
+                no hay plazo escrito para responder, y el sistema **no puede
+                cerrar por silencio**. Lo único que se puede afirmar es lo que
+                pasó, con su fecha, y que lo que falta todavía no ha pasado. */}
+            <div className="pc-tarjeta">
+              <h3>Cómo va</h3>
+              <ul className="pc-history">
+                <li data-estado="ok">
+                  <strong>Recibido</strong>
+                  <p className="pc-meta">
+                    <IconoCuando /> {fecha(r.recibidoEn)}
+                  </p>
+                  <p className="pc-help">
+                    Quedó guardado con tus palabras. El código que tienes es lo que lo recupera.
+                  </p>
+                </li>
+                <li data-estado={tono}>
+                  <strong>Dónde ocurre</strong>
+                  <p className="pc-meta">
+                    <IconoLugar />{" "}
+                    {r.municipio ?? (r.lugarDeclarado ? `«${r.lugarDeclarado}»` : "sin registrar")}
+                  </p>
+                  <p className="pc-help">
+                    {HITO_UBICACION[r.estadoUbicacion ?? ""] ?? "Sin registrar todavía."}
+                  </p>
+                </li>
+                <li data-estado="neutro">
+                  <strong>Revisión</strong>
+                  <p className="pc-meta"><IconoRevisar /> todavía sin respuesta registrada</p>
+                  <p className="pc-help">
+                    Un equipo lo revisa junto con los demás aportes del territorio.{" "}
+                    <strong>No hay una fecha comprometida</strong>, y esta página no la va a
+                    inventar.
+                  </p>
+                </li>
+              </ul>
 
-          <p className="pc-note">
-            Que esté registrado no significa que se haya resuelto ni que haya un compromiso de
-            obra.
-          </p>
+              <p className="pc-note">
+                Que esté registrado no significa que se haya resuelto ni que haya un compromiso
+                de obra.
+              </p>
+            </div>
+          </div>
 
           {/* Antes no había nada que hacer después de consultar: la pantalla
               terminaba en un descargo. */}

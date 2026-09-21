@@ -1,8 +1,11 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { bandeja, type Filtro } from "../../revision/bandeja.ts";
-import { Filtros, Señales, DeQue, Donde, Gestion, ElAporte, Rangos } from "./bandeja.tsx";
+import { Filtros, Señales, DeQue, Donde, Gestion, ElAporte, Rangos, Falta, Fecha } from "./bandeja.tsx";
 import { Resumen } from "./resumen.tsx";
 import { FiltrosActivos } from "./filtros-activos.tsx";
+import { Paginacion } from "./paginacion.tsx";
+import { sectorDe } from "../../producto/sectores.ts";
 import { Armazon, type VistaInterna } from "../../producto/armazon.tsx";
 import { IconoBandeja, IconoBuscar, IconoSiguiente } from "../../producto/iconos.tsx";
 import { procesoVigente } from "../../datos/proceso.ts";
@@ -16,6 +19,9 @@ export const metadata = { title: "Consola de revisión" };
 // miente sobre a quién le toca primero.
 const fecha = (iso: string) =>
   new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota" });
+
+/** Cuántos por página. Veinticinco caben en una pantalla sin desplazarse dos veces. */
+const POR_PAGINA = 25;
 
 export default async function Consola({
   searchParams,
@@ -43,16 +49,28 @@ export default async function Consola({
   const soloAlerta = uno("alerta") === "1";
   // El orden de trabajo manda por defecto: el que lleva más esperando primero.
   const orden = (typeof q.orden === "string" ? q.orden : "antiguos") as Filtro["orden"];
-  const limite = Math.min(Number(q.ver) || 50, 500);
+  // **Páginas, no «ver más».** El enlace de traer cincuenta más alargaba la
+  // misma página hasta tres pantallas. La página va en la dirección como todo
+  // lo demás, y una página fuera de rango cae a la primera en vez de salir
+  // vacía sin decir por qué.
+  const paginaPedida = Math.max(1, Math.floor(Number(q.pagina) || 1));
 
   const procesoId = await procesoVigente();
-  const { filas, opciones, total, hayMas } = await bandeja(procesoId, {
+  const filtro: Filtro = {
     texto, ubicacion, orden, departamento, municipio, tema,
     gestion: (gestion || undefined) as Filtro["gestion"],
     antiguedad: (antiguedad || undefined) as Filtro["antiguedad"],
     alcance: (alcance || undefined) as Filtro["alcance"],
     soloAlerta,
-  }, limite);
+  };
+  let pagina = paginaPedida;
+  let resultado = await bandeja(procesoId, filtro, POR_PAGINA, (pagina - 1) * POR_PAGINA);
+  if (resultado.filas.length === 0 && resultado.total > 0) {
+    pagina = 1;
+    resultado = await bandeja(procesoId, filtro, POR_PAGINA, 0);
+  }
+  const { filas, opciones, total } = resultado;
+  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   const p = clienteServidor().schema("participacion");
   const { count: totalAportes } = await p.from("aporte")
@@ -146,6 +164,7 @@ export default async function Consola({
         <div className="bo-results-line">
           <p data-prueba="cuantos">
             Mostrando {filas.length} de {total}
+            {paginas > 1 && ` · página ${pagina} de ${paginas}`}
             {orden === "recientes"
               ? " · los últimos que llegaron"
               : " · los que llevan más esperando"}
@@ -200,24 +219,20 @@ export default async function Consola({
               es el contrato del sistema de diseño, que oculta `.bo-table-desktop`
               bajo 36rem y enciende `.bo-card-list`. Exactamente una se ve. */}
           <ul className="bo-card-list">
-            {filas.map((f) => (
-              <li key={f.aporteId} className="bo-record-card">
+            {filas.map((f, i) => (
+              <li key={f.aporteId} className="bo-record-card pc-entra" data-sector={sectorDe(f.tema)}
+                  style={{ "--pc-orden": Math.min(i, 8) } as CSSProperties}>
                 <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
                   <ElAporte fila={f} />
                 </Link>
-                <div className="bo-card-meta"><Señales fila={f} /></div>
+                <div className="bo-card-meta"><Fecha iso={f.recibidoEn} /><Señales fila={f} /></div>
                 {/* **Los mismos datos que la tabla.** El sistema de diseño lo
                     pide literal: «no se ocultan datos esenciales» al pasar a
-                    lista. Lo que falta y quién lo tiene son la razón de mirar
-                    la bandeja. */}
-                <p><DeQue tema={f.tema} /> · {fecha(f.recibidoEn)}</p>
+                    lista. */}
+                <p><DeQue tema={f.tema} /></p>
                 <p><Donde fila={f} /></p>
                 <p><Rangos fila={f} /></p>
-                {/* **Dos renglones, no uno.** «Qué le falta» y «en manos de
-                    quién está» son dos preguntas distintas y viajaban pegadas
-                    por un punto medio. Es la cuarta columna que no se
-                    entendía. */}
-                <p>Falta: {f.falta.length === 0 ? "nada" : f.falta.join(", ")}</p>
+                <p><Falta fila={f} /></p>
                 <p><Gestion fila={f} /></p>
               </li>
             ))}
@@ -241,8 +256,12 @@ export default async function Consola({
               </tr>
             </thead>
             <tbody>
-              {filas.map((f) => (
-                <tr key={f.aporteId}>
+              {filas.map((f, i) => (
+                // El riel de la primera celda toma el color del sector, y las
+                // filas entran en cascada: la hoja del paquete lo prohibía en
+                // el interno y el usuario levantó esa regla.
+                <tr key={f.aporteId} className="pc-entra" data-sector={sectorDe(f.tema)}
+                    style={{ "--pc-orden": Math.min(i, 8) } as CSSProperties}>
                   <td>
                     {/* Lo confirmado arriba y sus palabras debajo, en pequeño: se
                         lee de qué va sin tener que descifrar la redacción, y el
@@ -250,7 +269,7 @@ export default async function Consola({
                     <Link className="bo-record-link" href={`/consola/${f.aporteId}`}>
                       <ElAporte fila={f} />
                     </Link>
-                    <p className="bo-small">{fecha(f.recibidoEn)}</p>
+                    <p className="bo-small"><Fecha iso={f.recibidoEn} /></p>
                     <Señales fila={f} />
                   </td>
                   <td className="bo-small"><DeQue tema={f.tema} /></td>
@@ -259,11 +278,7 @@ export default async function Consola({
                     <br />
                     <Rangos fila={f} />
                   </td>
-                  <td className="bo-small">
-                    {f.falta.length === 0
-                      ? <span className="bo-muted">no le falta nada</span>
-                      : f.falta.join(", ")}
-                  </td>
+                  <td className="bo-small"><Falta fila={f} /></td>
                   <td className="bo-small"><Gestion fila={f} /></td>
                 </tr>
               ))}
@@ -272,16 +287,8 @@ export default async function Consola({
         </>
       )}
 
-      {hayMas && (
-        // Un enlace de texto de 12 px para traer cincuenta filas más no se lee
-        // como una acción, y es la única que hay en esta parte de la pantalla.
-        <div className="bo-actions">
-          <Link className="bo-button" href={{ pathname: "/consola", query: { ...q, ver: limite + 50 } }}>
-            Ver {Math.min(50, total - filas.length)} más
-          </Link>
-          <p className="bo-muted">quedan {total - filas.length} sin mostrar</p>
-        </div>
-      )}
+      <Paginacion pagina={pagina} paginas={paginas} consulta={q}
+                  mostrando={filas.length} total={total} porPagina={POR_PAGINA} />
 
       {/* **Los expedientes, plegados.** Ocupaban media pantalla debajo de la
           bandeja, con su propia tabla, compitiendo con lo único que esta

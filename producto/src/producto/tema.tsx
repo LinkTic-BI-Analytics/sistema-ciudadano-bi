@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { IconoClaro, IconoOscuro } from "./iconos.tsx";
 
 /**
  * El modo claro y el oscuro (`interfaz.md` I5).
@@ -57,7 +58,10 @@ export function BotonTema() {
   const vaAlClaro = tema === "oscuro";
   return (
     <button type="button" className="pc-tema" onClick={cambiar} aria-pressed={!vaAlClaro}>
-      <span aria-hidden>{montado ? (vaAlClaro ? "☀" : "☾") : "☀"}</span>
+      {/* El icono dice a dónde va, igual que el rótulo: sol para ir al claro,
+          luna para ir al oscuro. Era un carácter de texto (☀ / ☾) que en
+          teléfonos baratos sale como un cuadrado. */}
+      {montado && !vaAlClaro ? <IconoOscuro /> : <IconoClaro />}
       {montado ? (vaAlClaro ? "Modo claro" : "Modo oscuro") : "Cambiar el tema"}
     </button>
   );

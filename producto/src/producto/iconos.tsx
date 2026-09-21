@@ -1,7 +1,9 @@
 import {
-  ArrowLeft, ArrowRight, Calendar, Check, Clock, Copy, FileText, FolderOpen,
-  Info, Inbox, Lightbulb, ListChecks, MapPin, Megaphone, Mic, PenLine, Phone,
-  PhoneCall, QrCode, Search, Send, ShieldCheck, Sun, Moon, TriangleAlert, Users, X,
+  ArrowLeft, ArrowRight, ArrowUpDown, Calendar, CalendarOff, Check, ChevronDown, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen,
+  CircleAlert, CircleCheck, ClipboardList, Clock, Compass, Copy, FileText, Flag, FolderOpen,
+  History, Info, Inbox, Landmark, Lightbulb, Link2, ListChecks, MapPin, Megaphone, Menu,
+  MessagesSquare, Mic, PenLine, Phone, PhoneCall, QrCode, Scissors, Search, Send, ShieldCheck,
+  SlidersHorizontal, Sun, Moon, Tag, TriangleAlert, Users, Volume2, X,
   type LucideIcon, type LucideProps,
 } from "lucide-react";
 
@@ -83,3 +85,31 @@ export const IconoSinCuenta = decorativo(ShieldCheck);
 // El tema. El rótulo dice a dónde va, no dónde está, y el icono lo acompaña.
 export const IconoClaro = decorativo(Sun);
 export const IconoOscuro = decorativo(Moon);
+
+// Ronda 2: navegación, filtros, paginación y la ficha.
+export const IconoMenu = decorativo(Menu);
+export const IconoDesplegar = decorativo(ChevronDown);
+export const IconoPlegarBarra = decorativo(PanelLeftClose);
+export const IconoAbrirBarra = decorativo(PanelLeftOpen);
+export const IconoAnterior = decorativo(ChevronLeft);
+export const IconoSiguientePagina = decorativo(ChevronRight);
+export const IconoFiltro = decorativo(SlidersHorizontal);
+export const IconoOrden = decorativo(ArrowUpDown);
+export const IconoTema = decorativo(Tag);
+export const IconoHechoCirculo = decorativo(CircleCheck);
+export const IconoAlertaCirculo = decorativo(CircleAlert);
+export const IconoPrioridad = decorativo(Flag);
+export const IconoHistoria = decorativo(History);
+export const IconoEnlace = decorativo(Link2);
+export const IconoAudio = decorativo(Volume2);
+export const IconoFestivo = decorativo(CalendarOff);
+
+// Cómo es un encuentro regional: los cinco pasos del resumen del DNP.
+export const IconoRegistro = decorativo(ClipboardList);
+export const IconoInstalacion = decorativo(Scissors);
+export const IconoMesas = decorativo(Users);
+export const IconoPlenaria = decorativo(MessagesSquare);
+export const IconoBases = decorativo(FileText);
+// Los seis caminos.
+export const IconoCamino = decorativo(Compass);
+export const IconoInstitucion = decorativo(Landmark);

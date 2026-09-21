@@ -400,7 +400,7 @@ export function Afinado({ codigo }: { codigo: string }) {
 
   if (leyendo) {
     return (
-      <section className="pc-section" data-prueba="afinar">
+      <section className="pc-section pc-tarjeta" data-prueba="afinar">
         {/* **El código sale ya, antes de leer nada.** Lo tenía detrás de la
             lectura, y eso contradecía el ADR 0012: el aporte se guarda en el
             primer clic y el comprobante es lo único que la persona necesita de
@@ -418,7 +418,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     // La lectura no salió. No se pierde nada: el aporte está guardado y el
     // código es lo único que la persona necesita de nosotros.
     return (
-      <section className="pc-section pc-entra" data-prueba="afinar">
+      <section className="pc-section pc-tarjeta pc-entra" data-prueba="afinar">
         <h2>Recibimos lo que nos contaste</h2>
         {/* **El mismo comprobante que el del final**, no una versión hecha con
             estilos en línea. Este es el camino de cuando la lectura no sale: la
@@ -435,7 +435,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   const volverDeVoceria = atras();
   if (paso === "voceria") {
     return (
-      <section className="pc-section pc-entra" key="voceria" data-prueba="voceria">
+      <section className="pc-section pc-tarjeta pc-entra" key="voceria" data-prueba="voceria">
         {/* **El indicador también aquí.** Decía «Última pregunta» y quitaba el
             «Paso X de Y», así que el contador desaparecía justo en el paso
             donde alguien está decidiendo si sigue o se va. La vocería es el
@@ -516,7 +516,7 @@ export function Afinado({ codigo }: { codigo: string }) {
   if (paso === "listo") {
     return (
       <>
-        <section className="pc-section pc-entra" key="listo" data-prueba="afinado-listo" aria-live="polite">
+        <section className="pc-section pc-tarjeta pc-entra" key="listo" data-prueba="afinado-listo" aria-live="polite">
           {/* **El indicador llega hasta el final.** Aquí no había nada, así que
               la barra que acompañó a la persona durante cinco pantallas
               desaparecía en la única donde se cierra. Llena, y diciendo
@@ -547,7 +547,7 @@ export function Afinado({ codigo }: { codigo: string }) {
           // Sección aparte, no pegada debajo del comprobante: son dos cosas
           // distintas —tu aporte quedó / y además nos contaste esto— y juntas se
           // leían como una sola lista de botones azules compitiendo.
-          <section className="pc-section" data-prueba="pendientes">
+          <section className="pc-section pc-tarjeta" data-prueba="pendientes">
             <h2>También nos contaste esto</h2>
             <p className="pc-help">
               Queda guardado en tu relato, pero <strong>como aporte aparte se puede atender
@@ -604,7 +604,7 @@ export function Afinado({ codigo }: { codigo: string }) {
     // rama de `@media print`— vuelve a dispararse. Sin la `key`, React reusa el
     // mismo nodo y la animación corre una vez y nunca más: la pantalla cambiaba
     // de contenido sin que nada dijera que había cambiado de pregunta.
-    <section className="pc-section pc-entra" key={paso} data-prueba="afinar">
+    <section className="pc-section pc-tarjeta pc-entra" key={paso} data-prueba="afinar">
       {/* Decir cuánto falta es lo que impide que alguien abandone creyendo que
           esto no se acaba nunca. */}
       <Progreso actual={actual} total={total} volver={volver && (

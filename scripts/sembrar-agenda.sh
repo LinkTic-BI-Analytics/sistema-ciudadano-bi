@@ -42,17 +42,65 @@ conv as (
     where c.estado = 'publicada' and c.proceso_id = proc.id
   )
   returning id, proceso_id
+),
+-- **La convocatoria a la que se cuelgan los encuentros**: la recién sembrada, o
+-- la que ya estaba publicada en este proceso. Antes los encuentros solo se
+-- sembraban junto con la convocatoria, así que volver a correr esto sobre una
+-- base que ya la tenía no hacía nada — y el cronograma oficial no entraba.
+la_conv as (
+  select id, proceso_id from conv
+  union all
+  select c.id, c.proceso_id from participacion.convocatoria c
+  join proc on proc.id = c.proceso_id
+  where c.estado = 'publicada'
+),
+-- Los doce encuentros oficiales del cronograma de despliegue territorial
+-- (DNP, septiembre de 2026), con su fecha real. **Son los que ve la portada.**
+--
+-- Lo que la imagen no trae y por eso queda anotado como dato que falta: la
+-- hora (se pone 9:00 a. m.) y el sitio exacto dentro de cada ciudad (se pone
+-- la ciudad). Los «equipos» y los días de «alistamiento» son logística interna
+-- y no entran. Los rótulos de semana y el festivo viven en
+-- `producto/src/convocatoria/cronograma.ts`.
+oficiales as (
+  select * from (values
+    ('Encuentro regional · Pereira',       timestamptz '2026-10-05 09:00 America/Bogota', 'Pereira'),
+    ('Encuentro regional · Quibdó',        timestamptz '2026-10-07 09:00 America/Bogota', 'Quibdó'),
+    ('Encuentro regional · Ibagué',        timestamptz '2026-10-09 09:00 America/Bogota', 'Ibagué'),
+    ('Encuentro regional · Popayán',       timestamptz '2026-10-14 09:00 America/Bogota', 'Popayán'),
+    ('Encuentro regional · Cúcuta',        timestamptz '2026-10-15 09:00 America/Bogota', 'Cúcuta'),
+    ('Encuentro regional · Leticia',       timestamptz '2026-10-16 09:00 America/Bogota', 'Leticia'),
+    ('Encuentro regional · Villavicencio', timestamptz '2026-10-20 09:00 America/Bogota', 'Villavicencio'),
+    ('Encuentro regional · Tunja',         timestamptz '2026-10-21 09:00 America/Bogota', 'Tunja'),
+    ('Encuentro regional · Medellín',      timestamptz '2026-10-23 09:00 America/Bogota', 'Medellín'),
+    ('Encuentro regional · Bogotá D.C.',   timestamptz '2026-10-27 09:00 America/Bogota', 'Bogotá D.C.'),
+    ('Encuentro regional · Barranquilla',  timestamptz '2026-10-28 09:00 America/Bogota', 'Barranquilla'),
+    ('Encuentro regional · Cali',          timestamptz '2026-10-30 09:00 America/Bogota', 'Cali')
+  ) as t(titulo, comienza_en, lugar)
+),
+sembrados as (
+  insert into participacion.encuentro
+    (proceso_id, convocatoria_id, titulo, tema, modalidad, comienza_en, lugar, cupos, estado)
+  select la_conv.proceso_id, la_conv.id, o.titulo, null, 'presencial', o.comienza_en, o.lugar, null, 'programado'
+  from la_conv, oficiales o
+  -- Idempotente por título: volver a sembrar no duplica.
+  where not exists (
+    select 1 from participacion.encuentro e
+    where e.convocatoria_id = la_conv.id and e.titulo = o.titulo
+  )
+  returning id
 )
+-- **Los casos de prueba, solo en el proceso de los recorridos** (cuando viene
+-- `PROCESO_NOMBRE`). Un cancelado y un reprogramado con fecha relativa: son los
+-- dos que se ven mal si la pantalla los esconde, y `pruebas/e2e/portada.spec.ts`
+-- los busca por su texto. En desarrollo no se siembran: la portada enseña el
+-- cronograma oficial limpio.
 insert into participacion.encuentro
   (proceso_id, convocatoria_id, titulo, tema, modalidad, comienza_en, lugar, sala, ayudas, cupos, estado, comenzaba_en, motivo_cambio)
-select conv.proceso_id, conv.id, t.titulo, t.tema, t.modalidad,
+select la_conv.proceso_id, la_conv.id, t.titulo, t.tema, t.modalidad,
        now() + (t.dias || ' days')::interval, t.lugar, t.sala, t.ayudas, t.cupos,
        t.estado, case when t.estado='reprogramado' then now() + interval '4 days' end, t.motivo
-from conv, (values
-  -- El tema del encuentro se escribe con el nombre del sector, el mismo que
-  -- lleva el aporte (`TEMAS` en `src/captura/lectura.ts`). El título
-  -- sigue hablando como la gente —«el agua en la zona rural»— porque es lo que
-  -- se lee en la portada: quien busca a qué ir no busca un sector.
+from la_conv, (values
   ('Mesa sobre el agua en la zona rural', 'Vivienda, Ciudad y Territorio', 'presencial', 5,
    'Caseta comunal de la vereda El Salado', null, 'Hay interpretación en lengua de señas y transporte desde la cabecera', 40, 'programado', null),
   ('Encuentro virtual: vías y transporte', 'Transporte', 'virtual', 9,
@@ -63,7 +111,12 @@ from conv, (values
   ('Encuentro sobre educación', 'Educación', 'mixta', 16,
    'Colegio del corregimiento', 'https://encuentro.ejemplo/educacion', null, null, 'cancelado',
    'la sede no estará disponible; se reprograma y se avisa aquí')
-) as t(titulo, tema, modalidad, dias, lugar, sala, ayudas, cupos, estado, motivo);
+) as t(titulo, tema, modalidad, dias, lugar, sala, ayudas, cupos, estado, motivo)
+where :'nombre' <> ''
+  and not exists (
+    select 1 from participacion.encuentro e
+    where e.convocatoria_id = la_conv.id and e.titulo = t.titulo
+  );
 
 select '  convocatoria: ' || count(*) from participacion.convocatoria where estado='publicada';
 select '  encuentros:   ' || count(*) from participacion.encuentro;

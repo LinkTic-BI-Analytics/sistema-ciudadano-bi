@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
 import { recurrenciaDe } from "../../../revision/recurrencia.ts";
 import { TEMAS } from "../../../captura/lectura.ts";
 import { Campo, Opciones } from "../campos.tsx";
 import { BotonEnvio } from "../boton-envio.tsx";
 import { Armazon } from "../../../producto/armazon.tsx";
-import { IconoVacio } from "../../../producto/iconos.tsx";
+import { sectorDe } from "../../../producto/sectores.ts";
+import {
+  IconoVacio, IconoLugar, IconoExpediente, IconoMicrofono, IconoTelefono, IconoEscribir,
+  IconoGrupo, IconoUrgencia, IconoRevisar, IconoAudio, IconoEnlace, IconoHistoria,
+  IconoPrioridad, IconoRemitir,
+} from "../../../producto/iconos.tsx";
 import { enPartes } from "../../../revision/sintesis-en-partes.ts";
 import {
   antiguedadDe, alcanceDe, COMO_SE_LEE_ANTIGUEDAD, COMO_SE_LEE_ALCANCE,
@@ -65,6 +70,9 @@ const COMO_LLEGO: Record<string, string> = {
 function enPalabras(valor: string | null | undefined): string {
   return (valor ?? "").replace(/_/g, " ");
 }
+
+/** La posición en la cascada de entrada: cada panel llega 60 ms después del anterior. */
+const orden = (n: number) => ({ "--pc-orden": n }) as CSSProperties;
 
 /**
  * Hora de Bogotá, explícita.
@@ -225,6 +233,23 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
   const atencion = exp ? await estadoDeAtencion(exp.id) : null;
   const remisiones = actuaciones.filter((x) => x.tipo === "remision");
 
+  const porAclarar = ubi?.some((u) => u.estado === "por_aclarar") ?? false;
+  const alertaViva = Boolean(alerta && !alerta.devuelta_en);
+
+  /**
+   * La tira de estado, de un vistazo.
+   *
+   * Lo que antes había que juntar de tres sitios —el tema en la rejilla, la
+   * ubicación en su sección, la gestión en el panel de la derecha— va en una
+   * fila de chips bajo el titular, cada uno con su color. Ninguno afirma más de
+   * lo que hay: «por aclarar» es ámbar, no rojo, y «sin expediente» es gris.
+   */
+  const gestion = !exp
+    ? { estado: "draft", texto: "sin expediente" }
+    : atencion?.remisionPendiente
+      ? { estado: "clarify", texto: "remitido · sin aceptar" }
+      : { estado: "info", texto: `expediente · ${enPalabras(atencion?.estado ?? "abierto")}` };
+
   return (
     <Armazon
       seccion="Consola"
@@ -244,13 +269,37 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
           del aporte en la tipografía de cifras. Antes el código iba solo, en la
           barra de arriba, y la ficha empezaba sin titular: había que leerse el
           relato para saber qué tenías delante. */}
-      <div className="bo-record-head">
+      <div className="bo-record-head pc-entra" style={orden(0)}>
         <h1>{primeraFrase(vigente?.texto ?? a.relato_original)}</h1>
         <span className="bo-record-code">{aporteId}</span>
       </div>
 
-      {alerta && !alerta.devuelta_en && (
-        <section className="bo-error">
+      <div className="bo-tira pc-entra" style={orden(1)} aria-label="Estado del aporte">
+        <span className="bo-sector" data-sector={sectorDe(a.tema)}>
+          {a.tema ?? "sin tema"}
+        </span>
+        <span className="bo-badge" data-state={aceptada ? "validated" : "clarify"}>
+          <IconoLugar />
+          {aceptada ? nombreDelMunicipio ?? "municipio aceptado" : "municipio por aclarar"}
+        </span>
+        <span className="bo-badge" data-state={gestion.estado}>
+          <IconoExpediente />
+          {gestion.texto}
+        </span>
+        <span className="bo-badge" data-state={a.canal === "voz_transcrita" ? "voz" : "draft"}>
+          {a.canal === "voz_transcrita" ? <IconoMicrofono /> : a.canal === "telefono" ? <IconoTelefono /> : <IconoEscribir />}
+          llegó {COMO_LLEGO[a.canal]?.split(" · ")[0] ?? `por ${a.canal}`}
+        </span>
+        {a.es_colectivo && (
+          <span className="bo-badge" data-state="info"><IconoGrupo />dice hablar por un grupo</span>
+        )}
+        {alertaViva && (
+          <span className="bo-badge" data-state="alert"><IconoUrgencia />alerta urgente</span>
+        )}
+      </div>
+
+      {alertaViva && alerta && (
+        <section className="bo-error pc-entra" style={orden(2)}>
           <h2>Alerta urgente</h2>
           <p>
             La levantó <strong>{alerta.origen === "senal" ? "una señal de texto" : alerta.origen}</strong>
@@ -268,612 +317,590 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
         </section>
       )}
 
-            <div className="bo-review-layout">
-              {/* `.bo-reading` no es cosmética: lleva `min-width: 0`, y sin eso
-                  un relato largo sin espacios —una dirección, un código— empuja
-                  la columna y **descuadra la rejilla entera**. La clase estaba
-                  declarada y el marcado tenía un `<div>` pelado. */}
-              <div className="bo-reading">
-                {/* **Lo que hay que ver antes de leer el relato** (`CLA-02`).
-                    Sin esto el revisor tenía que leerse cada aporte entero para
-                    saber siquiera si hablaba de agua o de una vía, y no había
-                    con qué clasificar ni priorizar. */}
-                <dl className="bo-context-grid" data-prueba="cabecera">
-                  <dt className="bo-small">De qué</dt>
-                  <dd>
-                    {a.tema
-                      ? <strong>{a.tema}</strong>
-                      : <span className="bo-muted">sin tema · no se puede enrutar</span>}
-                    {a.tema_propuesto && a.tema !== a.tema_propuesto && (
-                      <span className="bo-small">
-                        {" "}· la lectura propuso «{a.tema_propuesto}»
-                      </span>
-                    )}
-                  </dd>
-
-                  <dt className="bo-small">Dónde</dt>
-                  <dd>
-                    {/* El municipio **aceptado**, no el texto declarado: mostrar
-                        el declarado como si fuera el aceptado es la inferencia
-                        que `I2` prohíbe.
-
-                        Y con su departamento: se capturaba y esta ficha lo
-                        traía de la base sin llegar a enseñarlo nunca. */}
-                    {nombreDelMunicipio
-                      ? <strong>{nombreDelMunicipio}{departamentoDelMunicipio && `, ${departamentoDelMunicipio}`}</strong>
-                      : <span className="bo-muted">sin municipio aceptado</span>}
-                    {a.lugar_declarado && (
-                      <span className="bo-small"> · dijo: «{a.lugar_declarado}»</span>
-                    )}
-                  </dd>
-
-                  {/* **Suben aquí desde debajo del relato.** `CLA-02` los pide
-                      de un vistazo, antes de leer: enterrados entre párrafos,
-                      había que leerse el aporte entero para saber a cuánta
-                      gente le pasa. */}
-                  <dt className="bo-small">A quiénes</dt>
-                  <dd>
-                    {/* El rango primero, su frase después. El rango es una
-                        lectura nuestra para poder agrupar (`NOR-02`); lo que
-                        ella dijo es el dato, y por eso va al lado y no se
-                        sustituye. */}
-                    {a.afectados ? (
-                      <>
-                        <strong>{COMO_SE_LEE_ALCANCE[alcanceDe(a.afectados)]}</strong>
-                        <span className="bo-small"> · «{a.afectados}»</span>
-                      </>
-                    ) : (
-                      <span className="bo-muted">no lo dijo</span>
-                    )}
-                  </dd>
-
-                  <dt className="bo-small">Desde cuándo</dt>
-                  <dd>
-                    {/* Tal cual. «Hace tres meses» no es una fecha, y volverlo
-                        una sería la inferencia que `I2` prohíbe. */}
-                    {a.desde_cuando ? (
-                      <>
-                        <strong>{COMO_SE_LEE_ANTIGUEDAD[antiguedadDe(a.desde_cuando)]}</strong>
-                        <span className="bo-small"> · «{a.desde_cuando}»</span>
-                      </>
-                    ) : (
-                      <span className="bo-muted">no lo dijo</span>
-                    )}
-                  </dd>
-
-                  <dt className="bo-small">Cuántos más como este</dt>
-                  <dd>
-                    {/* Dice **cuál** de los dos falta. «Falta tema o
-                        municipio» obligaba a ir a buscar cuál era, y muchas
-                        veces uno de los dos estaba ahí mismo, dos filas arriba. */}
-                    {!a.tema || !aceptada ? (
-                      <span className="bo-muted">
-                        sin contar · falta {!a.tema && !aceptada ? "el tema y el municipio"
-                          : !a.tema ? "el tema" : "el municipio"}
-                      </span>
-                    ) : recurrencia.otros === 0 ? (
-                      <>Ninguno todavía. <span className="bo-muted">Ser el único no lo hace menos grave.</span></>
-                    ) : (
-                      <>
-                        <strong>{recurrencia.otros} aportes más</strong> del mismo tema en este
-                        municipio · <span className="bo-muted">son aportes, no personas</span>
-                      </>
-                    )}
-                  </dd>
-                </dl>
-
-                {/* **Corregir el tema.** `GES-02` la lista entre lo que se
-                    puede corregir, y no existía: 114 de 115 aportes estaban sin
-                    tema y no había ninguna forma de ponérselo. Un aporte sin
-                    tema no se puede enrutar a ninguna mesa. */}
-                <details className="bo-plegable" data-prueba="corregir-tema">
-                  <summary>{a.tema ? "Corregir el tema" : "Poner un tema"}</summary>
-                  <div className="bo-plegado">
-                    <form action={accionCambiarTema}>
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <Opciones id="tema-codigo" name="tema" etiqueta="De qué habla"
-                                defaultValue={a.tema ?? ""}>
-                        <option value="">Sin tema</option>
-                        {TEMAS.map((x) => (
-                          <option key={x} value={x}>{x}</option>
-                        ))}
-                      </Opciones>
-                      <Campo id="tema-motivo" name="motivo" etiqueta="Por qué"
-                             ejemplo="habla del acueducto, no de la vía" />
-                      <Campo id="tema-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <BotonEnvio mientras="Guardando…">Guardar el tema</BotonEnvio>
-                      {/* Que es una etiqueta nuestra y no algo que la persona
-                          afirmó ya lo dice el formulario: pide motivo y firma. Y
-                          la cabecera enseña «la lectura propuso …» cuando
-                          difiere. Decirlo además en un párrafo era repetírselo a
-                          quien abre cuarenta fichas al día. */}
-                    </form>
-                  </div>
-                </details>
-
-                {/* **El orden es el de decidir, no el de escribir.**
-
-                    Iba: relato → grabación → de dónde llegó → lo que entendimos
-                    → ubicación. La ubicación quedaba de penúltima, después del
-                    contexto del QR y de las versiones viejas de la síntesis —y
-                    es lo primero que hay que resolver para que el aporte sirva
-                    de algo.
-
-                    Ahora: **ubicación** (que es trabajo pendiente) → el relato →
-                    lo que la persona confirmó → y al final lo que solo se mira
-                    para profundizar: el audio y de dónde llegó el enlace. */}
-                <section className="bo-history-section" data-prueba="ubicacion">
-                  <h2>Ubicación</h2>
-                  {ubi?.map((u, i) => (
-                    <p key={i} data-prueba="territorio">
-                      {/* En palabras, no como está en la base: salía
-                          «por_aclarar», con guion bajo. */}
-                      <span className="bo-badge" data-state={u.estado === "confirmada" ? "validated" : "clarify"}>
-                        {u.estado === "por_aclarar" ? "por aclarar" : u.estado}
-                      </span>{" "}
-                      {/* **El nombre, y el código al lado.** Decía «15001» y
-                          nada más: quien revisa no trabaja con códigos DANE de
-                          memoria, y un dato que hay que ir a buscar a otra
-                          parte es un dato que no está. */}
-                      {u.territorio_codigo
-                        ? <><strong>{nombreDe.get(u.territorio_codigo) ?? "un municipio que no está en el catálogo"}</strong>
-                            {" "}<span className="bo-small">({u.territorio_codigo})</span></>
-                        : <span className="bo-muted">sin municipio</span>}
-                      {u.motivo && <span className="bo-small"> · {u.motivo}</span>}
-                    </p>
-                  ))}
-
-                  {/* **Corregir en un paso.** Cambiar un municipio mal aceptado
-                      obligaba a devolverlo a «por aclarar» y aceptarlo otra vez:
-                      dos formularios y dos motivos para arreglar una letra. Y
-                      entre los dos pasos el aporte pasaba por un estado que no
-                      era cierto.
-
-                      Corregir **reemplaza**, no agrega: dos territorios
-                      significan que el problema cruza dos municipios (`GEO-01`),
-                      y un error de dedo no es eso. */}
-                  {/* **Plegados.** Los tres iban abiertos a la vez, y cada
-                      uno lleva dentro un desplegable con los 1.122 municipios
-                      del país: al abrir un aporte, lo primero que aparecía era
-                      un muro de listas antes de llegar al relato. Cerrados,
-                      esto vuelve a ser una ficha. */}
-                  {ubi?.some((u) => u.estado === "confirmada") && (
-                    <details className="bo-plegable">
-                    <summary>Corregir el municipio</summary>
-                    <div className="bo-plegado">
-                    <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
-                      <Opciones id="cor-codigo" name="codigo" etiqueta="Municipio correcto">
-                        <option value="">Escoge uno…</option>
-                        {mun.map((m) => (
-                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
-                        ))}
-                      </Opciones>
-                      <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
-                             ejemplo="dice El Salado de Rionegro, no el de Bello" />
-                      <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <BotonEnvio mientras="Corrigiendo…">Corregir</BotonEnvio>
-                      <p className="bo-small">
-                        <strong>Reemplaza el municipio, no agrega un segundo.</strong> El cambio
-                        queda registrado con tu nombre y el motivo.
-                      </p>
-                    </form>
-                    </div>
-                    </details>
-                  )}
-
-                  {ubi?.some((u) => u.estado === "confirmada") && (
-                    <details className="bo-plegable">
-                    <summary>Devolver a «por aclarar»</summary>
-                    <div className="bo-plegado">
-                    <form action={accionDevolver}>
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
-                             ejemplo="la persona dijo otra cosa al llamarla" />
-                      <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <BotonEnvio mientras="Devolviendo…">Devolver a por aclarar</BotonEnvio>
-                      {/* Por qué el código se borra en vez de quedarse de
-                          adorno —sería el cuarto estado implícito que `I2`
-                          prohíbe— está en `src/revision/ubicacion.ts`. Aquí solo
-                          hace falta la consecuencia. */}
-                      <p className="bo-small">El municipio se quita hasta que se aclare.</p>
-                    </form>
-                    </div>
-                    </details>
-                  )}
-
-                  {/* Este NO se pliega: es el trabajo pendiente del aporte, lo
-                      que la persona que abre la ficha vino a hacer. */}
-                  {ubi?.some((u) => u.estado === "por_aclarar") && (
-                    <form action={accionResolver}>
-                      <input type="hidden" name="aporteId" value={aporteId} />
-                      <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
-                      <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
-                        <option value="">Escoge uno…</option>
-                        {mun.map((m) => (
-                          <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
-                        ))}
-                      </Opciones>
-                      <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
-                             ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
-                      <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <BotonEnvio variante="primary" mientras="Aceptando…">Aceptar el municipio</BotonEnvio>
-                      <p className="bo-small">
-                        Acepta <strong>el lugar del problema</strong>, no la dirección de quien
-                        escribió.
-                      </p>
-                    </form>
-                  )}
-                </section>
-
-                <section className="bo-source">
-                  <h2>Lo que la persona contó</h2>
-                  <blockquote>{a.relato_original}</blockquote>
-                  {/* **El techo de esta pantalla, dicho en la pantalla.**
-                      Sin decirlo, «corregir» y «reescribir» se parecen
-                      demasiado — y la diferencia entre las dos es todo el valor
-                      de esto: si la consola puede cambiar el sentido de lo que
-                      alguien contó, lo que sube ya no es lo que la gente dijo. */}
-                  {/* **Aquí iba un párrafo de cinco líneas y ya no está.**
-                      Explicaba `N03` y `V14` citando los códigos, y quien revisa
-                      lo leía cuarenta veces al día sin que le cambiara ninguna
-                      decisión. Lo que impide reescribir el relato no es un
-                      aviso: es que no existe ningún campo para hacerlo — y de
-                      eso se encarga una prueba, no una frase. */}
-                  {/* Lo que la persona precisó al contar, **con sus palabras**
-                      (ADR 0012). Lo que no dijo no aparece: un campo vacío es
-                      información —nadie se lo preguntó o no lo sabía— y
-                      rellenarlo con «sin dato» lo disfrazaría de omisión suya.
-
-                      `desde_cuando` se muestra tal cual y no se convierte en
-                      fecha: «hace tres meses» no es una fecha, y volverlo una
-                      sería la inferencia que `I2` prohíbe. */}
-                  {/* **Declarado, no verificado.** La especificación dice que
-                      *«vocero exige verificar representación y destinatario
-                      autorizado»*, y nadie verificó nada: lo dijo quien escribió.
-                      Ponerlo sin ese aviso invitaría a tratarlo como probado, y
-                      el colectivo ni siquiera existe como entidad todavía
-                      (`Q23`). */}
-                  {a.es_colectivo && (
-                    <p className="bo-observation">
-                      <strong>Dice hablar por un grupo:</strong>{" "}
-                      <em>«{a.colectivo_declarado ?? "sin nombrarlo"}»</em>{" "}
-                      <span className="bo-muted">· nadie verificó que lo represente</span>
-                    </p>
-                  )}
-                  {/* Lo que precisó —dónde, a quiénes, desde cuándo— está
-                      arriba, en la cabecera. Repetirlo aquí era la mitad del
-                      muro de texto. */}
-                </section>
-
-                {(sint?.length ?? 0) > 0 && (
-                  <section className="bo-synthesis" data-prueba="sintesis">
-                    <h2>Lo que entendimos</h2>
-                    {/* **Solo la vigente, y en sus partes.** Se imprimían las
-                        dos, tres o cuatro versiones enteras, una detrás de
-                        otra, y como cada vuelta confirma la suya, todas decían
-                        «la confirmó la persona»: el revisor no sabía cuál
-                        manda. Eso —más el texto corrido de un campo que en
-                        realidad son dos— es lo que hacía que la ficha se leyera
-                        como una transcripción.
-
-                        Las anteriores no se borran: se pliegan. Sirven para ver
-                        qué cambió, no para leerlas como el dato. */}
-                    <span className="bo-badge" data-state={vigente!.confirmada_en ? "validated" : "draft"}>
-                      v{vigente!.version} · {vigente!.clase}
-                      {vigente!.confirmada_en ? " · la confirmó la persona" : " · sin confirmar"}
-                    </span>
-                    <dl className="bo-context-grid">
-                      {enPartes(vigente!.texto).map(([etiqueta, valor]) => (
-                        <Fragment key={etiqueta}>
-                          <dt className="bo-small">{etiqueta}</dt>
-                          <dd>{valor}</dd>
-                        </Fragment>
-                      ))}
-                    </dl>
-                    <p className="bo-small">
-                      Que la persona confirme <strong>no significa que los hechos estén
-                      verificados</strong>.
-                    </p>
-
-                    {sint!.length > 1 && (
-                      <details className="bo-plegable" data-prueba="versiones-anteriores">
-                        <summary>Ver las {sint!.length - 1} versiones anteriores</summary>
-                        <div className="bo-plegado">
-                          {sint!.slice(0, -1).map((s) => (
-                            <div key={s.version} className="bo-check">
-                              <span className="bo-badge" data-state="draft">
-                                v{s.version} · {s.clase} · sustituida por la v{vigente!.version}
-                              </span>
-                              <p style={{ whiteSpace: "pre-wrap" }}>{s.texto}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </section>
+      <div className="bo-review-layout">
+        {/* `.bo-reading` no es cosmética: lleva `min-width: 0`, y sin eso un
+            relato largo sin espacios —una dirección, un código— empuja la
+            columna y **descuadra la rejilla entera**. */}
+        <div className="bo-reading">
+          {/* **Lo que hay que ver antes de leer el relato** (`CLA-02`). Sin
+              esto el revisor tenía que leerse cada aporte entero para saber
+              siquiera si hablaba de agua o de una vía, y no había con qué
+              clasificar ni priorizar. */}
+          <section className="bo-panel pc-entra" style={orden(2)}>
+            <header className="bo-panel-cabecera">
+              <h2><IconoRevisar />De un vistazo</h2>
+              <span className="bo-small">lo que hay que saber antes de leer</span>
+            </header>
+            <dl className="bo-context-grid" data-prueba="cabecera">
+              <dt className="bo-small">De qué</dt>
+              <dd>
+                {a.tema
+                  ? <strong>{a.tema}</strong>
+                  : <span className="bo-muted">sin tema · no se puede enrutar</span>}
+                {a.tema_propuesto && a.tema !== a.tema_propuesto && (
+                  <span className="bo-small">
+                    {" "}· la lectura propuso «{a.tema_propuesto}»
+                  </span>
                 )}
+              </dd>
 
-                {a.canal === "voz_transcrita" && (
-                  <section className="bo-history-section" data-prueba="grabacion">
-                    <h2>Lo contó hablando</h2>
-                    {/* **El audio es el original** (ADR 0013). El texto de
-                        arriba es la lectura de una máquina, y las máquinas se
-                        equivocan con los nombres de veredas: en la primera
-                        prueba «La Martinita» volvió como «La Martinica». */}
-                    <p className="bo-small">
-                      <strong>El original es la grabación</strong>, no el texto. Escúchala antes de
-                      dar por buena una vereda, una cantidad o un «no».
-                    </p>
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <audio controls preload="none" src={`/consola/audio/${aporteId}`} style={{ width: "100%" }} />
-
-                    {transcripciones.length > 0 ? (
-                      <dl className="bo-context-grid">
-                        {transcripciones.map((v) => (
-                          <div key={v.version}>
-                            <dt className="bo-small">
-                              v{v.version} · {v.autor.startsWith("modelo:")
-                                ? <>la transcribió <code>{v.autor.replace("modelo:", "")}</code></>
-                                : "la corrigió la persona"}
-                            </dt>
-                            <dd>{v.texto}{v.motivo && <span className="bo-small"> · {v.motivo}</span>}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    ) : (
-                      <p className="bo-observation">
-                        No se pudo transcribir. <strong>El audio queda guardado.</strong>
-                      </p>
-                    )}
-                  </section>
+              <dt className="bo-small">Dónde</dt>
+              <dd>
+                {/* El municipio **aceptado**, no el texto declarado: mostrar el
+                    declarado como si fuera el aceptado es la inferencia que
+                    `I2` prohíbe. Y con su departamento: se capturaba y esta
+                    ficha lo traía de la base sin llegar a enseñarlo nunca. */}
+                {nombreDelMunicipio
+                  ? <strong>{nombreDelMunicipio}{departamentoDelMunicipio && `, ${departamentoDelMunicipio}`}</strong>
+                  : <span className="bo-muted">sin municipio aceptado</span>}
+                {a.lugar_declarado && (
+                  <span className="bo-small"> · dijo: «{a.lugar_declarado}»</span>
                 )}
+              </dd>
 
-                {(enlace || a.evento_confirmado_id) && (
-                  <section className="bo-history-section" data-prueba="contexto">
-                    <h2>De dónde llegó</h2>
-                    {/* `QR-03` obliga a distinguir tres cosas que la gente
-                        mezcla. Juntarlas haría creer que quien escaneó el
-                        afiche de A asistió a A. */}
-                    <dl className="bo-context-grid">
-                      {enlace && (
-                        <div>
-                          <dt className="bo-small">Enlace por el que entró</dt>
-                          <dd>
-                            <code>{enlace.id}</code> · pieza «{enlace.pieza}»
-                            {tituloDe(enlace.encuentro_id) && <> · apuntaba a «{tituloDe(enlace.encuentro_id)}»</>}
-                          </dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="bo-small">Evento en el que dice participar</dt>
-                        <dd>
-                          {a.evento_confirmado_id
-                            ? tituloDe(a.evento_confirmado_id) ?? "un encuentro que ya no está"
-                            : <span className="bo-muted">ninguno</span>}
-                          {" · "}<span className="bo-muted">{a.estado_contexto}</span>
-                        </dd>
-                      </div>
-                      {a.utms_recibidas && (
-                        <div>
-                          <dt className="bo-small">Campaña que traía el enlace</dt>
-                          <dd>
-                            <code>{JSON.stringify(a.utms_recibidas)}</code>{" "}
-                            <span className="bo-muted">· sin verificar</span>
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                    <p className="bo-small">
-                      <strong>Abrir el enlace no prueba que estuvo en el evento.</strong>
-                    </p>
-                  </section>
+              <dt className="bo-small">A quiénes</dt>
+              <dd>
+                {/* El rango primero, su frase después. El rango es una lectura
+                    nuestra para poder agrupar (`NOR-02`); lo que ella dijo es
+                    el dato, y por eso va al lado y no se sustituye. */}
+                {a.afectados ? (
+                  <>
+                    <strong>{COMO_SE_LEE_ALCANCE[alcanceDe(a.afectados)]}</strong>
+                    <span className="bo-small"> · «{a.afectados}»</span>
+                  </>
+                ) : (
+                  <span className="bo-muted">no lo dijo</span>
                 )}
+              </dd>
 
-                {/* ── Qué ha pasado con esto ──────────────────────────────────
-                    **Las actuaciones que no son remisiones no se veían en
-                    ninguna parte.** La ficha las traía todas —`historiaDe`
-                    devuelve los cinco tipos de `RES-01`— y solo dibujaba las
-                    remisiones, dentro del panel de la derecha: una decisión o
-                    una respuesta registradas quedaban en la base sin pantalla
-                    que las mostrara.
+              <dt className="bo-small">Desde cuándo</dt>
+              <dd>
+                {/* Tal cual. «Hace tres meses» no es una fecha, y volverlo una
+                    sería la inferencia que `I2` prohíbe. */}
+                {a.desde_cuando ? (
+                  <>
+                    <strong>{COMO_SE_LEE_ANTIGUEDAD[antiguedadDe(a.desde_cuando)]}</strong>
+                    <span className="bo-small"> · «{a.desde_cuando}»</span>
+                  </>
+                ) : (
+                  <span className="bo-muted">no lo dijo</span>
+                )}
+              </dd>
 
-                    Y la ficha entera no tenía una sola línea de tiempo. Para
-                    reconstruir qué había pasado con un aporte había que juntar
-                    con la cabeza tres sitios: la sección de ubicación, el
-                    panel de gestión y la historia de la prioridad.
-
-                    `.bo-history` es la clase que el sistema de diseño trae para
-                    esto —línea vertical, punto dorado, fecha en cifras— y
-                    ninguna pantalla la usaba.
-
-                    **Solo hechos con fecha.** No hay pasos futuros en gris ni
-                    una secuencia prometida: lo que no ha pasado, no se dibuja. */}
-                <section className="bo-history-section">
-                  <h2>Qué ha pasado con esto</h2>
-                  <ul className="bo-history">
-                    <li>
-                      <strong>Llegó {COMO_LLEGO[a.canal] ?? `por ${a.canal}`}</strong>
-                      <p>
-                        Quedó guardado con sus palabras y con el comprobante que se le entregó.
-                      </p>
-                      <small>{fechaHora(a.recibido_en)}</small>
-                    </li>
-
-                    {exp && (
-                      <li>
-                        <strong>Se abrió un expediente</strong>
-                        <p>{exp.descripcion}</p>
-                        <small>
-                          {exp.reabierto_en
-                            ? `reabierto el ${fechaHora(exp.reabierto_en)}`
-                            : "abrir un expediente no aprueba ni compromete nada"}
-                        </small>
-                      </li>
-                    )}
-
-                    {actuaciones.map((x) => (
-                      <li key={x.actuacionId}>
-                        <strong>{COMO_SE_LEE_ACTUACION[x.tipo]}</strong>
-                        {x.destino && <p>A {x.destino}.</p>}
-                        {x.motivo && <p>{x.motivo}</p>}
-                        {x.siguientePaso && <p>Siguiente paso: {x.siguientePaso}</p>}
-                        <small>
-                          {fechaHora(x.ocurridaEn)} · {x.autor}
-                          {x.tipo === "remision" && (
-                            x.aceptadaEn
-                              ? ` · la recibieron el ${fechaHora(x.aceptadaEn)}`
-                              : " · todavía sin aceptar"
-                          )}
-                        </small>
-                      </li>
-                    ))}
-
-                    {/* Lo que falta se dice una vez, al final, y sin fingir que
-                        es un paso pendiente de una secuencia acordada: no hay
-                        plazo escrito para responder y el sistema no cierra por
-                        silencio. */}
-                    {actuaciones.length === 0 && (
-                      <li>
-                        <strong>Sin actuaciones registradas</strong>
-                        <p>
-                          Nadie ha remitido, decidido ni respondido todavía. No hay plazo escrito
-                          para hacerlo.
-                        </p>
-                      </li>
-                    )}
-                  </ul>
-                </section>
-              </div>
-
-              <aside className="bo-inspector">
-                <h2>Gestión</h2>
-                {/* Que los cuatro estados se muevan por separado (`CAL-01`) es
-                    una decisión nuestra, no algo que quien revisa tenga que
-                    hacer. Y se veía raro: aquí solo salen tres, porque el de la
-                    ubicación vive arriba. */}
-                <p className="bo-small">
-                  {enPalabras(a.estado_clasificacion)} · {enPalabras(a.estado_confirmacion)} ·
-                  {" "}{enPalabras(a.estado_revision)}
-                </p>
-
-                {!exp ? (
-                  <form action={accionCrearExpediente}>
-                    <input type="hidden" name="aporteId" value={aporteId} />
-                    <input type="hidden" name="procesoId" value={procesoId} />
-                    <h3>Abrir expediente</h3>
-                    {/* **Llega medio lleno con lo que la persona confirmó**
-                        (`CLA-04`). Rellenar no es decidir: el expediente se abre
-                        por un acto del revisor y queda a su nombre, con su
-                        motivo. Lo propuesto se puede cambiar entero. */}
-                    <Campo id="exp-descripcion" name="descripcion" etiqueta="La afectación, en una frase"
-                           defaultValue={propuestaDeExpediente.descripcion} />
-                    <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional
-                           defaultValue={propuestaDeExpediente.cambio} />
-                    <Campo id="exp-motivo" name="motivo" etiqueta="Por qué se abre" />
-                    <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
-                    <BotonEnvio variante="primary" mientras="Abriendo…">Abrir</BotonEnvio>
-                    <p className="bo-small">
-                      <strong>Un expediente por afectación</strong>, aunque compartan tema o
-                      municipio.
-                    </p>
-                  </form>
+              <dt className="bo-small">Cuántos más como este</dt>
+              <dd>
+                {/* Dice **cuál** de los dos falta. «Falta tema o municipio»
+                    obligaba a ir a buscar cuál era, y muchas veces uno de los
+                    dos estaba ahí mismo, dos filas arriba. */}
+                {!a.tema || !aceptada ? (
+                  <span className="bo-muted">
+                    sin contar · falta {!a.tema && !aceptada ? "el tema y el municipio"
+                      : !a.tema ? "el tema" : "el municipio"}
+                  </span>
+                ) : recurrencia.otros === 0 ? (
+                  <>Ninguno todavía. <span className="bo-muted">Ser el único no lo hace menos grave.</span></>
                 ) : (
                   <>
-                    <h3>Expediente</h3>
-                    <p>{exp.descripcion}</p>
-                    {exp.reabierto_en && (
-                      <p className="bo-badge" data-state="clarify">
-                        reabierto · la prioridad dejó de estar vigente
-                      </p>
-                    )}
+                    <strong>{recurrencia.otros} aportes más</strong> del mismo tema en este
+                    municipio · <span className="bo-muted">son aportes, no personas</span>
+                  </>
+                )}
+              </dd>
+            </dl>
 
-                    <h3>Prioridad de examen</h3>
-                    {prio ? (
-                      <div className="bo-context-grid">
-                        <p><strong>{prio.motivo}</strong></p>
-                        <p className="bo-small">
-                          afectación: {prio.afectacion ?? "—"} · urgencia: {prio.urgenciaReportada ?? "—"} ·
-                          recurrencia: {prio.recurrencia ?? "—"} · competencia: {prio.competencia ?? "—"}
-                        </p>
-                        {prio.incertidumbre && <p className="bo-observation">Incertidumbre: {prio.incertidumbre}</p>}
-                        <p className="bo-small">por {prio.autor}</p>
+            {/* **Corregir el tema.** `GES-02` la lista entre lo que se puede
+                corregir, y no existía: 114 de 115 aportes estaban sin tema y no
+                había ninguna forma de ponérselo. Un aporte sin tema no se puede
+                enrutar a ninguna mesa. */}
+            <details className="bo-plegable" data-prueba="corregir-tema">
+              <summary>{a.tema ? "Corregir el tema" : "Poner un tema"}</summary>
+              <div className="bo-plegado">
+                <form action={accionCambiarTema}>
+                  <input type="hidden" name="aporteId" value={aporteId} />
+                  <Opciones id="tema-codigo" name="tema" etiqueta="De qué habla"
+                            defaultValue={a.tema ?? ""}>
+                    <option value="">Sin tema</option>
+                    {TEMAS.map((x) => (
+                      <option key={x} value={x}>{x}</option>
+                    ))}
+                  </Opciones>
+                  <Campo id="tema-motivo" name="motivo" etiqueta="Por qué"
+                         ejemplo="habla del acueducto, no de la vía" />
+                  <Campo id="tema-autor" name="autor" etiqueta="Tu nombre" opcional />
+                  <BotonEnvio mientras="Guardando…">Guardar el tema</BotonEnvio>
+                </form>
+              </div>
+            </details>
+          </section>
+
+          {/* **El relato, en dorado y antes que nada.** Es lo que nadie puede
+              reescribir (`N03`): no existe ningún campo para hacerlo, y de eso
+              se encarga una prueba, no un aviso. */}
+          <section className="bo-panel pc-entra" data-tono="dorado" style={orden(3)}>
+            <header className="bo-panel-cabecera">
+              <h2><IconoEscribir />Lo que la persona contó</h2>
+              <span className="bo-small">sus palabras · no se editan</span>
+            </header>
+            <blockquote className="bo-relato">{a.relato_original}</blockquote>
+            {/* **Declarado, no verificado.** Lo dijo quien escribió; nadie
+                comprobó que represente a nadie (`Q23`). */}
+            {a.es_colectivo && (
+              <p className="bo-observation">
+                <strong>Dice hablar por un grupo:</strong>{" "}
+                <em>«{a.colectivo_declarado ?? "sin nombrarlo"}»</em>{" "}
+                <span className="bo-muted">· nadie verificó que lo represente</span>
+              </p>
+            )}
+          </section>
+
+          {/* **La ubicación es trabajo pendiente**, y el panel lo dice con el
+              borde: ámbar mientras está por aclarar, verde cuando ya se aceptó
+              un municipio. Es lo primero que hay que resolver para que el
+              aporte sirva de algo. */}
+          <section className="bo-panel pc-entra" data-prueba="ubicacion" style={orden(4)}
+                   data-tono={porAclarar ? "aviso" : aceptada ? "ok" : undefined}>
+            <header className="bo-panel-cabecera">
+              <h2><IconoLugar />Ubicación</h2>
+              <span className="bo-badge" data-state={porAclarar ? "clarify" : aceptada ? "validated" : "draft"}>
+                {porAclarar ? "por aclarar" : aceptada ? "confirmada" : "sin municipio"}
+              </span>
+            </header>
+            {ubi?.map((u, i) => (
+              <p key={i} data-prueba="territorio">
+                {/* En palabras, no como está en la base: salía «por_aclarar». */}
+                <span className="bo-badge" data-state={u.estado === "confirmada" ? "validated" : "clarify"}>
+                  {u.estado === "por_aclarar" ? "por aclarar" : u.estado}
+                </span>{" "}
+                {/* **El nombre, y el código al lado.** Quien revisa no trabaja
+                    con códigos DANE de memoria. */}
+                {u.territorio_codigo
+                  ? <><strong>{nombreDe.get(u.territorio_codigo) ?? "un municipio que no está en el catálogo"}</strong>
+                      {" "}<span className="bo-small">({u.territorio_codigo})</span></>
+                  : <span className="bo-muted">sin municipio</span>}
+                {u.motivo && <span className="bo-small"> · {u.motivo}</span>}
+              </p>
+            ))}
+
+            {/* Este NO se pliega: es el trabajo pendiente del aporte, lo que la
+                persona que abre la ficha vino a hacer. */}
+            {porAclarar && (
+              <form action={accionResolver}>
+                <input type="hidden" name="aporteId" value={aporteId} />
+                <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
+                <Opciones id="ubi-codigo" name="codigo" etiqueta="Municipio">
+                  <option value="">Escoge uno…</option>
+                  {mun.map((m) => (
+                    <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                  ))}
+                </Opciones>
+                <Campo id="ubi-motivo" name="motivo" etiqueta="Por qué este municipio"
+                       ejemplo="la persona lo confirmó / la referencia solo existe ahí…" />
+                <Campo id="ubi-autor" name="autor" etiqueta="Tu nombre" opcional />
+                <BotonEnvio variante="primary" mientras="Aceptando…">Aceptar el municipio</BotonEnvio>
+                <p className="bo-small">
+                  Acepta <strong>el lugar del problema</strong>, no la dirección de quien
+                  escribió.
+                </p>
+              </form>
+            )}
+
+            {/* **Corregir en un paso.** Corregir **reemplaza**, no agrega: dos
+                territorios significan que el problema cruza dos municipios
+                (`GEO-01`), y un error de dedo no es eso. Plegados: cada uno
+                lleva dentro los 1.122 municipios del país. */}
+            {ubi?.some((u) => u.estado === "confirmada") && (
+              <details className="bo-plegable">
+                <summary>Corregir el municipio</summary>
+                <div className="bo-plegado">
+                  <form action={accionCorregirMunicipio} data-prueba="corregir-municipio">
+                    <input type="hidden" name="aporteId" value={aporteId} />
+                    <input type="hidden" name="version" value={mun[0]?.version ?? ""} />
+                    <Opciones id="cor-codigo" name="codigo" etiqueta="Municipio correcto">
+                      <option value="">Escoge uno…</option>
+                      {mun.map((m) => (
+                        <option key={m.codigo} value={m.codigo}>{m.nombre} ({m.codigo})</option>
+                      ))}
+                    </Opciones>
+                    <Campo id="cor-motivo" name="motivo" etiqueta="Por qué estaba mal"
+                           ejemplo="dice El Salado de Rionegro, no el de Bello" />
+                    <Campo id="cor-autor" name="autor" etiqueta="Tu nombre" opcional />
+                    <BotonEnvio mientras="Corrigiendo…">Corregir</BotonEnvio>
+                    <p className="bo-small">
+                      <strong>Reemplaza el municipio, no agrega un segundo.</strong> El cambio
+                      queda registrado con tu nombre y el motivo.
+                    </p>
+                  </form>
+                </div>
+              </details>
+            )}
+
+            {ubi?.some((u) => u.estado === "confirmada") && (
+              <details className="bo-plegable">
+                <summary>Devolver a «por aclarar»</summary>
+                <div className="bo-plegado">
+                  <form action={accionDevolver}>
+                    <input type="hidden" name="aporteId" value={aporteId} />
+                    <Campo id="dev-motivo" name="motivo" etiqueta="Por qué vuelve a «por aclarar»"
+                           ejemplo="la persona dijo otra cosa al llamarla" />
+                    <Campo id="dev-autor" name="autor" etiqueta="Tu nombre" opcional />
+                    <BotonEnvio mientras="Devolviendo…">Devolver a por aclarar</BotonEnvio>
+                    {/* Por qué el código se borra en vez de quedarse de adorno
+                        está en `src/revision/ubicacion.ts`. */}
+                    <p className="bo-small">El municipio se quita hasta que se aclare.</p>
+                  </form>
+                </div>
+              </details>
+            )}
+          </section>
+
+          {(sint?.length ?? 0) > 0 && (
+            <section className="bo-panel pc-entra" data-prueba="sintesis" style={orden(5)}>
+              <header className="bo-panel-cabecera">
+                <h2><IconoRevisar />Lo que entendimos</h2>
+                {/* **Solo la vigente, y en sus partes.** Las anteriores no se
+                    borran: se pliegan. Sirven para ver qué cambió, no para
+                    leerlas como el dato. */}
+                <span className="bo-badge" data-state={vigente!.confirmada_en ? "validated" : "draft"}>
+                  v{vigente!.version} · {vigente!.clase}
+                  {vigente!.confirmada_en ? " · la confirmó la persona" : " · sin confirmar"}
+                </span>
+              </header>
+              <dl className="bo-context-grid">
+                {enPartes(vigente!.texto).map(([etiqueta, valor]) => (
+                  <Fragment key={etiqueta}>
+                    <dt className="bo-small">{etiqueta}</dt>
+                    <dd>{valor}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+              <p className="bo-small">
+                Que la persona confirme <strong>no significa que los hechos estén
+                verificados</strong>.
+              </p>
+
+              {sint!.length > 1 && (
+                <details className="bo-plegable" data-prueba="versiones-anteriores">
+                  <summary>Ver las {sint!.length - 1} versiones anteriores</summary>
+                  <div className="bo-plegado">
+                    {sint!.slice(0, -1).map((s) => (
+                      <div key={s.version} className="bo-check">
+                        <span className="bo-badge" data-state="draft">
+                          v{s.version} · {s.clase} · sustituida por la v{vigente!.version}
+                        </span>
+                        <p style={{ whiteSpace: "pre-wrap" }}>{s.texto}</p>
                       </div>
-                    ) : (
-                      <p className="bo-muted">Sin priorizar.</p>
-                    )}
+                    ))}
+                  </div>
+                </details>
+              )}
+            </section>
+          )}
 
-                    <details className="bo-plegable">
+          {a.canal === "voz_transcrita" && (
+            <section className="bo-panel pc-entra" data-prueba="grabacion" style={orden(6)}>
+              <header className="bo-panel-cabecera">
+                <h2><IconoAudio />Lo contó hablando</h2>
+                <span className="bo-badge" data-state="voz">el original es la grabación</span>
+              </header>
+              {/* **El audio es el original** (ADR 0013). El texto de arriba es
+                  la lectura de una máquina, y las máquinas se equivocan con los
+                  nombres de veredas. */}
+              <p className="bo-small">
+                Escúchala antes de dar por buena una vereda, una cantidad o un «no».
+              </p>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <audio controls preload="none" src={`/consola/audio/${aporteId}`} style={{ width: "100%" }} />
+
+              {transcripciones.length > 0 ? (
+                <dl className="bo-context-grid">
+                  {transcripciones.map((v) => (
+                    <div key={v.version}>
+                      <dt className="bo-small">
+                        v{v.version} · {v.autor.startsWith("modelo:")
+                          ? <>la transcribió <code>{v.autor.replace("modelo:", "")}</code></>
+                          : "la corrigió la persona"}
+                      </dt>
+                      <dd>{v.texto}{v.motivo && <span className="bo-small"> · {v.motivo}</span>}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="bo-observation">
+                  No se pudo transcribir. <strong>El audio queda guardado.</strong>
+                </p>
+              )}
+            </section>
+          )}
+
+          {(enlace || a.evento_confirmado_id) && (
+            <section className="bo-panel pc-entra" data-prueba="contexto" style={orden(6)}>
+              <header className="bo-panel-cabecera">
+                <h2><IconoEnlace />De dónde llegó</h2>
+                <span className="bo-small">abrir el enlace no prueba que estuvo en el evento</span>
+              </header>
+              {/* `QR-03` obliga a distinguir tres cosas que la gente mezcla.
+                  Juntarlas haría creer que quien escaneó el afiche de A
+                  asistió a A. */}
+              <dl className="bo-context-grid">
+                {enlace && (
+                  <div>
+                    <dt className="bo-small">Enlace por el que entró</dt>
+                    <dd>
+                      <code>{enlace.id}</code> · pieza «{enlace.pieza}»
+                      {tituloDe(enlace.encuentro_id) && <> · apuntaba a «{tituloDe(enlace.encuentro_id)}»</>}
+                    </dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="bo-small">Evento en el que dice participar</dt>
+                  <dd>
+                    {a.evento_confirmado_id
+                      ? tituloDe(a.evento_confirmado_id) ?? "un encuentro que ya no está"
+                      : <span className="bo-muted">ninguno</span>}
+                    {" · "}<span className="bo-muted">{a.estado_contexto}</span>
+                  </dd>
+                </div>
+                {a.utms_recibidas && (
+                  <div>
+                    <dt className="bo-small">Campaña que traía el enlace</dt>
+                    <dd>
+                      <code>{JSON.stringify(a.utms_recibidas)}</code>{" "}
+                      <span className="bo-muted">· sin verificar</span>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
+
+          {/* ── Qué ha pasado con esto ──────────────────────────────────────
+              La única línea de tiempo de la ficha: llegada, expediente y las
+              cinco actuaciones de `RES-01`, cada una con el color de lo que
+              es. **Solo hechos con fecha.** No hay pasos futuros en gris ni
+              una secuencia prometida: lo que no ha pasado, no se dibuja. */}
+          <section className="bo-panel pc-entra" style={orden(7)}>
+            <header className="bo-panel-cabecera">
+              <h2><IconoHistoria />Qué ha pasado con esto</h2>
+              <span className="bo-small">solo hechos con fecha</span>
+            </header>
+            <ul className="bo-history">
+              <li data-estado="neutro">
+                <strong>Llegó {COMO_LLEGO[a.canal] ?? `por ${a.canal}`}</strong>
+                <p>
+                  Quedó guardado con sus palabras y con el comprobante que se le entregó.
+                </p>
+                <small>{fechaHora(a.recibido_en)}</small>
+              </li>
+
+              {exp && (
+                <li data-estado="info">
+                  <strong>Se abrió un expediente</strong>
+                  <p>{exp.descripcion}</p>
+                  <small>
+                    {exp.reabierto_en
+                      ? `reabierto el ${fechaHora(exp.reabierto_en)}`
+                      : "abrir un expediente no aprueba ni compromete nada"}
+                  </small>
+                </li>
+              )}
+
+              {actuaciones.map((x) => (
+                <li key={x.actuacionId}
+                    data-estado={x.tipo === "remision" ? (x.aceptadaEn ? "ok" : "aviso") : x.tipo === "recepcion" ? "ok" : "info"}>
+                  <strong>{COMO_SE_LEE_ACTUACION[x.tipo]}</strong>
+                  {x.destino && <p>A {x.destino}.</p>}
+                  {x.motivo && <p>{x.motivo}</p>}
+                  {x.siguientePaso && <p>Siguiente paso: {x.siguientePaso}</p>}
+                  <small>
+                    {fechaHora(x.ocurridaEn)} · {x.autor}
+                    {x.tipo === "remision" && (
+                      x.aceptadaEn
+                        ? ` · la recibieron el ${fechaHora(x.aceptadaEn)}`
+                        : " · todavía sin aceptar"
+                    )}
+                  </small>
+                </li>
+              ))}
+
+              {/* Lo que falta se dice una vez, al final, y sin fingir que es un
+                  paso pendiente de una secuencia acordada: no hay plazo escrito
+                  para responder y el sistema no cierra por silencio. */}
+              {actuaciones.length === 0 && (
+                <li data-estado="vacio">
+                  <strong>Sin actuaciones registradas</strong>
+                  <p>
+                    Nadie ha remitido, decidido ni respondido todavía. No hay plazo escrito
+                    para hacerlo.
+                  </p>
+                </li>
+              )}
+            </ul>
+          </section>
+        </div>
+
+        {/* ── Gestión ────────────────────────────────────────────────────────
+            Sin expediente, el panel es una sola cosa: abrirlo. Con expediente,
+            tres bloques plegables —Expediente · Prioridad · Escalar— cada uno
+            con su estado en la cabecera, y **los tres abiertos al llegar**:
+            los recorridos rellenan el de prioridad y el de escalar sin abrir
+            nada, y quien revisa cierra el que no le sirve. Los formularios de
+            dentro sí van plegados: son el muro de listas que la ronda anterior
+            quitó de en medio. */}
+        <aside className="bo-inspector pc-entra" style={orden(3)}>
+          <header className="bo-panel-cabecera">
+            <h2><IconoExpediente />Gestión</h2>
+            <span className="bo-badge" data-state={gestion.estado}>{gestion.texto}</span>
+          </header>
+          {/* Que los cuatro estados se muevan por separado (`CAL-01`) es una
+              decisión nuestra, no algo que quien revisa tenga que hacer. Aquí
+              solo salen tres, porque el de la ubicación vive arriba. */}
+          <p className="bo-small">
+            {enPalabras(a.estado_clasificacion)} · {enPalabras(a.estado_confirmacion)} ·
+            {" "}{enPalabras(a.estado_revision)}
+          </p>
+
+          {!exp ? (
+            <form action={accionCrearExpediente}>
+              <input type="hidden" name="aporteId" value={aporteId} />
+              <input type="hidden" name="procesoId" value={procesoId} />
+              <h3>Abrir expediente</h3>
+              {/* **Llega medio lleno con lo que la persona confirmó**
+                  (`CLA-04`). Rellenar no es decidir: el expediente se abre por
+                  un acto del revisor y queda a su nombre, con su motivo. */}
+              <Campo id="exp-descripcion" name="descripcion" etiqueta="La afectación, en una frase"
+                     defaultValue={propuestaDeExpediente.descripcion} />
+              <Campo id="exp-cambio" name="cambioEsperado" etiqueta="Qué debería cambiar" opcional
+                     defaultValue={propuestaDeExpediente.cambio} />
+              <Campo id="exp-motivo" name="motivo" etiqueta="Por qué se abre" />
+              <Campo id="exp-autor" name="autor" etiqueta="Tu nombre" opcional />
+              <BotonEnvio variante="primary" mientras="Abriendo…">Abrir</BotonEnvio>
+              <p className="bo-small">
+                <strong>Un expediente por afectación</strong>, aunque compartan tema o
+                municipio.
+              </p>
+            </form>
+          ) : (
+            <div className="bo-acordeon">
+              <details open>
+                <summary>
+                  <IconoExpediente />Expediente
+                  {exp.reabierto_en
+                    ? <span className="bo-badge" data-state="clarify">reabierto</span>
+                    : <span className="bo-badge" data-state="info">abierto</span>}
+                </summary>
+                <div className="bo-plegado">
+                  <p>{exp.descripcion}</p>
+                  {exp.reabierto_en && (
+                    <p className="bo-small">Reabierto · la prioridad dejó de estar vigente.</p>
+                  )}
+                </div>
+              </details>
+
+              <details open>
+                <summary>
+                  <IconoPrioridad />Prioridad de examen
+                  <span className="bo-badge" data-state={prio ? "ok" : "draft"}>
+                    {prio ? "registrada" : "sin priorizar"}
+                  </span>
+                </summary>
+                <div className="bo-plegado">
+                  {prio ? (
+                    <div className="bo-context-grid">
+                      <p><strong>{prio.motivo}</strong></p>
+                      <p className="bo-small">
+                        afectación: {prio.afectacion ?? "—"} · urgencia: {prio.urgenciaReportada ?? "—"} ·
+                        recurrencia: {prio.recurrencia ?? "—"} · competencia: {prio.competencia ?? "—"}
+                      </p>
+                      {prio.incertidumbre && <p className="bo-observation">Incertidumbre: {prio.incertidumbre}</p>}
+                      <p className="bo-small">por {prio.autor}</p>
+                    </div>
+                  ) : (
+                    <p className="bo-muted">Sin priorizar. Los factores van sueltos y sin sumar: no hay puntaje.</p>
+                  )}
+
+                  <details className="bo-plegable">
                     <summary>{prio ? "Cambiar la prioridad de examen" : "Registrar prioridad de examen"}</summary>
                     <div className="bo-plegado">
-                    <form action={accionPriorizar}>
-                      <input type="hidden" name="expedienteId" value={exp.id} />
-                      <Campo id="pri-motivo" name="motivo" etiqueta="Por qué examinar esto primero"
-                             ejemplo="afecta a menores y es una sola fuente de agua" />
-                      {FACTORES.map(([n, etiqueta, ops]) => (
-                        <Opciones key={n} id={`pri-${n}`} name={n} etiqueta={etiqueta} opcional>
-                          <option value="">sin registrar</option>
-                          {ops.map((o) => <option key={o} value={o}>{enPalabras(o)}</option>)}
-                        </Opciones>
-                      ))}
-                      <Campo id="pri-incertidumbre" name="incertidumbre" etiqueta="Qué no sabemos" opcional />
-                      <Campo id="pri-autor" name="autor" etiqueta="Tu nombre" opcional />
-                      <BotonEnvio mientras="Registrando…">Registrar prioridad</BotonEnvio>
-                      {/* Por qué los factores van por separado y no hay
-                          puntaje está junto a `FACTORES`, arriba. En pantalla
-                          sobraba: quien revisa ve cuatro selectores sueltos y no
-                          hay ningún número que sumar. Además decía «cinco». */}
-                    </form>
+                      <form action={accionPriorizar}>
+                        <input type="hidden" name="expedienteId" value={exp.id} />
+                        <Campo id="pri-motivo" name="motivo" etiqueta="Por qué examinar esto primero"
+                               ejemplo="afecta a menores y es una sola fuente de agua" />
+                        {FACTORES.map(([n, etiqueta, ops]) => (
+                          <Opciones key={n} id={`pri-${n}`} name={n} etiqueta={etiqueta} opcional>
+                            <option value="">sin registrar</option>
+                            {ops.map((o) => <option key={o} value={o}>{enPalabras(o)}</option>)}
+                          </Opciones>
+                        ))}
+                        <Campo id="pri-incertidumbre" name="incertidumbre" etiqueta="Qué no sabemos" opcional />
+                        <Campo id="pri-autor" name="autor" etiqueta="Tu nombre" opcional />
+                        <BotonEnvio mientras="Registrando…">Registrar prioridad</BotonEnvio>
+                        {/* Por qué los factores van por separado y no hay
+                            puntaje está junto a `FACTORES`, arriba. */}
+                      </form>
                     </div>
-                    </details>
+                  </details>
 
-                    {/* **Escalar: a dónde va esto y quién puede desagregarlo.**
-                        Faltaba entero: la ficha sabía abrir el expediente y
-                        priorizarlo, pero no sacarlo de aquí. Y un aporte que
-                        describe una necesidad que no es una sola cosa lo parte
-                        el equipo que conoce el territorio, no quien lo recibió.
-
-                        Lo que se registra es un **hecho**, no un estado: remitir
-                        no es haber atendido, y esta pantalla no mueve nada hacia
-                        «resuelto». */}
-                    <section data-prueba="escalar">
-                      <h3>Escalar</h3>
-                      {atencion && (
-                        <p className="bo-small">
-                          Estado de atención: <strong>{atencion.estado.replace(/_/g, " ")}</strong>
-                          {" · "}{atencion.diasSinActuar} días sin actuar
-                          {atencion.remisionPendiente && (
-                            <> · <span className="bo-badge" data-state="clarify">remisión sin aceptar</span></>
-                          )}
-                        </p>
-                      )}
-
-                      {remisiones.map((r) => (
-                        <div key={r.actuacionId} className="bo-check">
-                          <span className="bo-badge" data-state={r.aceptadaEn ? "validated" : "clarify"}>
-                            {r.aceptadaEn ? "recibida" : "pendiente de aceptación"}
-                          </span>
-                          <p>
-                            <strong>{r.destino}</strong>
-                            {r.motivo && <span className="bo-small"> · {r.motivo}</span>}
-                            <span className="bo-small"> · por {r.autor}</span>
-                          </p>
-                          {!r.aceptadaEn && (
-                            <form action={accionAceptarRemision} data-prueba="aceptar-remision">
-                              <input type="hidden" name="actuacionId" value={r.actuacionId} />
-                              <Campo id={`ace-${r.actuacionId}`} name="motivo"
-                                     etiqueta="Quién confirmó que lo recibió"
-                                     ejemplo="la secretaría lo radicó con el número 4471" />
-                              <BotonEnvio mientras="Confirmando…">Confirmar recepción</BotonEnvio>
-                            </form>
-                          )}
-                        </div>
-                      ))}
-
-                      <details className="bo-plegable" data-prueba="remitir">
-                      <summary>{remisiones.length ? "Remitir a otra mesa" : "Remitir a una mesa o un equipo"}</summary>
+                  {historia.length > 1 && (
+                    <details className="bo-plegable">
+                      <summary>Historia de la prioridad ({historia.length})</summary>
                       <div className="bo-plegado">
+                        {historia.map((h) => (
+                          <p key={h.id} className="bo-small">
+                            {h.vigenteHasta ? "· " : "▸ "}{h.motivo} — {h.autor}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </details>
+
+              {/* **Escalar: a dónde va esto y quién puede desagregarlo.** Lo
+                  que se registra es un **hecho**, no un estado: remitir no es
+                  haber atendido, y esta pantalla no mueve nada hacia
+                  «resuelto». */}
+              <details open data-prueba="escalar">
+                <summary>
+                  <IconoRemitir />Escalar
+                  {atencion?.remisionPendiente
+                    ? <span className="bo-badge" data-state="clarify">remisión sin aceptar</span>
+                    : remisiones.length > 0
+                      ? <span className="bo-badge" data-state="ok">recibida</span>
+                      : <span className="bo-badge" data-state="draft">sin remitir</span>}
+                </summary>
+                <div className="bo-plegado">
+                  {atencion && (
+                    <p className="bo-small">
+                      Estado de atención: <strong>{atencion.estado.replace(/_/g, " ")}</strong>
+                      {" · "}{atencion.diasSinActuar} días sin actuar
+                    </p>
+                  )}
+
+                  {remisiones.map((r) => (
+                    <div key={r.actuacionId} className="bo-remision">
+                      <span className="bo-badge" data-state={r.aceptadaEn ? "validated" : "clarify"}>
+                        {r.aceptadaEn ? "recibida" : "pendiente de aceptación"}
+                      </span>
+                      <p>
+                        <strong>{r.destino}</strong>
+                        {r.motivo && <span className="bo-small"> · {r.motivo}</span>}
+                        <span className="bo-small"> · por {r.autor}</span>
+                      </p>
+                      {!r.aceptadaEn && (
+                        <form action={accionAceptarRemision} data-prueba="aceptar-remision">
+                          <input type="hidden" name="actuacionId" value={r.actuacionId} />
+                          <Campo id={`ace-${r.actuacionId}`} name="motivo"
+                                 etiqueta="Quién confirmó que lo recibió"
+                                 ejemplo="la secretaría lo radicó con el número 4471" />
+                          <BotonEnvio mientras="Confirmando…">Confirmar recepción</BotonEnvio>
+                        </form>
+                      )}
+                    </div>
+                  ))}
+
+                  <details className="bo-plegable" data-prueba="remitir">
+                    <summary>{remisiones.length ? "Remitir a otra mesa" : "Remitir a una mesa o un equipo"}</summary>
+                    <div className="bo-plegado">
                       <form action={accionRemitir}>
                         <input type="hidden" name="expedienteId" value={exp.id} />
                         <Campo id="rem-destino" name="destino" etiqueta="A qué mesa o equipo"
@@ -887,26 +914,15 @@ export default async function Ficha({ params }: { params: Promise<{ aporte: stri
                           la mesa confirme que lo recibió.
                         </p>
                       </form>
-                      </div>
-                      </details>
-                    </section>
-
-                    {historia.length > 1 && (
-                      <details className="bo-plegable">
-                        <summary>Historia de la prioridad ({historia.length})</summary>
-                        <div className="bo-plegado">
-                          {historia.map((h) => (
-                            <p key={h.id} className="bo-small">
-                              {h.vigenteHasta ? "· " : "▸ "}{h.motivo} — {h.autor}
-                            </p>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </>
-                )}
-              </aside>
+                    </div>
+                  </details>
+                </div>
+              </details>
             </div>
+          )}
+        </aside>
+      </div>
     </Armazon>
   );
 }
+

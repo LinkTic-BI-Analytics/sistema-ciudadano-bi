@@ -135,6 +135,10 @@ export function Formulario({ claveDeReserva }: {
           hoja desde el principio y no había ninguno: tres palabras sueltas en
           una barra gris no se leen como tres formas de hacer lo mismo.
           El texto no cambia — es el nombre por el que se llaman. */}
+      {/* Los tres modos y el formulario van en una tarjeta: era texto suelto
+          sobre el lienzo, y una tarjeta es lo que separa «una pantalla» de
+          «una caja de texto en una página». */}
+      <div className="pc-tarjeta" data-prueba="contar">
       <div className="pc-modes" role="group" aria-label="Cómo quieres contarlo">
         <button type="button" className="pc-mode" aria-pressed={modo === "escribir"}
                 onClick={() => setModo("escribir")}><IconoEscribir />Escribir</button>
@@ -211,6 +215,7 @@ export function Formulario({ claveDeReserva }: {
           {enviando ? "Guardando…" : "Continuar"}
         </button>
       </form>
+      </div>
     </>
   );
 }

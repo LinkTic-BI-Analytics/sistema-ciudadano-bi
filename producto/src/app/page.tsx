@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { procesoVigente } from "../datos/proceso.ts";
-import { convocatoriaVigente, proximosEncuentros, type Encuentro } from "../convocatoria/agenda.ts";
+import { convocatoriaVigente, proximosEncuentros } from "../convocatoria/agenda.ts";
+import { Calendario } from "./calendario.tsx";
 import { Cabecera, FranjaInstitucional, Pie, Tricolor } from "../producto/marca.tsx";
-import { IconoAviso, IconoSinCuenta } from "../producto/iconos.tsx";
+import {
+  IconoAviso, IconoBases, IconoInstalacion, IconoMesas, IconoPlenaria, IconoRegistro, IconoSinCuenta,
+} from "../producto/iconos.tsx";
 
 /** El retardo de entrada de cada pieza del hero. Entra en cascada, no de golpe. */
 const orden = (n: number) => ({ "--pc-orden": n }) as CSSProperties;
@@ -29,9 +32,6 @@ export const metadata = {
     "Cuéntanos qué necesita mejorar donde vives. Sin cuenta y sin correo. Consulta las convocatorias y los próximos encuentros.",
 };
 
-const DIA = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
-const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-
 // Dentro de una frase el mes va entero: «14 de nov de 2026» se lee como una
 // abreviatura de formulario, no como una fecha que alguien te está diciendo.
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
@@ -43,74 +43,24 @@ function enPalabras(iso: string) {
   return `${f.getDate()} de ${MESES[f.getMonth()]} de ${f.getFullYear()}`;
 }
 
-function cuando(iso: string, zona: string) {
-  const f = new Date(iso);
-  const hora = f.toLocaleTimeString("es-CO", { timeZone: zona, hour: "numeric", minute: "2-digit" });
-  // **La zona solo si no es la del país.** Decía siempre «(Bogota)» —sin tilde—
-  // justo al lado de «Caseta comunal de la vereda El Salado», y se leía como el
-  // lugar: «¿es en Bogotá o en El Salado?». Para quien vive en la vereda esa no
-  // es una duda de detalle: decide si va o no.
-  //
-  // Cuando de verdad es otro huso sí hace falta, porque quien se conecta desde
-  // fuera llega tarde. Entonces se dice como lo que es: la hora de un sitio.
-  const otroHuso = zona !== "America/Bogota";
-  const donde = otroHuso ? ` (hora de ${zona.split("/")[1]?.replace(/_/g, " ") ?? zona})` : "";
-  // **La fecha completa, también para quien no ve.** El recuadro grande del día
-  // lleva `aria-hidden`, así que un lector de pantalla solo decía «dom»: el día
-  // del mes no se oía en ninguna parte.
-  return `${DIA[f.getDay()]} ${f.getDate()} de ${MES[f.getMonth()]} · ${hora}${donde}`;
-}
-
-function Encuentros({ lista }: { lista: Encuentro[] }) {
-  return (
-    <ul className="pc-event-list pc-event-grid">
-      {lista.map((e) => {
-        const f = new Date(e.comienzaEn);
-        return (
-          <li key={e.id} className="pc-event-row" data-status={e.estado === "cancelado" ? "cancelled" : undefined}>
-            <div className="pc-event-date" aria-hidden>
-              <strong>{f.getDate()}</strong>
-              <span>{MES[f.getMonth()]?.toUpperCase()}</span>
-            </div>
-            <div>
-              {e.tema && <p className="pc-event-category">{e.tema}</p>}
-              <p className="pc-event-title"><span>{e.titulo}</span></p>
-              <p className="pc-event-when">{cuando(e.comienzaEn, e.zonaHoraria)}</p>
-              <p className="pc-event-where">
-                {e.modalidad === "virtual" ? "Virtual" : e.lugar}
-                {e.modalidad === "mixta" && " · también virtual"}
-                {e.cupos !== null && ` · ${e.cupos} cupos`}
-              </p>
-              {e.ayudas && <p className="pc-event-where">{e.ayudas}</p>}
-
-              {/* Un encuentro cancelado **se queda en la lista**. Quitarlo es la
-                  forma más rápida de que alguien se presente en la puerta. */}
-              {e.estado === "cancelado" && (
-                <span className="pc-event-state">
-                  Cancelado{e.motivoCambio && `: ${e.motivoCambio}`}. Puedes contar lo tuyo por
-                  internet igual.
-                </span>
-              )}
-              {e.estado === "reprogramado" && e.comenzabaEn && (
-                <span className="pc-event-state">
-                  Cambió de fecha: antes era el {new Date(e.comenzabaEn).getDate()} de{" "}
-                  {MES[new Date(e.comenzabaEn).getMonth()]}
-                  {e.motivoCambio && ` · ${e.motivoCambio}`}
-                </span>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
+/** Los seis ejes del resumen del DNP, cada uno con un tono de la paleta de sectores. */
+const CAMINOS: [string, number][] = [
+  ["Reconstrucción, Transformación y Resiliencia", 1],
+  ["Patriotismo Constitucional", 2],
+  ["Milagro Social", 3],
+  ["Milagro Económico", 4],
+  ["Colombia de las Regiones", 5],
+  ["Transformación del Estado", 6],
+];
 
 export default async function Portada() {
   const procesoId = await procesoVigente();
   const [convocatoria, encuentros] = await Promise.all([
     convocatoriaVigente(procesoId),
-    proximosEncuentros(procesoId),
+    // Sesenta y no los seis por defecto: el cronograma oficial trae doce y
+    // administración puede añadir más. Cortar en seis dejaba tres semanas del
+    // calendario vacías con encuentros en la base.
+    proximosEncuentros(procesoId, 60),
   ]);
   const abierta = convocatoria?.recibeAportes ?? true;
 
@@ -253,22 +203,31 @@ export default async function Portada() {
             </div>
           </section>
 
-          {/* `pc-revela`: lo que entra en cuadro al desplazar. Sin una línea
-              de JavaScript —la línea de tiempo la lleva el propio scroll— y con
-              una guarda `@supports`: donde el navegador no la conoce, la sección
-              sale visible y quieta. */}
-          <section className="pc-section pc-revela" data-prueba="agenda">
+          {/* **El calendario, no una lista.** Es el cronograma de despliegue
+              territorial del DNP, en la identidad de la aplicación: semanas con
+              su rótulo, cinco días, y cada encuentro como bloque con uno de los
+              tres colores de la bandera. Los encuentros salen de la base; el
+              rótulo de la semana y el festivo, de `convocatoria/cronograma.ts`.
+
+              `.pc-entra` con retardo y no `.pc-revela`: la animación atada al
+              desplazamiento dejaba media portada invisible en cualquier
+              captura y depende de que el navegador la conozca. Con tiempo,
+              todo se ve. */}
+          <section className="pc-section pc-entra" style={orden(4)} data-prueba="agenda">
             <div className="pc-section-header">
               <div>
                 <p className="pc-eyebrow"><Tricolor />Agenda</p>
-                <h2>Próximos encuentros</h2>
+                <h2>Encuentros regionales</h2>
               </div>
+              <ul className="pc-leyenda" aria-label="Cómo leer el calendario">
+                <li><i data-bandera="1" aria-hidden />Cada día con encuentro lleva un color de la bandera</li>
+                <li><i data-cancelado aria-hidden />Cancelado</li>
+              </ul>
             </div>
 
-            {/* **Antes de la lista, no después.** Iba debajo de las cuatro
-                tarjetas: la persona leía «Mesa sobre el agua · 40 cupos» y sacaba
-                la conclusión de que había que ir, mucho antes de llegar a la
-                frase que dice que no. */}
+            {/* **Antes del calendario, no después.** La persona lee «Pereira ·
+                lun 5 de oct» y saca la conclusión de que hay que ir, mucho antes
+                de llegar a la frase que dice que no. */}
             {encuentros.length > 0 && (
               <p className="pc-note">
                 <strong>Ir a un encuentro no es obligatorio.</strong> Puedes contar lo tuyo aquí,
@@ -286,9 +245,7 @@ export default async function Portada() {
               </p>
             ) : (
               <>
-                <Encuentros lista={encuentros} />
-                {/* La otra mitad de lo mismo, y esta sí va detrás: importa
-                    cuando ya miró los encuentros y está pensando en ir. */}
+                <Calendario encuentros={encuentros} />
                 <p className="pc-note">
                   Entrar a un encuentro <strong>no registra tu necesidad</strong>: para eso,
                   cuéntala.
@@ -297,7 +254,84 @@ export default async function Portada() {
             )}
           </section>
 
-          <section className="pc-section pc-revela">
+          {/* **Cómo es un encuentro regional.** Del «Resumen Encuentro Regional»
+              del DNP: cinco pasos desde la llegada hasta las Bases del Plan.
+              Va después del calendario —primero cuándo y dónde, después qué
+              pasa allí— y no repite el botón de contar: la portada tiene uno. */}
+          <section className="pc-section pc-entra" style={orden(5)} data-prueba="como-es">
+            <div className="pc-section-header">
+              <div>
+                <p className="pc-eyebrow"><Tricolor />En el encuentro</p>
+                <h2>Cómo es un encuentro regional</h2>
+              </div>
+            </div>
+            <p className="pc-note">Desde la llegada de los participantes hasta las Bases del Plan.</p>
+            <ol className="pc-pasos-encuentro">
+              <li>
+                <span className="pc-paso-icono"><IconoRegistro /></span>
+                <h3>Registro</h3>
+                <p>
+                  La ciudadanía se dirige a la mesa de registro, donde se toman sus datos y se le
+                  orienta hacia el eje de su interés.
+                </p>
+              </li>
+              <li>
+                <span className="pc-paso-icono"><IconoInstalacion /></span>
+                <h3>Instalación</h3>
+                <p>
+                  Los participantes escuchan en el escenario central las palabras de apertura del
+                  gobierno nacional.
+                </p>
+              </li>
+              <li>
+                <span className="pc-paso-icono"><IconoMesas /></span>
+                <h3>Mesas Milagro</h3>
+                <p>
+                  Los participantes dialogan sobre las problemáticas del territorio y construyen
+                  propuestas y visiones para los próximos cuatro años. Cada mesa registra sus
+                  acuerdos.
+                </p>
+              </li>
+              <li>
+                <span className="pc-paso-icono"><IconoPlenaria /></span>
+                <h3>Plenaria</h3>
+                <p>
+                  Cada mesa comparte con todos las conclusiones y propuestas de su eje, y se
+                  recogen observaciones.
+                </p>
+              </li>
+              <li>
+                <span className="pc-paso-icono"><IconoBases /></span>
+                <h3>Bases del Plan</h3>
+                <p>
+                  Los aportes se sistematizan y se incorporan como insumo para las Bases del Plan
+                  Nacional de Desarrollo.
+                </p>
+              </li>
+            </ol>
+          </section>
+
+          {/* **Los seis caminos hacia la Patria Milagro.** Los ejes en los que
+              se organizan las mesas. Cada uno con un color de la paleta de
+              sectores, para que se distingan de un vistazo. */}
+          <section className="pc-section pc-entra" style={orden(6)} data-prueba="caminos">
+            <div className="pc-section-header">
+              <div>
+                <p className="pc-eyebrow"><Tricolor />Los ejes</p>
+                <h2>Los seis caminos hacia la Patria Milagro</h2>
+              </div>
+            </div>
+            <ol className="pc-caminos">
+              {CAMINOS.map(([nombre, sector], i) => (
+                <li key={nombre} className="pc-camino" data-sector={sector}>
+                  <p className="pc-eyebrow">Eje {i + 1}</p>
+                  <h3>{nombre}</h3>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="pc-section pc-entra" style={orden(7)}>
             <p className="pc-eyebrow"><Tricolor />Después de contarlo</p>
             <h2>Qué pasa con lo que cuentas</h2>
             <p className="pc-note">

@@ -28,6 +28,8 @@ de la máquina, no del proyecto.
 | **No hay, a propósito** | **Ninguna autenticación.** No hay mecanismo de identidad decidido — es la pregunta P4 del pliego |
 | Hay | La línea gráfica **Patria Milagro v1**: 374 tokens en dos modos, Montserrat e Inter servidas desde el propio dominio, y la bandera de fondo en el hero |
 | Hay | **Dos hojas propias** además de las seis copiadas del paquete de diseño: `propio-ciudadano.css` y `propio-interno.css`. Qué puede ir ahí y qué no, en [`src/producto/tokens/LEEME.md`](src/producto/tokens/LEEME.md); por qué existen, en `V25` de [`negocio/vacios.md`](../negocio/vacios.md) |
+| Hay | **Una paleta extendida sobre la línea gráfica**, en `src/app/globals.css`: el modo oscuro deja de ser un solo azul —lienzo casi negro en cuatro escalones, estados con hue real, ocho tonos de sector para los 24 temas— sin tocar el paquete. La vigila `pruebas/paleta.test.ts`. Por qué, en `V26` de [`negocio/vacios.md`](../negocio/vacios.md) |
+| Hay | En la portada, **el calendario de encuentros regionales** leído de la base (los 12 oficiales de octubre de 2026 los siembra `scripts/sembrar-agenda.sh`) con los rótulos de semana de `src/convocatoria/cronograma.ts`; y en `/consola`, **paginación por páginas** (`?pagina=N`, 25 por página) sobre el mismo corte en memoria de `bandeja()` |
 
 ## De cero a andando
 
@@ -72,6 +74,7 @@ build, las pruebas de nodo, los recorridos de navegador y una veintena de cheque
 | Un puerto ocupado | El bloque `548xx` y el `3100` se escogieron libres **en esta máquina**. En otra hay que volver a comprobar |
 | Las pruebas fallan al importar un `.ts` | Node viejo. Hace falta 24 o más |
 | La portada sale sin encuentros | Falta `./scripts/sembrar-agenda.sh` |
+| El calendario sale sin los rótulos «Semana 1 · Reestructuración…» | Los rótulos son estáticos (`src/convocatoria/cronograma.ts`) y se cruzan por fecha: solo salen en las semanas de octubre de 2026 que el cronograma nombra. Un encuentro de otra semana sale igual, en una semana sin rótulo |
 | El hero sale sin bandera detrás | Falta `./scripts/marca.sh`: la imagen vive en `negocio/` y se copia a `public/` |
 | «Bucket not found» al hablar | Falta el depósito de grabaciones. Lo crea `./scripts/sembrar.sh`; está declarado en `supabase/config.toml`, pero el CLI solo aplica esa sección al crear el volumen |
 | La pantalla sale en oscuro y se esperaba claro | Es el modo principal de la marca. El botón de la cabecera lo cambia y la elección se guarda (`src/producto/tema.tsx`) |
