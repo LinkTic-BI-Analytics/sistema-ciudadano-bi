@@ -8,9 +8,20 @@
 # Incluye a propósito un encuentro cancelado y uno reprogramado: son los dos
 # casos que se ven mal si la pantalla los esconde, y los que no se pueden probar
 # a ojo sin tenerlos delante.
+#
+# Los 12 encuentros regionales de octubre de 2026 sí son los oficiales del
+# cronograma de despliegue territorial. Para sembrarlos en una base que no es
+# la local —la de Vercel, por ejemplo— se pasa la cadena de conexión:
+#   DB_URL='postgresql://postgres.<ref>:<clave>@aws-0-<region>.pooler.supabase.com:5432/postgres' ./scripts/sembrar-agenda.sh
+# Con `DB_URL` no se toca Docker: corre `psql` de esta máquina contra esa base.
 set -euo pipefail
 C=${DB_CONTENEDOR:-supabase_db_participacion}
-docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -qAt \
+if [ -n "${DB_URL:-}" ]; then
+  PSQL=(psql "$DB_URL")
+else
+  PSQL=(docker exec -i "$C" psql -U postgres -d postgres)
+fi
+"${PSQL[@]}" -v ON_ERROR_STOP=1 -qAt \
   -v nombre="${PROCESO_NOMBRE:-}" <<'SQL'
 begin;
 -- Idempotente: si ya hay una convocatoria publicada, no se siembra otra. Los

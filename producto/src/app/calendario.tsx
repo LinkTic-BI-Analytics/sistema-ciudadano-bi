@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Encuentro } from "../convocatoria/agenda.ts";
-import { agruparPorSemana, fechaLocal } from "../convocatoria/calendario.ts";
+import { agruparPorMes, agruparPorSemana, fechaLocal, type Semana as SemanaDeCalendario } from "../convocatoria/calendario.ts";
 import { sectorDe } from "../producto/sectores.ts";
 import { IconoFestivo } from "../producto/iconos.tsx";
 
@@ -97,49 +97,71 @@ function Ficha({ e }: { e: Encuentro }) {
   );
 }
 
+function Semana({ s }: { s: SemanaDeCalendario }) {
+  // De lunes a viernes siempre; el fin de semana solo si tiene algo.
+  const visibles = s.dias.filter((d) => d.diaSemana < 5 || d.encuentros.length > 0);
+  const desde = s.dias[0]!.fecha;
+  const hasta = s.dias[4]!.fecha;
+  const rango = `del ${Number(desde.slice(8))} al ${Number(hasta.slice(8))} de ${MES[Number(hasta.slice(5, 7)) - 1]}`;
+  return (
+    <li className="pc-semana" data-extra={s.numero === null ? "true" : undefined}>
+      <header className="pc-semana-rotulo">
+        <p className="pc-eyebrow">{s.numero !== null ? `Semana ${s.numero}` : "Semana"}</p>
+        <h4>{s.tema ?? rango}</h4>
+        {s.tema && <p>{rango}</p>}
+      </header>
+      <ol className="pc-dias" style={{ "--pc-dias": visibles.length } as CSSProperties}>
+        {visibles.map((d) => (
+          <li key={d.fecha} className="pc-dia"
+              data-vacio={d.encuentros.length === 0 ? "true" : undefined}
+              data-festivo={d.festivo ? "true" : undefined}
+              data-bandera={d.bandera ?? undefined}>
+            <p className="pc-dia-numero">
+              <time dateTime={d.fecha}>{Number(d.fecha.slice(8))}</time>
+              <small>{DIA[diaDe(d.fecha)]}</small>
+            </p>
+            {d.festivo && (
+              <p className="pc-festivo"><IconoFestivo />{d.festivo}</p>
+            )}
+            {d.encuentros.length > 0 && (
+              <ul className="pc-dia-encuentros">
+                {d.encuentros.map((e) => <Ficha key={e.id} e={e} />)}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ol>
+    </li>
+  );
+}
+
+/**
+ * Meses como bloques, cada uno con su cabecera y sus semanas. Con las semanas
+ * una detrás de otra, la de «del 28 de sep al 2 de oct» y la «Semana 1 ·
+ * Reestructuración» se leían como la misma cosa; con el mes encima se ve dónde
+ * termina uno y empieza el otro, y cuántos encuentros hay en cada uno.
+ */
 export function Calendario({ encuentros }: { encuentros: Encuentro[] }) {
   const hoy = fechaLocal(new Date().toISOString(), "America/Bogota");
-  const semanas = agruparPorSemana(encuentros, { hoy });
+  const meses = agruparPorMes(agruparPorSemana(encuentros, { hoy }));
 
   return (
     <ol className="pc-calendario">
-      {semanas.map((s) => {
-        // De lunes a viernes siempre; el fin de semana solo si tiene algo.
-        const visibles = s.dias.filter((d) => d.diaSemana < 5 || d.encuentros.length > 0);
-        const desde = s.dias[0]!.fecha;
-        const hasta = s.dias[4]!.fecha;
-        const rango = `del ${Number(desde.slice(8))} al ${Number(hasta.slice(8))} de ${MES[Number(hasta.slice(5, 7)) - 1]}`;
-        return (
-          <li key={s.lunes} className="pc-semana" data-extra={s.numero === null ? "true" : undefined}>
-            <header className="pc-semana-rotulo">
-              <p className="pc-eyebrow">{s.numero !== null ? `Semana ${s.numero}` : "Semana"}</p>
-              <h3>{s.tema ?? rango}</h3>
-              {s.tema && <p>{rango}</p>}
-            </header>
-            <ol className="pc-dias" style={{ "--pc-dias": visibles.length } as CSSProperties}>
-              {visibles.map((d) => (
-                <li key={d.fecha} className="pc-dia"
-                    data-vacio={d.encuentros.length === 0 ? "true" : undefined}
-                    data-festivo={d.festivo ? "true" : undefined}
-                    data-bandera={d.bandera ?? undefined}>
-                  <p className="pc-dia-numero">
-                    <time dateTime={d.fecha}>{Number(d.fecha.slice(8))}</time>
-                    <small>{DIA[diaDe(d.fecha)]}</small>
-                  </p>
-                  {d.festivo && (
-                    <p className="pc-festivo"><IconoFestivo />{d.festivo}</p>
-                  )}
-                  {d.encuentros.length > 0 && (
-                    <ul className="pc-dia-encuentros">
-                      {d.encuentros.map((e) => <Ficha key={e.id} e={e} />)}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </li>
-        );
-      })}
+      {meses.map((m) => (
+        <li key={m.clave} className="pc-mes">
+          <header className="pc-mes-cabecera">
+            <h3>{m.nombre}</h3>
+            <p>
+              {m.encuentros === 0 ? "sin encuentros publicados todavía"
+                : m.encuentros === 1 ? "1 encuentro" : `${m.encuentros} encuentros`}
+              {" · "}{m.semanas.length === 1 ? "1 semana" : `${m.semanas.length} semanas`}
+            </p>
+          </header>
+          <ol className="pc-semanas">
+            {m.semanas.map((s) => <Semana key={s.lunes} s={s} />)}
+          </ol>
+        </li>
+      ))}
     </ol>
   );
 }

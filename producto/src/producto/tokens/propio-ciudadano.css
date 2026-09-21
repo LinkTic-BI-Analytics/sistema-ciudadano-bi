@@ -187,6 +187,12 @@
    reglas que los consumen.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* La portada usa más ancho que el resto de la cara ciudadana: 75rem —la
+   anchura de contenido del paquete— deja el calendario con celdas de 130 px en
+   una pantalla de 1920, y cinco encuentros por fila necesitan aire. Las
+   secciones de texto tienen su propia medida de línea, así que no se estiran. */
+.pc-ui .pc-main[data-layout="home"] { max-width: 88rem; }
+
 /* El hero es ahora el único bloque navy sobre un lienzo casi negro, y su borde
    izquierdo —navy al 94 %— se fundía con el fondo (1.05:1). Un filo de un píxel
    lo delimita sin tocar el degradado del paquete. */
@@ -264,7 +270,22 @@
    encuentros como bloques con los tres colores de la bandera rotando por
    posición dentro de la semana. Sin equipos ni alistamiento: eso es logística
    interna y a quien va a ir no le dice nada. */
-.pc-ui .pc-calendario { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 1.25rem; overflow-wrap: anywhere; }
+.pc-ui .pc-calendario { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 2.5rem; overflow-wrap: anywhere; }
+/* Cada mes es un bloque: cabecera con el nombre en Montserrat, una línea
+   tricolor debajo y el conteo; luego sus semanas. */
+.pc-ui .pc-mes { min-width: 0; }
+.pc-ui .pc-mes-cabecera {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .75rem 1.5rem; flex-wrap: wrap;
+  margin: 0 0 1rem; padding: 0 0 .75rem; position: relative;
+  border-bottom: 1px solid var(--pc-semantic-color-border-subtle);
+}
+.pc-ui .pc-mes-cabecera::after {
+  content: ''; position: absolute; left: 0; bottom: -1px; width: 6rem; height: 3px; border-radius: 2px;
+  background: linear-gradient(to right, var(--pc-x-bandera-1) 0 50%, var(--pc-x-bandera-2) 50% 75%, var(--pc-x-bandera-3) 75% 100%);
+}
+.pc-ui .pc-mes-cabecera h3 { margin: 0; font-size: 1.375rem; line-height: 1.2; }
+.pc-ui .pc-mes-cabecera p { margin: 0; font-size: .8125rem; color: var(--pc-semantic-color-text-secondary); font-variant-numeric: tabular-nums; }
+.pc-ui .pc-semanas { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
 .pc-ui .pc-semana {
   display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1rem;
   background: var(--pc-semantic-color-surface-base);
@@ -281,7 +302,7 @@
   background: var(--pc-semantic-color-surface-navy); color: var(--pc-semantic-color-text-onNavy);
 }
 .pc-ui .pc-semana-rotulo .pc-eyebrow { margin: 0; color: var(--pc-semantic-color-brand-accent); }
-.pc-ui .pc-semana-rotulo h3 { margin: 0; color: inherit; font-size: 1.0625rem; line-height: 1.25; overflow-wrap: normal; }
+.pc-ui .pc-semana-rotulo h4 { margin: 0; color: inherit; font-family: var(--pc-semantic-fontFamily-heading); font-size: 1.0625rem; font-weight: 800; line-height: 1.25; overflow-wrap: normal; }
 .pc-ui .pc-semana-rotulo p { margin: 0; font-size: .75rem; color: var(--pc-semantic-color-text-onNavySecondary); }
 .pc-ui .pc-semana[data-extra] .pc-semana-rotulo { background: var(--pc-semantic-color-surface-subtle); color: var(--pc-semantic-color-text-default); }
 .pc-ui .pc-semana[data-extra] .pc-semana-rotulo p { color: var(--pc-semantic-color-text-secondary); }

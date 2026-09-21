@@ -8,7 +8,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { agruparPorSemana, fechaLocal, lunesDe, sumarDias } from "../src/convocatoria/calendario.ts";
+import { agruparPorMes, agruparPorSemana, fechaLocal, lunesDe, sumarDias } from "../src/convocatoria/calendario.ts";
 import type { Encuentro } from "../src/convocatoria/agenda.ts";
 
 function encuentro(id: string, comienzaEn: string, extra: Partial<Encuentro> = {}): Encuentro {
@@ -95,4 +95,21 @@ test("el festivo cae en su día", () => {
   });
   assert.equal(s2!.dias[0]!.festivo, "Festivo nacional");
   assert.equal(s2!.dias[1]!.festivo, null);
+});
+
+test("las semanas se reparten por mes, y una semana va en el mes en que empieza", () => {
+  // Del 28 de sep al 4 de oct: empieza en septiembre, va en septiembre. Y el
+  // conteo del mes incluye al cancelado, que sigue en el calendario.
+  const semanas = agruparPorSemana([
+    encuentro("a", "2026-09-21T14:00:00Z"),
+    encuentro("b", "2026-09-30T14:00:00Z"),
+    encuentro("c", "2026-10-02T14:00:00Z", { estado: "cancelado" }),
+    encuentro("d", "2026-10-07T14:00:00Z"),
+  ], { cronograma: CRONOGRAMA, festivos: {}, hoy: "2026-09-20" });
+  const meses = agruparPorMes(semanas);
+  assert.deepEqual(meses.map((m) => [m.clave, m.nombre, m.semanas.length, m.encuentros]), [
+    ["2026-09", "Septiembre de 2026", 2, 3],
+    ["2026-10", "Octubre de 2026", 2, 1],
+  ]);
+  assert.equal(meses[0]!.semanas[1]!.lunes, "2026-09-28");
 });
